@@ -1,0 +1,60 @@
+.boardFrame {
+	margin-left:auto;
+	margin-right:auto;
+	width:400px;
+	background-color: #eeffff;
+	padding: 2;
+	border-spacing: 2;
+}
+
+.boardCoord {
+	color: #666666;
+}
+
+.board {
+	border-spacing: 0;
+	padding: 0;
+}
+
+.boardTileWhite {
+	background-color: #ffffff;
+	background-image: url(wsquare.jpg);
+	padding: 2;
+}
+
+.boardTileBlack {
+	background-color: #cccccc;
+	background-image: url(bsquare.jpg);
+	padding: 2;
+}
+
+.textFrame {
+	background-color: #777799;
+}
+
+.textFrameData {
+	background-color: #ffffff;
+}
+
+.boardPageTable {
+	width: 600;
+}
+
+.helpPageTable {
+	width: 600;
+}
+
+.textBox {
+	background-color: #f2f2f2;
+}
+
+.textBoxHighlight {
+	background-color: #e4e4ff;
+}
+
+.releaseInfo {
+	text-align: left;
+	width: 500;
+	color: #0000bb;
+}
+

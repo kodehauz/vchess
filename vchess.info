@@ -1,0 +1,5 @@
+; $Id$
+name = "VChess"
+description = "drupal chess module"
+core = 6.x
+php = 5.1

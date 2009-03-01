@@ -1,0 +1,81 @@
+<?php
+/**
+ * Implementation of hook_install().
+ */
+function vchess_install() {
+  drupal_install_schema('vchess');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function vchess_uninstall() {
+  drupal_uninstall_schema('vchess');
+
+}
+
+function vchess_schema() {
+  $schema['vchess']= array(
+    'fields' => array(
+      'uid' => array(
+        'type' => 'varchar',
+	'length' => 33,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'wins' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+	'unsigned' => TRUE,
+        'default' => 0,
+      ),	
+      'draws' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+	'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'losses' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+	'unsigned' => TRUE,
+        'default' => 0,	
+      ),
+      'rating' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+	'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'rgames' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+	'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'rchange' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+	'unsigned' => TRUE,
+        'default' => 0,
+      ),
+    ),
+  );
+
+  $schema['vchess_games']= array(
+    'fields' => array(
+	'nid' => array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE,),
+	'gid' => array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => '',),
+	'timestamps' => array('type' => 'varchar', 'length' => 25, 'not null' => TRUE, 'default' => '',),
+	'white' => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE, 'default' => '',),
+	'black' => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE, 'default' => '',),
+	'state' => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE, 'default' => '',),
+	'board_white' => array('type' => 'varchar', 'length' => 100, 'not null' => TRUE, 'default' => '',),
+	'board_black' => array('type' => 'varchar', 'length' => 100, 'not null' => TRUE, 'default' => '',),
+    ),
+
+    'primary key' => array('nid'),
+
+  );
+return $schema;
+}
