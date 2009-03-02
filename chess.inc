@@ -1,4 +1,4 @@
-<?php // $id$
+<?php 
 /* Chess game logic to handle moves. */
 
 /* Return the array of adjacent tiles (<=8). */

@@ -1,4 +1,4 @@
-<?php// $id$
+<?php
 
 /* Convert board coordinate [a-h][1-8] to 1dim index [0..63] */
 function vchess_bc2i($coord)

@@ -1,4 +1,4 @@
-<?php// $id$
+<?php
 function vchess_renderBoard($board,$pc,$active,$gid)
 {
   global $user;

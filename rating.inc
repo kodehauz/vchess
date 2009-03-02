@@ -1,4 +1,4 @@
-<? // $id$
+<?php
 /* Functions to apply game results to rating according to Elo's formular */
 
 /* Compute initial rating based on average opponent strength */
