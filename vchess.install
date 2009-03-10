@@ -66,7 +66,7 @@ function vchess_schema() {
     'fields' => array(
 	'nid' => array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE,),
 	'gid' => array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => '',),
-	'timestamps' => array('type' => 'varchar', 'length' => 25, 'not null' => TRUE, 'default' => '',),
+	'timestamps' => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE, 'default' => '',),
 	'white' => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE, 'default' => '',),
 	'black' => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE, 'default' => '',),
 	'state' => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE, 'default' => '',),
