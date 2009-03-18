@@ -269,7 +269,7 @@ else{
     $out.=vchess_renderBoard($game['board'],$game['p_color'],$game['p_maymove'],$gid);
 
   $out.= '<IMG src="/'.$module_path.'/images/spacer.gif" width=10><BR></TD>';
-  $out.= '<TD rowspan=2><IMG width=10 alt="" src="images/spacer.gif"></TD>';
+  $out.= '<TD rowspan=2><IMG width=10 alt="" src="/'.$module_path.'images/spacer.gif"></TD>';
   $out.= '<TD width=0 valign="top">';
 
   $out.=vchess_renderCommandForm($game,$cmdres,$move);
