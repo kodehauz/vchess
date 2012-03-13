@@ -1,292 +1,529 @@
 <?php
+
+// $Id: vchess.module,v 1.2 2009/03/18 23:31:51 hrocho Exp $
 /**
  * @file
  * Drupal chess module
- * VChess is based on OCC chess by Michael Speck 
- * @author: Andrej Prochazka
+ * VChess is based on OCC chess by Michael Speck
+ * VChess for Drupal 7 is based on VChess for Drupal 6 by Andrej Prochazka
+ *
+ * @author: Hugh Prior
  */
 
-require_once drupal_get_path('module', 'vchess') .'/io.inc';
-require_once drupal_get_path('module', 'vchess') .'/render.inc';
-require_once drupal_get_path('module', 'vchess') .'/chess.inc';
-require_once drupal_get_path('module', 'vchess') .'/rating.inc';
-/**
-* Display help and module information
-*/
-function vchess_help($path,$arg) {
-if($path == 'admin/help#vchess'){
-  $txt = t('Drupal chess module.Chess games between site users');
-  return $txt;
-}
-}
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/io.inc';
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/render.inc';
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/chess.inc';
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/rating.inc';
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/player.inc';
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/game.inc';
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/scoresheet.inc';
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/piece.inc';
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/board.inc';
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/move.inc';  
 
-/**
-* VChess permissions
-*/
-function vchess_perm() {
-  return array('access VChess', );
-}
-
-/**
-* hook_menu() impementation
-*/
-function vchess_menu(){
-$items = array();
-
-$items['vchess/main'] = array(
-  'page callback' => 'vchess_main_page',
-//      'access arguments' => array('access content'),
-  'title' => t('VChess chess'),
-  'access' => TRUE,
-  'access callback' => TRUE,
-  'type' => MENU_NORMAL_ITEM,
-);
-
-$items['vchess/newgame_form'] = array(
-  'page callback' => 'drupal_get_form',
-  'access arguments' => array('access content'),
-  'page arguments' => array('vchess_new_game_form'),
-  'title' => t('Create VChess chess game'),
-  'type' => MENU_CALLBACK,
-);
-
-$items['vchess/board/%'] = array(
-  'page callback' => 'vchess_board',
-  'page arguments' => array(2),
-  'access arguments' => array('access content'),
-  'type' => MENU_CALLBACK,
-);
-
-  return $items;
-}
-
-
-/**
-* menu callback vchess_main_page to display main vchess window
-*/
-function vchess_main_page()
-{
-global $user;
-$module_path = drupal_get_path('module','vchess');
-$gamefolder =  variable_get('vchess_game_files_folder','/vchess-data');
-$res_games = $gamefolder;
-
-if(!$user->name)
-{
-  $txt = t('Please, register to play chess register');
-  return $txt;
-}
-
-$uid = $user->name;
-$usrstat = vchess_ioLoadUserStats($uid);
-$out ='<div style="text-align:center;"><b>'. $uid.'</b><br>';
-$out .= t('wins: ').$usrstat['wins'].t(' losses: ').$usrstat['losses'].t(' draws: ').$usrstat['draws'].'</div>';
-/* Part from index.php */
-$list=vchess_ioLoadGameInfoList('opengames',$uid,null,null);
-/* Add mark whether user may move in game */
-foreach ($list as $key=>$info)
-  if ((($info['white']==$uid && $info['curplyr']=='w') || ($info['black']==$uid && $info['curplyr']=='b'))){// filter_loc =- opengames was removed
-    $list[$key]['p_maymove']=1;
-    if($info['curstate']=='w' || $info['curstate']=='b')$list[$key]['p_maymove']=-1;	//added, archived games not supported yet
-}
-
-
-  $greenlist=array();
-  $redlist=array();
-  $i=0;
-  $j=count($list); /* required for unique keys for union */
-  foreach ($list as $info){
-    if ($info['p_maymove'] && $info['curstate']<>'w' && $info['curstate']<>'b'){
-      $greenlist[$i++]=$info;
-    }
-    else{
-      $redlist[$j++]=$info;
+  
+  define('HOME_ROOT', "http://localhost/");
+  define('BASE_DIR', "chess_drupal_7/");
+  
+  define('MEDIUM_PATH', HOME_ROOT . BASE_DIR);  // e.g. "http://localhost/chess_drupal_7/"
+  define('SUB_PATH', BASE_DIR . drupal_get_path('module', 'vchess'));  // e.g. "chess_drupal_7/sites/all/modules/vchess/"
+  define('FULL_PATH', HOME_ROOT . BASE_DIR . drupal_get_path('module', 'vchess'));  // e.g. "http://localhost/chess_drupal_7/sites/all/modules/vchess/"
+  
+  // The name of a blank piece
+  define("BLANK", " ");
+  
+  ini_set('display_errors', 'On');
+  error_reporting(E_ALL);
+  
+  /**
+   * Display help and module information
+   */
+  function vchess_help($path, $arg) {
+    if ($path == 'admin/help#vchess') {
+      $txt = t('Drupal chess module.Chess games between site users');
+      return $txt;
     }
   }
-    $list=$greenlist+$redlist;
-
-
-$theme='default';
-$gc.='<br><b>'.t('You can turn in ').count($greenlist).t(' games').'</b>';
-if (count($list)>0) 
-{
-  $gc.= '<TABLE>';
-  $gc.= '<TR><TD></TD>';
-  $gc.= '<TD><B>'.t('White').'&nbsp;&nbsp;&nbsp;&nbsp;</B></TD>';
-  $gc.= '<TD><B>'.t('Black').'&nbsp;&nbsp;&nbsp;&nbsp;</B></TD>';
-  $gc.= '<TD><B>'.t('Moves').'&nbsp;&nbsp;&nbsp;&nbsp;</B></TD>';
-  $gc.= '<TD><B>'.t('Starting Date').'&nbsp;&nbsp;&nbsp;&nbsp;</B></TD>';
-  $gc.= '<TD><B>'.t('Last Move On').'&nbsp;&nbsp;&nbsp;&nbsp;</B></TD>';
-  $gc.= '<TD></TD></TR>';
-  foreach ($list as $info) {{
-    if($info['p_maymove']){
-      $mark='greenmark.gif';
-    }
-    else{
-      $mark='redmark.gif';
-    }
-    if($info['curstate']=='w' || $info['curstate']=='b')
-    $mark='greymark.gif';
+  
+  /**
+   * VChess permissions
+   */
+  function vchess_permission() {
+    return array(
+        'access content' => array(
+            'title' => t('access content'),
+            'description' => t('Access VChess as normal user')),
+        'reset games' => array(
+            'title' => t('reset games'),
+            'description' => t('This enables someone to completely reset the games database'))
+    );
   }
-
-
-    $startdate=date('M jS Y H:i',$info['ts_start']);
-    $lastdate=date('M jS Y H:i',$info['ts_last']);
-    $gc.= '<TR><TD><IMG alt="" src="/'.$module_path.'/images/'.$theme.'/'.$mark.'"></TD>';
-    if($info['curstate']=='w' || $info['curstate']=='-'){
-      $gc.= '<TD><U>'.$info['white'].'</U></TD>';
-    }
-    else{
-      $gc.= '<TD>'.$info['white'].'</TD>';
-    }
-    if($info['curstate']=='b' || $info['curstate']=='-'){
-      $gc.= '<TD><U>'.$info['black'].'</U></TD>';
-    }
-    else{
-      $gc.= '<TD>'.$info['black'].'</TD>';
-    }
-    $gc.= '<TD>'.$info['curmove'].'</TD>';
-    $gc.= '<TD>'.$startdate.'&nbsp;&nbsp;</TD>';
-    $gc.= '<TD>'.$lastdate.'&nbsp;&nbsp;</TD>';
-    $gc.= '<TD><A href="board/'.$info['gid'].'">';
-    $gc.= t('View').'</A></TD></TR>';
+  
+  /**
+   * hook_menu() implementation
+   */
+  function vchess_menu() {
+    $items = array();
+  
+    $items['vchess/main'] = array(
+        'page callback' => 'vchess_main_page',
+        //      'access arguments' => array('access content'),
+        'title' => 'VChess chess',
+        'access' => TRUE,
+        'access callback' => TRUE,
+        'type' => MENU_NORMAL_ITEM,
+    );
+  
+    $items['vchess/newgame_form'] = array(
+        'page callback' => 'drupal_get_form',
+        'access arguments' => array('access content'),
+        'page arguments' => array('vchess_new_game_form'),
+        'title' => 'Create VChess chess game',
+        'type' => MENU_CALLBACK,
+    );
+  
+    $items['vchess/reset_games'] = array(
+        'page callback' => 'drupal_get_form',
+        'access arguments' => array('reset games'),
+        'page arguments' => array('vchess_reset_games_form'),
+        'title' => 'Reset ALL games!',
+        'type' => MENU_CALLBACK,
+    );
+  
+    $items['vchess/players'] = array(
+        'page callback' => 'vchess_players',
+        'page arguments' => array(2),
+        'access arguments' => array('access content'),
+        'type' => MENU_CALLBACK,
+    );
+  
+    $items['vchess/board/%'] = array(
+        'page callback' => 'vchess_board',
+        'page arguments' => array(2),
+        'access arguments' => array('access content'),
+        'type' => MENU_CALLBACK,
+    );
+  
+    $items['vchess/player/%'] = array(
+        'page callback' => 'vchess_player',
+        'page arguments' => array(2),
+        'access arguments' => array('access content'),
+        'type' => MENU_CALLBACK,
+    );
+  
+    return $items;
   }
-  $gc.= '</TABLE>';
-}
-$gc.= '<P>[ <A href="newgame_form">New Game</A> ]</P>';
-$out.=$gc;
-return $out;
-}
-
-
-/**
-* menu callback vchess_new_game_page to display new game form
-*/
-function vchess_new_game_form()
-{
-$colors = array('w'=>t('white'),'b'=>t('black'));
-
-$form['colorfield'] = array(
-  '#type' => 'fieldset',
-  '#title' => t('Choose your color'),
-);
-
-$form['colorfield']['color'] = array(
-  '#type'=> 'radios',
-  '#default_value' => 'w',
-  '#options' => $colors,
-);
-
-$form['opponent'] = array(
-  '#type' => 'textfield',
-  '#title' => t('opponent'),
-  '#description' => t('Type opponent\'s name. Oppenent must be registered on this site.'),
-  '#required' => TRUE,
-);
-
-$form['comment'] = array(
-  '#type'=> 'textarea',
-  '#title' => t('comment'),
-  '#cols' => '40',
-  '#rows' => '3',
-);
-
-$form['submit'] = array(
-  '#type' => 'submit',
-  '#value' => t('Create Game'),
-);
-
-return $form;
-}
-
-function vchess_new_game_form_submit($form,&$form_state)
-{
-global $user;
-$form_values = $form_state['values'];
-$sql = "SELECT name FROM {users} WHERE name = '".$form_values['opponent']."'";
-$res = db_query($sql);
-$opponent = db_fetch_object($res);
-
-
-if($form_values['color']=='w'){
-  $white = $user->name;
-  $black = $opponent->name;
-  $comment = $form_values['comment'];
-}
-else {
-  $black = $user->name;
-  $white = $opponent->name;
-  $comment = $form_values['comment'];
-}
-$gid=vchess_ioCreateGame($white,$black,$comment);
-
-drupal_set_message(t('Game has been created.'));
-$form_state['redirect'] = 'vchess/board/'.$gid;
-}
-
-function vchess_new_game_form_validate($form,&$form_state)
-{
-global $user;
-$form_values = $form_state['values'];
-
-$sql = "SELECT name FROM {users} WHERE name = '".$form_values['opponent']."'";
-$res = db_query($sql);
-$item = db_fetch_object($res);
-
-if($item->name ==''){
-    form_set_error('',t('Opponent does not exist on this site'));
+  
+  /**
+   * menu callback vchess_players to display a list of all players
+   */
+  function vchess_players() {
+    $sql = "SELECT uid FROM {users} ORDER BY name";
+    // Converted to the D7 database API syntax.
+    $result = db_query($sql);
+    foreach ($result as $record) {
+      if ($record->uid <> 0) {
+        $player_stats = vchess_io_load_user_stats($record->uid);
+        $stats[] = array(
+            $record->uid,
+            "<a href='" . url("vchess/player/" . $player_stats['name']) . "'>" . $player_stats['name'] . "</a>",
+            $player_stats['rating'],
+            $player_stats['played'],
+            $player_stats['won'],
+            $player_stats['lost'],
+            $player_stats['drawn'],
+            $player_stats['rchange']
+        );
+      }
+    }
+  
+    $table['header'] = array('uid', 'name', 'rating', 'played', 'won', 'lost', 'drawn', 'rchange');
+    $table['attributes'] = array();
+    $table['caption'] = array();
+    $table['colgroups'] = array();
+    $table['sticky'] = "";
+    $table['empty'] = "The message to display in an extra row if table does not have any rows.";
+    $table['rows'] = $stats;
+  
+    //  ['name'], $stats['wins'], $stats['draws'],
+    //$stats['losses'], $stats['rating'], $stats['rgames'], $stats['rchange']);
+  
+    return theme_table($table);
   }
-
-if(strcmp($item->name,$user->name)==0){
-    form_set_error('',t('Do not play again yourself'));
+  
+  /**
+   * menu callback vchess_main_page to display main vchess window
+   */
+  function vchess_main_page() {
+    global $user;
+  
+    if (user_is_logged_in()) {
+      $gamefolder =  variable_get('vchess_game_files_folder', '/vchess-data');
+      $res_games = $gamefolder;
+  
+      if (!$user->name) {
+        $txt = t('Please, register to play chess');
+        return $txt;
+      }
+  
+      //  $uid = $user->name;
+      $user_stats = vchess_io_load_user_stats($user->uid);
+      $out = '<div style="text-align:center;"><b>' . $user->name . '</b><br />';
+      $out .= t('won:') . " " . $user_stats['won'] . " " . t('lost:') . " " . $user_stats['lost'] . " " .
+          t('drawn:') . " " . $user_stats['drawn'] . '</div>';
+  
+      $out .= vchess_current_games($user->uid);
+  
+      //    $out .= '<p>[ <a href="newgame_form">New Game</a> ]</p>';
+      $out .= "<p>[ <a href=" . url("vchess/newgame_form") . ">New Game</a> ]</p>";
+    }
+    else {
+      $out = "Please log in to access this page";
+    }
+  
+    return $out;
   }
-
-}
-
-function vchess_board($gid)
-{
-  global $user;
-  $uid = $user->name;
-  $module_path = drupal_get_path('module','vchess');
-
-  drupal_add_css($module_path .'/vchessstyle.css');
-  drupal_add_js($module_path .'/board.js');
-
-  $browse = 0; //temporary for early version
-  $game = vchess_ioLoadGame($gid,$uid);
-
-  $out = '<div style="text-align:center;">white: <b>'.$game['white'].'</b> -   black: <b>'.$game['black'].'</b></div><br>';
-
-if($game==null){
-  $out.='Error: Game not found !!';
-}
-else{
-  $out.= '<TABLE width=100% border=0 cellspacing=0 cellpadding=0><TR><TD valign="top" rowspan=2>';
-  if ($browse)
-    vchess_renderBoard(null,$pcolor,null,$gid);
-  else
-    $out.=vchess_renderBoard($game['board'],$game['p_color'],$game['p_maymove'],$gid);
-
-  $out.= '<IMG src="/'.$module_path.'/images/spacer.gif" width=10><BR></TD>';
-  $out.= '<TD rowspan=2><IMG width=10 alt="" src="/'.$module_path.'images/spacer.gif"></TD>';
-  $out.= '<TD width=0 valign="top">';
-
-  $out.=vchess_renderCommandForm($game,$cmdres,$move);
-  $out.= '</TD></TR><TR><TD valign=bottom>';
-  $out.= '</TD></TR>';
-
-  $out.='</TABLE>';
-  $out.='<script language="Javascript">module_path=\''.$module_path.'\';checkMoveButton();highlightMove(window.document.getElementById("vchess-commandForm").move.value);</script>';
-
-if ($game['curstate']=='w') {
-  drupal_set_message('The game is over: white won');
-}
-
-if ($game['curstate']=='b') {
-  drupal_set_message('The game is over: black won');
-}
-
-}
-
-return $out;
-}
+  
+  /**
+   * Get table of current games for a given player
+   */
+  function vchess_current_games($uid) {
+    global $user;
+  
+    $module_path = drupal_get_path('module', 'vchess');  // e.g. sites/all/modules/vchess
+    //  $view_path = "chess_drupal_7/vchess";
+    $view_path = $GLOBALS['base_root'] . url("vchess");
+    $full_path = "http://localhost/chess_drupal_7/" . drupal_get_path('module', 'vchess');
+  
+    // Get the list of possible games to view
+    $games = vchess_io_load_users_games($uid);
+  
+    // Add mark whether user may move in game
+    /**
+     foreach ($games as $key => $game) {
+     $games[$key]['p_maymove'] = FALSE;  // set a default
+     if ((($game['white'] == $user->name && $game['turn'] == 'w') || ($game['black'] == $user->name && $game['turn'] == 'b'))) { // filter_loc =- opengames was removed
+     // p_maymove --> player may move
+     $games[$key]['p_maymove'] = TRUE;
+     }
+     }
+     */
+  
+    $greenlist = array();  // the games which the player has the move
+    $redlist = array();    // the games where the player does not have the move
+    $i = 0;
+    $j = count($games); // required for unique keys for union
+    foreach ($games as $game) {
+      //    if ($game['p_maymove'] && $game['curstate'] <> 'w' && $game['curstate'] <> 'b') {
+      //    if ($game['p_maymove']) {
+      if ($game->is_players_move($uid)) {
+        $greenlist[$i++] = $game;
+      }
+      else {
+        $redlist[$j++] = $game;
+      }
+    }
+    $games = $greenlist + $redlist;
+  
+    $theme = 'default';
+  
+    // Find if we are looking at our own list
+    $view_user = user_load($uid);
+    if ($view_user->uid == $user->uid) {
+      $turn_text = t('It is your turn in');
+      $waiting_text = t('You are waiting for');
+    }
+    else {
+      $turn_text = t("It is <b>" . $view_user->name . "'s</b> turn in");
+      $waiting_text = t("<b>" . $view_user->name . "</b> is waiting for");
+    }
+    $gc = "";
+    $gc .= '<br /><b>' . $turn_text  . " " . count($greenlist) . " " . t('games') . '</b>';
+    $gc .= '<br /><b>' . $waiting_text . " " . count($redlist) . " " . t('games') . '</b>';
+  
+    if (count($games) > 0) {
+      $gc .= '<table>';
+      $gc .= '<tr><td></td>';
+      $gc .= '<td><b>' . t('White') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
+      $gc .= '<td><b>' . t('Black') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
+      //    $gc .= '<td><b>' . t('Moves') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
+      //     $gc .= '<td><b>' . t('Starting Date') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
+      //     $gc .= '<td><b>' . t('Last Move On') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
+      $gc .= '<td></td></tr>';
+      foreach ($games as $game) {
+        if ($game->is_players_move($uid)) {
+          $mark = 'greenmark.gif';
+        }
+        else {
+          $mark = 'redmark.gif';
+        }
+        // If it's not a game user is playing, but just one they are watching, then use grey
+        /*
+         if ($game['turn'] == 'w' || $game['turn'] == 'b') {
+        $mark = 'greymark.gif';
+        }
+        */
+  
+        //    $startdate = date('M jS Y H:i', $game['ts_start']);
+        //    $lastdate = date('M jS Y H:i', $game['ts_last']);
+        $startdate = date('M jS Y H:i');
+        $lastdate = date('M jS Y H:i');
+        $gc .= '<tr><td><img alt="" src="' . $full_path . '/images/' . $theme . '/' . $mark . '"></td>';
+        $gc .= "<td><a href=" . url("vchess/player/" . $game->get_white_player()->get_name()) . ">" . $game->get_white_player()->get_name() . "</a></td>";
+        $gc .= "<td><a href=" . url("vchess/player/" . $game->get_black_player()->get_name()) . ">" . $game->get_black_player()->get_name() . "</a></td>";
+  
+        //      $game['moves'] = 42; // Hugh - hard-coding for now
+        //      $gc .= '<td>' . 42 . '</td>'; // Hugh - hard-coding for now
+        //      $gc .= '<td>' . $startdate . '&nbsp;&nbsp;</td>';
+        //      $gc .= '<td>' . $lastdate . '&nbsp;&nbsp;</td>';
+        $gc .= "<td><a href='" . $view_path . "/board/" . $game->get_gid() . "'>";
+        $gc .= t('View') . '</a></td></tr>';
+      }
+      $gc .= '</table>';
+    }
+    else {
+      $gc = "You currently do not have any games.";
+    }
+  
+    return $gc;
+  }
+  
+  /**
+   * menu callback vchess_new_game_page to display new game form
+   */
+  function vchess_new_game_form() {
+    $colors = array('w' => t('white'), 'b' => t('black'));
+  
+    $form['colorfield'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Choose your color'),
+    );
+  
+    $form['colorfield']['color'] = array(
+        '#type' => 'radios',
+        '#default_value' => 'w',
+        '#options' => $colors,
+    );
+  
+    $form['opponent'] = array(
+        '#type' => 'textfield',
+        '#title' => t('opponent'),
+        '#description' => t('Type opponent\'s name. Oppenent must be registered on this site.'),
+        '#required' => TRUE,
+    );
+  
+    $form['comment'] = array(
+        '#type' => 'textarea',
+        '#title' => t('comment'),
+        '#cols' => '40',
+        '#rows' => '3',
+    );
+  
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Create Game'),
+    );
+  
+    return $form;
+  }
+  
+  /**
+   * menu callback vchess_new_game_page to display new game form
+   */
+  function vchess_reset_games_form() {
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Reset ALL games!?!'),
+    );
+  
+    return $form;
+  }
+  
+  /**
+   * Process the Reset Games form.
+   *
+   * All tables for vchess (games, statistics, moves) will be emptied!
+   *
+   * @param unknown_type $form
+   * @param unknown_type $form_state
+   */
+  function vchess_reset_games_form_submit($form, &$form_state) {
+    $result = db_truncate('vchess_stats')->execute();
+    $result = db_truncate('vchess_games')->execute();
+    $result = db_truncate('vchess_moves')->execute();
+  
+    drupal_set_message(t('ALL games have been reset!'));
+  }
+  
+  
+  /**
+   * Process the form to start a new game
+   *
+   * @param unknown_type $form
+   * @param unknown_type $form_state
+   */
+  function vchess_new_game_form_submit($form, &$form_state) {
+    global $user;
+  
+    $form_values = $form_state['values'];
+  
+    // Get the uid and name of the opponent
+    $sql = "SELECT uid, name FROM {users} WHERE name = '" . $form_values['opponent'] . "'";
+    $result = db_query($sql);
+  
+    $record = $result->fetchAssoc();
+    $opponent_uid = $record['uid'];
+    $opponent_name = $record['name'];
+    //  $opponent_name = $result->fetchField();  // Hugh - new D7 way
+  
+    if ($form_values['color']=='w') {
+      // user plays white
+      $white = $user->name;
+      $white_uid = $user->uid;
+  
+      // opponent plays black
+      $black = $opponent_name;
+      $black_uid = $opponent_uid;
+  
+      $comment = $form_values['comment'];
+    }
+    else {
+      // user plays black
+      $black = $user->name;
+      $black_uid = $user->uid;
+  
+      // opponent plays white
+      $white = $opponent_name;
+      $white_uid = $opponent_uid;
+      $comment = $form_values['comment'];
+    }
+  
+    $game = new Game();
+    $gid = $game->new_game($white, $black, $white_uid, $black_uid, $comment);
+  
+    drupal_set_message(t('Game has been created.'));
+    $form_state['redirect'] = 'vchess/board/' . $gid;
+  }
+  
+  /**
+   * Check the form for a new game.  The only bit of validation is to check
+   * that the selected opponent exists on the site.
+   *
+   * @param unknown_type $form
+   * @param unknown_type $form_state
+   */
+  function vchess_new_game_form_validate($form, &$form_state) {
+    global $user;
+  
+    $form_values = $form_state['values'];
+  
+    $sql = "SELECT name FROM {users} WHERE name = '" . $form_values['opponent'] . "'";
+    $res = db_query($sql);
+  
+    if ($res->rowCount() == 0) {
+      form_set_error('', t('Opponent does not exist on this site'));
+    }
+  }
+  
+  /**
+   * Display the board for the given gid
+   *
+   * @param $gid: Game id
+   */
+  function vchess_board($gid) {
+    global $user;
+  
+    //  $uid = $user->name;
+    $module_path = drupal_get_path('module', 'vchess');
+  
+    drupal_add_css($module_path . '/vchessstyle.css');
+    drupal_add_js($module_path . '/board.js');
+  
+    $game = new Game();
+    $game->load_game($gid);
+  
+    // Find the player color
+    $player_color = $game->get_player_color($user->uid);
+  
+    // Display game heading, e.g. "white: admin - black: hugh"
+    $out = '<div style="text-align:center;">white: <b>' .
+        $game->get_white_player()->get_name() . '</b> -   black: <b>' . $game->get_black_player()->get_name() . '</b></div><br />';
+  
+    $out .= '<table width=100% border=0 cellspacing=0 cellpadding=0><tr><td valign="top" rowspan=2>';
+  
+    // Find out if the player has the move or not
+    if ($game->get_turn() == $player_color) {
+      $player_may_move = TRUE;
+    }
+    else {
+      $player_may_move = FALSE;
+    }
+  
+    $out .= vchess_render_board($game->get_board(), $player_color, $player_may_move, $gid);
+  
+    //  $out .= '<IMG src="/' . $module_path . '/images/spacer.gif" width=10><BR></td>';
+    $out .= '<img src="/' . SUB_PATH . '/images/spacer.gif" width=10><br /></td>';
+    //      $out .= '<td rowspan=2><IMG width=10 alt="" src="/' . $module_path . 'images/spacer.gif"></td>';
+    $out .= '<td rowspan=2><img width=10 alt="" src="/' . SUB_PATH . '/images/spacer.gif"></td>';
+    $out .= '<td width=0 valign="top">';
+  
+    $out .= vchess_render_command_form($game);
+    $out .= '</td></tr><tr><td valign=bottom>';
+    $out .= '</td></tr>';
+  
+    $out .= '</table>';
+    $out .= '';
+    $out .= '<script language="Javascript">module_path=\'' . $module_path . '\';';
+    $out .= 'sub_path=\'' . SUB_PATH . '\';';
+    $out .= 'full_path=\'' . FULL_PATH . '\';';
+    $out .= 'checkMoveButton();';
+    $out .= 'highlightMove(window.document.getElementById("vchess-command-form").move.value);';
+    //      $out .= '<input type=\'button\' onclick=\'confirm_resign()\' value=\'Show alert box\' />;';
+    $out .= '</script>';
+  
+    return $out;
+  }
+  
+  /**
+   * Display the page for a given player
+   *
+   * @param $uid
+   */
+  function vchess_player($name) {
+    $player = user_load_by_name($name);
+  
+    $html = "";
+  
+    $html .= vchess_player_stats($player->uid);
+    $html .= vchess_current_games($player->uid);
+  
+    return $html;
+  }
+  
+  /**
+   * Get the stats table for a single player
+   */
+  function vchess_player_stats($uid) {
+    //  $player = user_load_by_name($name);
+  
+    $stats = vchess_io_load_user_stats($uid);
+  
+    $header = array('Played', 'Won', 'Drawn', 'Lost', 'Rating', 'Rating change?');
+    $rows = array(array($stats['played'], $stats['won'], $stats['drawn'],
+        $stats['lost'], $stats['rating'], $stats['rchange']));
+  
+    $player = user_load($uid);
+  
+    $html = "Here are the statistics for <strong>" . $player->name . "</strong>:";
+  
+    $html .= theme_table(array(
+        'header' => $header,
+        'rows' => $rows,
+        'attributes' => array(),
+        'caption' => array(),
+        'colgroups' => array(),
+        'sticky' => array(),
+        'empty' => NULL
+    ));
+  }
+  

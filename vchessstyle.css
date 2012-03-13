@@ -16,15 +16,15 @@
 	padding: 0;
 }
 
-.boardTileWhite {
+.boardSquareWhite {
 	background-color: #ffffff;
-	background-image: url(wsquare.jpg);
+	background-image: url(images/default/wsquare.jpg);
 	padding: 2;
 }
 
-.boardTileBlack {
+.boardSquareBlack {
 	background-color: #cccccc;
-	background-image: url(bsquare.jpg);
+	background-image: url(images/default/bsquare.jpg);
 	padding: 2;
 }
 

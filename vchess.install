@@ -1,81 +1,156 @@
 <?php
 /**
- * Implementation of hook_install().
+ * @file
+ * Install, update and uninstall functions for the vchess module.
+ *
  */
-function vchess_install() {
-  drupal_install_schema('vchess');
-}
 
 /**
- * Implementation of hook_uninstall().
+ * Define the database tables required for this module
+ * 
+ * There are 3 tables:
+ * - vchess_games contains summary of each game 
+ *   - who is playing who
+ *   - whose move it is
+ *   - what the current board postion is
+ *   - etc.
+ * 
+ * - vchess_moves contains the list of moves for each game
+ * 
+ * - vchess_stats contains statistics about each player
+ *   - how many games played
+ *   - current grade
+ *   - etc.
+ *   
  */
-function vchess_uninstall() {
-  drupal_uninstall_schema('vchess');
-
-}
-
 function vchess_schema() {
-  $schema['vchess']= array(
+  $schema['vchess_games'] = array(
+      'description' => 'This table contains a summary of each game',
+      'fields' => array(
+          'gid' => array(
+              'description' => 'Game id.  A unique identifier for a particular game.',
+              'type' => 'serial',
+              'unsigned' => TRUE,
+              'not null' => TRUE,
+          ),
+          'turn' => array(
+              'description' => 'Whose turn it is to play, either "w" (white) or "b" (black)',
+              'type' => 'enum',
+              'enum_items' => array('w', 'b'),
+              'not null' => TRUE,
+              'default' => 'w',
+          ),
+          'status' => array(
+              'description' => 'Status of the game',
+              'type' => 'enum',
+              'enum_items' => array('in progress','1/2-1/2','1-0','0-1'),
+              'not null' => TRUE,
+          ),
+          'white_uid' => array(
+              'description' => 'Userid of white player',
+              'type' => 'int',
+              'unsigned' => TRUE,
+              'not null' => TRUE,
+          ),
+          'black_uid' => array(
+              'description' => 'Userid of black player',
+              'type' => 'int',
+              'unsigned' => TRUE,
+              'not null' => TRUE,
+          ),
+          'board' => array(
+              'description' => 'The board position saved as standard Forsyth–Edwards Notation (FEN)',
+              'type' => 'varchar',
+              'length' => '4096',
+              'not null' => TRUE,
+              'default' => '',
+          ),
+      ),
+      'primary key' => array('gid'),
+  );
+  
+  $schema['vchess_moves'] = array(
+      'description' => 'Contains the list of moves for each game',
+      'fields' => array(
+          'gid' => array(
+              'description' => 'Game id',
+              'type' => 'int',
+              'unsigned' => TRUE,
+              'not null' => TRUE,
+          ),
+          'move_no' => array(
+              'description' => 'Move number',
+              'type' => 'int',
+              'unsigned' => TRUE,
+              'not null' => TRUE,
+          ),
+          'color' => array(
+              'description' => 'Move color',
+              'type' => 'enum',
+              'enum_items' => array('w', 'b'),
+              'not null' => TRUE,
+          ),
+          'move' => array(
+              'description' => 'The actual move, e.g. "e4", "Nf6", "O-O-O"',
+              'type' => 'varchar',
+              'length' => '10',
+              'not null' => TRUE,
+          ),
+          'timestamp' => array(
+              'description' => 'Exact date and time of the move',
+              'type' => 'timestamp',
+              'not null' => TRUE,
+          ),
+      ),
+      'primary key' => array('gid', 'move_no', 'color'),
+  );
+  
+  $schema['vchess_stats'] = array(
     'fields' => array(
       'uid' => array(
         'type' => 'varchar',
-	'length' => 33,
+        'length' => 33,
         'not null' => TRUE,
         'default' => '',
       ),
-      'wins' => array(
+      'won' => array(
         'type' => 'int',
         'not null' => TRUE,
-	'unsigned' => TRUE,
-        'default' => 0,
-      ),	
-      'draws' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-	'unsigned' => TRUE,
+        'unsigned' => TRUE,
         'default' => 0,
       ),
-      'losses' => array(
+      'drawn' => array(
         'type' => 'int',
         'not null' => TRUE,
-	'unsigned' => TRUE,
-        'default' => 0,	
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'lost' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
       ),
       'rating' => array(
         'type' => 'int',
         'not null' => TRUE,
-	'unsigned' => TRUE,
+        'unsigned' => TRUE,
         'default' => 0,
       ),
-      'rgames' => array(
+      'played' => array(
         'type' => 'int',
         'not null' => TRUE,
-	'unsigned' => TRUE,
+        'unsigned' => TRUE,
         'default' => 0,
       ),
       'rchange' => array(
         'type' => 'int',
         'not null' => TRUE,
-	'unsigned' => TRUE,
         'default' => 0,
       ),
     ),
   );
-
-  $schema['vchess_games']= array(
-    'fields' => array(
-	'nid' => array('type' => 'serial', 'unsigned' => TRUE, 'not null' => TRUE,),
-	'gid' => array('type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => '',),
-	'timestamps' => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE, 'default' => '',),
-	'white' => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE, 'default' => '',),
-	'black' => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE, 'default' => '',),
-	'state' => array('type' => 'varchar', 'length' => 32, 'not null' => TRUE, 'default' => '',),
-	'board_white' => array('type' => 'varchar', 'length' => 100, 'not null' => TRUE, 'default' => '',),
-	'board_black' => array('type' => 'varchar', 'length' => 100, 'not null' => TRUE, 'default' => '',),
-    ),
-
-    'primary key' => array('nid'),
-
-  );
-return $schema;
+  
+  
+  return $schema;
 }

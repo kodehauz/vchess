@@ -1,2 +1,6 @@
-<? $credits='The chessmen graphics were taken from <A class="tiny" href="http://www.tommasovitale.it/my/wcg">WCG</A> with kind permission of Tommaso Vitale.';?>
-
+<?php
+/**
+ * @file
+ * Credits
+ */
+$credits='The chessmen graphics were taken from <a class="tiny" href="http://www.tommasovitale.it/my/wcg">WCG</a> with kind permission of Tommaso Vitale.';
