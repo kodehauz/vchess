@@ -5,69 +5,115 @@
  * Functions concerning a move
  */
 
-/**
- * Get the destination coord from a given move
- *
- * In a move like "Bf5xPe4":
- *   $move[0] = source piece
- *   $move[1-2] = source coord
- *   $move[3] = move type, "x"
- *   $move[4] = dest piece
- *   $move[5-6] = dest square
- *
- * In a move like "Rh4-d4":
- *   $move[0] = source piece
- *   $move[1-2] = source coord
- *   $move[3] = move type, "-"
- *   $move[4-5] = dest square
- */
-function vchess_move_dest_coord($move) {
-  if ($move[3] == "x") {
-    $dest_coord = substr($move, 5, 2);
-  }
-  else { // Move type = "-"
-    $dest_coord = substr($move, 4, 2);
-  }
-
-  return $dest_coord;
-}
-
-/**
- * Get the move type
- * e.g. "-" for a move like "Ra1-a4"
- *   or "x" for a move like "Ra1xNa6"
- */
-function vchess_move_type($move) {
-  return $move[3];
-}
-
-/**
- * Get the source piece from a given move
- * e.g. "Ra1-a4" gives "R"
- */
-function vchess_move_source_piece($move) {
-  return $move[0];
-}
-
-/**
- * Get the destination piece from a given move
- * 
- * If there is no destination piece, return NULL
- * 
- * e.g. 
- * "Qd1xBd7" returns "B"
- * "Ra1-a4" returns ""
- */
-function vchess_move_dest_piece($move) {
-  if ($move[3] == "x") {
-    $dest_piece = $move[4];
-  }
-  else {
-    $dest_piece = "";
+class Move {
+  var $move;
+  
+  /**
+   * Initialise a move with a given string
+   * 
+   * A move is one of the following formats:
+   * - "Bf5xPe42 i.e. a capture which includes the type of the piece being captured 
+   * - "Rh4-d4" i.e. a move to a square
+   */
+  function initialise($move) {
+    $this->move = $move;
   }
   
-  return $dest_piece;
+  /**
+   * Get the destination coord from a given move
+   *
+   * In a move like "Bf5xPe4":
+   *   $move[0] = source piece
+   *   $move[1-2] = source coord
+   *   $move[3] = move type, "x"
+   *   $move[4] = dest piece
+   *   $move[5-6] = dest square
+   *
+   * In a move like "Rh4-d4":
+   *   $move[0] = source piece
+   *   $move[1-2] = source coord
+   *   $move[3] = move type, "-"
+   *   $move[4-5] = dest square
+   */
+  function dest_coord() {
+    if ($this->move[3] == "x") {
+      $dest_coord = substr($this->move, 5, 2);
+    }
+    else { // Move type = "-"
+      $dest_coord = substr($this->move, 4, 2);
+    }
+  
+    return $dest_coord;
+  }
+  
+  /**
+   * Get the destination coord from a given move
+   *
+   * In a move like "Bf5xPe4":
+   *   $move[0] = source piece
+   *   $move[1-2] = source coord
+   *   $move[3] = move type, "x"
+   *   $move[4] = dest piece
+   *   $move[5-6] = dest square
+   *
+   * In a move like "Rh4-d4":
+   *   $move[0] = source piece
+   *   $move[1-2] = source coord
+   *   $move[3] = move type, "-"
+   *   $move[4-5] = dest square
+   */
+  function source_coord() {
+    if ($this->move[3] == "x") {
+      $dest_coord = substr($this->move, 5, 2);
+    }
+    else { // Move type = "-"
+      $dest_coord = substr($this->move, 4, 2);
+    }
+  
+    return $dest_coord;
+  }
+  
+  /**
+   * Get the move type
+   * e.g. "-" for a move like "Ra1-a4"
+   *   or "x" for a move like "Ra1xNa6"
+   */
+  function type() {
+    return $this->move[3];
+  }
+  
+  /**
+   * Get the source piece from a given move
+   * e.g. "Ra1-a4" gives "R"
+   */
+  function source_piece() {
+    return $this->move[0];
+  }
+  
+  /**
+   * Get the destination piece from a given move
+   *
+   * If there is no destination piece, return ""
+   *
+   * e.g.
+   * "Qd1xBd7" returns "B"
+   * "Ra1-a4" returns ""
+   */
+  function dest_piece() {
+    if ($this->move[3] == "x") {
+      $dest_piece = $this->move[4];
+    }
+    else {
+      $dest_piece = "";
+    }
+  
+    return $dest_piece;
+  }
 }
+
+
+
+
 
 /**
  * Get the source file (a..h)
@@ -356,26 +402,32 @@ function vchess_short_to_long_move($player, $move, $board) {
  * If an error occurs the move is kept unchanged (no error is generated).
  *
  */
-function vchess_long_to_short_move($player, $long_move, $board) {
+function vchess_long_to_short_move($player, $long_move_string, $board) {
   // If all else fails, just return the long move
-  $short_move = $long_move;
+  $short_move_string = $long_move_string;
+  
+  $move = new Move();
+  $move->initialise($long_move_string);
 
-  $source_piece = vchess_move_source_piece($long_move);
-  $dest_piece = vchess_move_dest_piece($long_move);
+  $source_piece = $move->source_piece();
+  $dest_piece = $move->dest_piece();
+  
+  $source_coord = $move->source_coord();
+  $dest_coord = $move->dest_coord();
 
   switch ($source_piece) {
     case 'P':
       // Always skip P. For attacks skip source digit
       // and for moves skip source pos and "-"
-      if ($long_move[3] == '-') {
-        $short_move = substr($long_move, 4);
+      if ($move->type() == '-') {
+        $short_move_string = substr($long_move_string, 4);
       }
-      elseif ($long_move[3] == 'x') {
+      elseif ($long_move_string[3] == 'x') {
         if ($dest_piece == "P") {
-          $short_move = sprintf('%s%s', $long_move[1], substr($long_move, 4));
+          $short_move_string = $long_move_string[1] . "x" . $dest_coord;
         }
         else {
-          $short_move = sprintf('%s%s', $long_move[1], substr($long_move, 3));
+          $short_move_string = sprintf('%s%s', $long_move_string[1], substr($long_move_string, 3));
         }
       }
       break;
@@ -384,39 +436,41 @@ function vchess_long_to_short_move($player, $long_move, $board) {
     case 'K':
       // Since bishop always travels on its own color and the queen and king 
       // are both unique, these pieces always have unambiguous moves
-      if (vchess_move_type($long_move) == "x") {
-        $short_move = $source_piece . "x" . vchess_move_dest_coord($long_move);
+      // @todo: In fact, the only piece which is unique is the king, since, with pawn promotion
+      // you can have 2 queens, 2 white bishops   
+      if ($move->type() == "x") {
+        $short_move_string = $source_piece . "x" . $move->dest_coord();
       }
       else {
-        $short_move = $source_piece . vchess_move_dest_coord($long_move);
+        $short_move_string = $source_piece . $move->dest_coord();
       }
       break;
     default: 
       // Try to remove the source position and check whether it
       // is a non-ambigious move. If it is not add one of the components
       // and check again.
-      //     if ($long_move[3] == '-') {
-      //       $dest = substr($long_move, 4);
+      //     if ($long_move_string[3] == '-') {
+      //       $dest = substr($long_move_string, 4);
       //     }
-      //     elseif ($long_move[3] == 'x') {
-      //       $dest = substr($long_move, 3);
+      //     elseif ($long_move_string[3] == 'x') {
+      //       $dest = substr($long_move_string, 3);
       //     }
       
-      //     $short_move = sprintf('%s%s', $long_move[0], $dest);
-      //     if (vchess_short_to_long_move($player, $short_move, $board) == NULL) {
+      //     $short_move_string = sprintf('%s%s', $long_move_string[0], $dest);
+      //     if (vchess_short_to_long_move($player, $short_move_string, $board) == NULL) {
       //       // Add source column [a-h]
-      //       $short_move = sprintf('%s%s%s', $long_move[0], $long_move[1], $dest);
-      //       if (vchess_short_to_long_move($player, $short_move, $board) == NULL) {
+      //       $short_move_string = sprintf('%s%s%s', $long_move_string[0], $long_move_string[1], $dest);
+      //       if (vchess_short_to_long_move($player, $short_move_string, $board) == NULL) {
       //         // Add source row [1-8]
-      //         $short_move = sprintf('%s%s%s', $long_move[0], $long_move[2], $dest);
-      //         if (vchess_short_to_long_move($player, $short_move, $board) == NULL) {
-      //           $short_move = $long_move; // give up
+      //         $short_move_string = sprintf('%s%s%s', $long_move_string[0], $long_move_string[2], $dest);
+      //         if (vchess_short_to_long_move($player, $short_move_string, $board) == NULL) {
+      //           $short_move_string = $long_move_string; // give up
       //         }
       //       }
       //     }
       
   }
 
-  return $short_move;
+  return $short_move_string;
 }
 

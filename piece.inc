@@ -14,14 +14,25 @@ class Piece {
 	$this->type = strtoupper($type);
   }
 	
+  /**
+   * Type is R, N, B, Q, K or a blank
+   *  
+   * @return string
+   */
   function get_type() {
 	return $this->type;
   }
 	  
+  /**
+   * Get the piece color.  Color is w or b
+   */
   function get_color() {
     return $this->color;
   }
   
+  /**
+   * Set the piece color.  Color is w or b
+   */
   function set_color($color) {
 	$this->color = $color;
   }

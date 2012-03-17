@@ -1096,7 +1096,9 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
 //     }
 
     // Get target square
-    $dest_coord = vchess_move_dest_coord($move);
+    $move_obj = new Move();
+    $move_obj->initialise($move);
+    $dest_coord = $move_obj->dest_coord();
     if ($dest_coord == $piece_coord) {
       return 'ERROR: Current position and destination are equal!';
     }
