@@ -205,19 +205,11 @@ function vchess_command_form($form, $context, Game $game, $cmdres, $move) {
     '#value' => '',
   );
 
-  if ($game->is_players_move($user->uid)) {
-    $form['moveButton'] = array(
-      '#type' => 'submit', //original button
-      '#value' => 'Make a Move',
+  $form['flipBoardButton'] = array(
+    '#type' => 'submit', //original button
+    '#value' => 'Flip Board',
     );
-  }
-  else {
-    //$form['moveButton'] = array(
-    //'#type'=>'submit',   //originaly button
-    //'#value'=> 'Refresh',
-    //);
-  }
-
+  
   if (!$game->is_game_over()) {
     $form['resignButton'] = array(
       '#type' => 'submit',
@@ -280,6 +272,7 @@ function vchess_render_command_form($game) {
   $move = ""; // Hugh - removed this as function parm, since used to get this parm but was always empty!
   
   $out = drupal_get_form('vchess_command_form', $game, $cmdres, $move);
+//  $out = drupal_get_form('vchess_command_form', $game);
   $out = drupal_render($out);
   
   return $out;
