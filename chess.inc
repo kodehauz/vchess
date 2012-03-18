@@ -3,11 +3,12 @@
 /**
  * @file
  * 
- * Chess game logic to handle moves. 
+ * Chess game logic to handle the board. 
  */
 
 /**
- * Return the array of adjacent squares (<=8)
+ * Return the array of adjacent squares (<=8).  Squares are in the format
+ * of a [0..63] index.
  */
 function vchess_get_adjacent_squares($piece_pos) {
   $adj_squares = array();
@@ -90,15 +91,19 @@ function vchess_get_path($start, $end, $change) {
  * No additional checks as in tileIsReachable are
  * performed. Rook,queen and bishop are the only
  * units that can have empty tiles in between.
+ * 
+ * @param $piece_type Type of piece, "K", "Q", "R", "N", "B" or "P"
+ * @param $piece_index Position index of piece [0..63]
+ * @param $dest_index Destination position index [0..63]
  */
-function vchess_get_path_change($piece, $piece_pos, $dest_pos) {
+function vchess_get_path_change($piece_type, $piece_index, $dest_index) {
   $change = 0;
-  $piece_y = floor($piece_pos / 8);
-  $piece_x = $piece_pos % 8;
-  $dest_y = floor($dest_pos / 8);
-  $dest_x = $dest_pos % 8;
-  switch ($piece) {
-    /* bishop */
+  $piece_y = floor($piece_index / 8);
+  $piece_x = $piece_index % 8;
+  $dest_y = floor($dest_index / 8);
+  $dest_x = $dest_index % 8;
+  switch ($piece_type) {
+    // bishop 
     case 'B':
       if ($dest_y < $piece_y) {
         $change = -8;
@@ -113,7 +118,7 @@ function vchess_get_path_change($piece, $piece_pos, $dest_pos) {
         $change += 1;
       }
       break;
-      /* rook */
+    // rook
     case 'R':
       if ($piece_x == $dest_x) {
         if ($dest_y < $piece_y) {
@@ -132,7 +137,7 @@ function vchess_get_path_change($piece, $piece_pos, $dest_pos) {
         }
       }
       break;
-      /* queen */
+    // queen 
     case 'Q':
       if (abs($piece_x -$dest_x) == abs($piece_y -$dest_y)) {
         if ($dest_y < $piece_y) {
@@ -465,12 +470,12 @@ function vchess_king_is_in_check($player_color, Board $board) {
   }
   
   if ($player_color == 'w') {
-//    return vchess_square_is_under_attack('b', $king_pos, $board);
-      return vchess_square_is_under_attack('b', $coord, $board);
+    return vchess_square_is_under_attack('b', $king_pos, $board);
+//      return vchess_square_is_under_attack('b', $coord, $board);
   }
   else {
-//    return vchess_square_is_under_attack('w', $king_pos, $board);
-    return vchess_square_is_under_attack('w', $coord, $board);
+    return vchess_square_is_under_attack('w', $king_pos, $board);
+//    return vchess_square_is_under_attack('w', $coord, $board);
   }
 
   return FALSE;
@@ -480,10 +485,8 @@ function vchess_king_is_in_check($player_color, Board $board) {
  * Check whether player's king is in checkmate
  */
 function vchess_is_checkmate($player, Board $board) {
-  return FALSE; // Hugh's temporary fudge 
+//  return FALSE; // Hugh's temporary fudge 
   
-  //global $board;
-
   if ($player == 'w') {
     $opp = 'b';
   }
@@ -497,6 +500,7 @@ function vchess_is_checkmate($player, Board $board) {
     $piece = $board->get_piece($coord);
     if ($piece->get_type() == 'K' && $piece->get_color() == $player) {
       $king_pos = $square;
+      $king_coord = vchess_i2coord($king_pos);
       $king_x = $square % 8;
       $king_y = floor($square / 8);
       break;
@@ -505,69 +509,67 @@ function vchess_is_checkmate($player, Board $board) {
 
   // Test adjacent squares while king is temporarily removed 
   $adj_squares = vchess_get_adjacent_squares($king_pos);
-//  kpr($adj_squares);
-  $contents = $board[$king_pos];
-  $board[$king_pos] = '';
+//  $contents = $board[$king_pos];
+//  $board[$king_pos] = '';
   foreach ($adj_squares as $dest_pos) {
-    if ($board[$dest_pos][0] == $player) {
+    $coord = vchess_i2coord($dest_pos);
+    // If this adjacent square has a piece of the same color, then 
+    // we cannot move the king there
+    if ($board->get_piece($coord)->get_color() == $player) {
       continue;
     }
+    // If this adjacent square is under attack, then we cannot
+    // move the king there
     if (vchess_square_is_under_attack($opp, $dest_pos, $board)) {
       continue;
     }
-    $board[$king_pos] = $contents;
-    return 0;
+    //    $board[$king_pos] = $contents;
+    // Since this square is neither occupied by one of our own pieces
+    // or is under attack then we can move the king there and so it
+    // isn't checkmate
+    return FALSE;
   }
-  $board[$king_pos] = $contents;
-
-  // DEBUG: echo 'King cannot escape by itself! '; 
+//  $board[$king_pos] = $contents;
 
   // Get all pieces that attack the king
-  $attackers = array();
-  $count = 0;
+  $attacker_coords = array();
   for ($square = 0; $square < 64; $square++) {
-    if ($board[$square][0] == $opp) {
-      if (($board[$square][1] == 'P' && vchess_check_pawn_attacks($square, $king_pos, $board)) 
-      || ($board[$square][1] != 'P' && vchess_square_is_reachable($board[$square][1], $square, $king_pos, $board))) {
-        $attackers[$count++] = $square;
+    $square_coord = vchess_i2coord($square);
+    $piece = $board->get_piece($square_coord);
+    if ($piece->get_color() <> $player) {
+      if (($piece->get_type() == 'P' && vchess_check_pawn_attacks($square_coord, $king_coord, $board)) 
+      || ($piece->get_type() != 'P' && vchess_square_is_reachable($piece->get_type(), $square_coord, $king_coord, $board))) {
+        $attacker_coords[] = $square_coord;
       }
     }
   }
 
   // If more than one there is no chance to escape
-  if ($count > 1) {
-    return 1;
+  if (count($attacker_coords) > 1) {
+    return TRUE;
   }
 
-  // Check whether attacker can be killed by own piece
-  $dest_pos = $attackers[0];
+  // There is only 1 attacker.  Check whether this attacker can be killed by own piece.
   for ($square = 0; $square < 64; $square++) {
-    if ($board[$square][0] == $player) {
-      $square_coord = vchess_i2coord($square);
-      $dest_coord = vchess_i2coord($dest_pos);
-      if (($board[$square][1] == 'P' 
-      && vchess_check_pawn_attacks($square_coord, $dest_coord, $board)) ||
-      ($board[$square][1] != 'P' &&
-      $board[$square][1] != 'K' &&
-      vchess_square_is_reachable($board[$square][1], $square, $dest_pos, $board)) ||
-      ($board[$square][1] == 'K' &&
-      vchess_square_is_reachable($board[$square][1], $square,
-      $dest_pos, $board) &&
-      !vchess_square_is_under_attack($opp, $dest_pos, $board))) {
+    $square_coord = vchess_i2coord($square);
+    if ($board->get_piece($square_coord)->get_color() == $player) {
+      $piece_type = $board->get_piece($square_coord)->get_type();
+      if (($piece_type == 'P' && vchess_check_pawn_attacks($square_coord, $attacker_coords[0], $board)) 
+      || ($piece_type != 'P' && $piece_type != 'K' && vchess_square_is_reachable($piece_type, $square_coord, $attacker_coords[0], $board)) 
+      || ($piece_type == 'K' && vchess_square_is_reachable($piece_type, $square_coord, $attacker_coords[0], $board) && !vchess_square_is_under_attack($opp, $attacker_coords[0], $board))) {
           // DEBUG: echo 'candidate: $square '; 
-          $can_kill_atk = 0;
-          $contents_def = $board[$square];
-          $contents_atk = $board[$dest_pos];
-          $board[$dest_pos] = $board[$square];
-          $board[$square] = '';
-          if (!vchess_square_is_under_attack($opp, $king_pos, $board)) {
-            $can_kill_atk = 1;
+          $can_kill_attacker = FALSE;
+//           $contents_def = $board[$square];
+//           $contents_atk = $board[$dest_pos];
+//           $board[$dest_pos] = $board[$square];
+//           $board[$square] = '';
+          if (!vchess_square_is_under_attack($opp, $king_coord, $board)) {
+            $can_kill_attacker = TRUE;
           }
-          $board[$square] = $contents_def;
-          $board[$dest_pos] = $contents_atk;
-          if ($can_kill_atk) {
-            // DEBUG: echo '$square can kill attacker';
-          return 0;
+//           $board[$square] = $contents_def;
+//           $board[$dest_pos] = $contents_atk;
+          if ($can_kill_attacker) {
+            return FALSE;
         }
       }
     }
@@ -576,48 +578,48 @@ function vchess_is_checkmate($player, Board $board) {
   // Check whether own unit can block the way
 
   // If attacking unit is a knight there
-  // is no way to block the path. 
-  if ($board[$dest_pos][1] == 'N') {
-    return 1;
+  // is no way to block the path.
+  $dest_coord = vchess_i2coord($dest_pos); 
+  if ($board->get_piece($dest_coord)->get_type() == 'N') {
+    return TRUE;
   }
 
   // If enemy is adjacent to king there is no
-  // way either 
+  // way to escape either 
   $dest_x = $dest_pos % 8;
   $dest_y = floor($dest_pos / 8);
-  if (abs($dest_x -$king_x) <= 1 && abs($dest_y -$king_y) <= 1) {
-    return 1;
+  if (abs($dest_x - $king_x) <= 1 && abs($dest_y - $king_y) <= 1) {
+    return TRUE;
   }
 
-  /* Get the list of tiles between king and attacking
-   * unit that can be blocked to stop the attack */
-  $change = vchess_get_path_change($board[$dest_pos][1], $dest_pos, $king_pos);
-  /* DEBUG:  echo 'path change: $change '; */
+  // Get the list of squares between king and attacking
+  // unit that can be blocked to stop the attack 
+//  $change = vchess_get_path_change($board[$dest_pos][1], $dest_pos, $king_pos);
+  $dest_coord = vchess_i2coord($dest_pos);
+  $change = vchess_get_path_change($board->get_piece($dest_coord)->get_type(), $dest_pos, $king_pos);
   $path = vchess_get_path($dest_pos + $change, $king_pos, $change);
-  /* DEBUG: foreach($path as $tile) echo 'tile: $tile '; */
   foreach ($path as $pos) {
     for ($square = 0; $square < 64; $square++) {
-      if ($board[$square][0] == $player) {
-        if (($board[$square][1] == 'P' &&
-      vchess_check_pawn_move($square, $pos, $board)) ||
-      ($board[$square][1] != 'P' &&
-      $board[$square][1] != 'K' &&
-      vchess_square_is_reachable($board[$square][1], $square, $pos, $board))) {
-          $board[$pos] = $board[$square];
-          $old = $board[$square];
-          $board[$square] = '';
-          $is_bound = vchess_king_is_in_check($player, $board);
-          $board[$square] = $old;
-          $board[$pos] = '';
-          if (!$is_bound) {
-            /*DEBUG: echo '$square can block ';*/
-            return 0;
+      $coord = vchess_i2coord($square);
+      $piece = $board->get_piece($coord);
+      $piece_type = $piece->get_type();
+      if ($piece->get_color() == $player) {
+        if (($piece_type == 'P' && vchess_check_pawn_move($square, $pos, $board)) 
+        || ($piece_type != 'P' && $piece_type != 'K' && vchess_square_is_reachable($piece_type, $square, $pos, $board))) {
+//           $board[$pos] = $board[$square];
+//           $old = $board[$square];
+//           $board[$square] = '';
+          $is_in_check = vchess_king_is_in_check($player, $board);
+//           $board[$square] = $old;
+//           $board[$pos] = '';
+          if (!$is_in_check) {
+            return FALSE;
           }
         }
       }
     }
   }
-  return 1;
+  return TRUE;
 }
 
 /**
