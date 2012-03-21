@@ -11,6 +11,14 @@ define('STATUS_IN_PROGRESS', 'in progress');
 define('END_TYPE_STALEMATE', 'stalemate');
 define('END_TYPE_CHECKMATE', 'checkmate');
 
+
+// Define errors
+define('ERROR_CASTLING_SQUARES_BLOCKED', 'ERROR: Castling squares are blocked!');
+define('ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING', 'ERROR: You cannot escape check by castling!');
+define('ERROR_CANNOT_CASTLE_ACROSS_CHECK', 'ERROR: You cannot castle across check!');
+define('ERROR_CANNOT_CASTLE_SHORT', 'ERROR: You cannot castle short anymore!');
+define('ERROR_CANNOT_CASTLE_LONG', 'ERROR: You cannot castle long anymore!');
+
 class Game {
   
   protected $game = array();
@@ -560,7 +568,7 @@ class Game {
   /**
    * Verify move (full notation), execute it and modify game.
    *
-   * @param $uid User id of current player
+   * @param int $uid User id of current player
    * @param $move Current move
    */
   function handle_move($uid, $move, $comment) {
@@ -671,16 +679,19 @@ class Game {
       $game['mhistory'][count($game['mhistory'])] = 'draw';
     }
     elseif ($move == 'O-O') {
+      if (!$this->may_castle_short($turn)) {
+        return ERROR_CANNOT_CASTLE_SHORT;
+      }
       // Short castling - white
       if ($turn == 'w') {
         if (!$board->square_is_empty("f1") || !$board->square_is_empty("g1")) {
-          return 'ERROR: Castling squares are blocked!';
+          return ERROR_CASTLING_SQUARES_BLOCKED;
         }
         if ($board->king_is_in_check('w')) {
-          return 'ERROR: You cannot escape check by castling!';
+          return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
         }
         if ($board->square_is_under_attack('b', 'f1')) {
-          return 'ERROR: You cannot castle across check!';
+          return ERROR_CANNOT_CASTLE_ACROSS_CHECK;
         }
   
         $board->move_piece("e1", "g1");  // White King
@@ -689,18 +700,15 @@ class Game {
         $this->white_may_not_castle();
       }
       // Short castling - black
-      if (!$this->may_castle_short($turn)) {
-        return 'ERROR: You cannot castle short anymore!';
-      }
       if ($turn == 'b') {
         if (!$board->square_is_empty("f8") || !$board->square_is_empty("g8")) {
-          return 'ERROR: Castling squares are blocked!';
+          return ERROR_CASTLING_SQUARES_BLOCKED;
         }
         if ($board->king_is_in_check('b')) {
-          return 'ERROR: You cannot escape check by castling!';
+          return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
         }
         if ($board->square_is_under_attack('w', 'f8')) {
-          return 'ERROR: You cannot castle across check!';
+          return ERROR_CANNOT_CASTLE_ACROSS_CHECK;
         }
   
         $board->move_piece("e8", "g8"); // Black king
@@ -715,18 +723,20 @@ class Game {
     elseif ($move == 'O-O-O') {
       // Long castling
       if (!$this->may_castle_long($turn)) {
-        return 'ERROR: You cannot castle long anymore!';
+        return ERROR_CANNOT_CASTLE_LONG;
       }
-      if ($turn == 'b'
-          && $board->square_is_empty("b8")
-          && $board->square_is_empty("c8")
-          && $board->square_is_empty("d8")) {
+      if ($turn == 'b') {
+        if (!$board->square_is_empty("b8") 
+        || !$board->square_is_empty("c8")
+        || !$board->square_is_empty("d8")) {
+          return ERROR_CASTLING_SQUARES_BLOCKED;
+        }
         if ($board->king_is_in_check('b')) {
-          return 'ERROR: You cannot escape check by castling!';
+          return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
         }
         if ($board->square_is_under_attack('w', 'c8')
             || $board->square_is_under_attack('w', 'd8')) {
-          return 'ERROR: You cannot castle across check!';
+          return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
         }
   
         $board->move_piece("e8", "c8");  // Black King
@@ -734,21 +744,19 @@ class Game {
   
         $this->black_may_not_castle();
       }
-      if ($turn == 'w'
-          && $board->square_is_empty("b1")
-          && $board->square_is_empty("c1")
-          && $board->square_is_empty("d1")) {
+      if ($turn == 'w') {
+        if (!$board->square_is_empty("b1")
+        || !$board->square_is_empty("c1")
+        || !$board->square_is_empty("d1")) {
+          return ERROR_CASTLING_SQUARES_BLOCKED;
+        }
         if ($board->king_is_in_check('w')) {
-          return 'ERROR: You cannot escape check by castling!';
+          return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
         }
         if ($board->square_is_under_attack('b', 'c1')
             || $board->square_is_under_attack('b', 'd1')    ) {
-          return 'ERROR: You cannot castle across check!';
+          return ERROR_CANNOT_CASTLE_ACROSS_CHECK;
         }
-  
-      }
-      if ($may_castle_long != 9) {
-        return 'ERROR: Cannot castle long because the way is blocked!';
       }
       $result = 'You castled long.';
       $move_handled = 1;
