@@ -320,10 +320,10 @@ function vchess_short_to_long_move($player, $move, $board) {
   // Check if 2 pieces of the same type can reach the destination square
   $piece1_can_reach = FALSE; // Hugh setting default
   $piece2_can_reach = FALSE; // Hugh setting default
-  if (vchess_square_is_reachable($move[0], $coord1, $dest_coord, $board)) {
+  if ($board->square_is_reachable($move[0], $coord1, $dest_coord)) {
     $piece1_can_reach = TRUE;
   }
-  if (vchess_square_is_reachable($move[0], $coord2, $dest_coord, $board)) {
+  if ($board->square_is_reachable($move[0], $coord2, $dest_coord)) {
     $piece2_can_reach = TRUE;
   }
   if (!$piece1_can_reach && !$piece2_can_reach) {
@@ -422,13 +422,8 @@ function vchess_long_to_short_move($player, $long_move_string, $board) {
       if ($move->type() == '-') {
         $short_move_string = substr($long_move_string, 4);
       }
-      elseif ($long_move_string[3] == 'x') {
-        if ($dest_piece == "P") {
-          $short_move_string = $long_move_string[1] . "x" . $dest_coord;
-        }
-        else {
-          $short_move_string = sprintf('%s%s', $long_move_string[1], substr($long_move_string, 3));
-        }
+      else {
+        $short_move_string = $long_move_string[1] . "x" . $dest_coord;
       }
       break;
     case 'B':

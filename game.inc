@@ -448,5 +448,751 @@ class Game {
   
 }
 
+/**
+ * HACK: this function checks whether en-passant is possible
+ */
+function vchess_en_passant_is_ok($player, $pos, $dest, $opp_ep_flag) {
+  if ($opp_ep_flag != 'x') {
+    if ($dest % 8 == $opp_ep_flag) {
+      // if (check_pawn_attacks($pos,$dest)) right now
+      // this is not required as we only use this
+      // function in isStaleMate which uses correct dests
+      if (($player == 'w' && floor($dest / 8) == 5)
+          || ($player == 'b' && floor($dest / 8) == 2)) {
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+/**
+ * Verify move (full notation), execute it and modify game.
+ *
+ * @param $gid Game id
+ * @param $uid User id of current player
+ * @param $move Current move
+ */
+function vchess_handle_move($gid, $uid, $move, $comment) {
+  //  global $acerror, $mail_from;
+
+  $game = new Game();
+  $game->load_game($gid);
+
+  $mate_type = "Hugh was here setting a default";
+
+  // w2spm = white 2 square piece move?
+  // b2spm = black 2 square piece move?
+  //  $game['w2spm'] = ""; // Hugh - added initialisation
+  //  $game['b2spm'] = ""; // Hugh - added initialisation
+
+  $board = $game->get_board();
+
+  $move = trim($move);
+  $result = 'undefined';
+  $move_handled = FALSE;
+
+  if (!$game->is_players_move($uid)) {
+    return 'It is not your turn!';
+  }
+  if ($game->get_turn() == 'w') {
+    $cur_opp = 'b';
+  }
+  else {
+    $cur_opp = 'w';
+  }
+
+  // if ($game['curstate'] != '?' && $game['curstate'] != 'D') {
+  //    return 'Game is over.';
+  //  }
+
+  /* Castling meaning:
+   * 0 - rook or king moved
+  * 1 - possible
+  * 9 - performed */
+  /*
+   if ($game['turn'] == 'w') {
+  $may_castle_short = $game['wcs']; // wcs = white castle short
+  $may_castle_long = $game['wcl'];  // wcl = white castle long
+  }
+  else {
+  $may_castle_short = $game['bcs'];  // bcs = black castle short
+  $may_castle_long = $game['bcl'];   // bcl = black castle long
+  }
+  */
+  $may_castle_short = FALSE; // Hugh default
+  $may_castle_long = FALSE;  // Hugh default
+
+  /* DEBUG echo 'HANDLE: w=$game['white'],b=$game['black'],c=$game['turn'],';
+   echo 'm=$cur_move,may_castle=$may_castle_short,';
+  echo '$may_castle_long  <BR>';*/
+
+  // Allow two-step of king to indicate castling.
+  if ($game->get_turn() == 'w' && $move == 'Ke1-g1') {
+    $move = 'O-O';
+  }
+  elseif ($game->get_turn() == 'w' && $move == 'Ke1-c1') {
+    $move = 'O-O-O';
+  }
+  elseif ($game->get_turn() == 'b' && $move == 'Ke8-g8') {
+    $move = 'O-O';
+  }
+  elseif ($game->get_turn() == 'b' && $move == 'Ke8-c8') {
+    $move = 'O-O-O';
+  }
+
+  // Accept "---" although it is now called resign.
+  //  if ($move == '---' || $move == 'resign') {
+  //    $move = 'resigned';
+  //  }
+
+  // Remember move for history
+  $history_move = $move;
+
+  // Clear last move
+  //  $game['lastmove'] = 'x';
+  //  $game['lastkill'] = 'x';
+  //  $game['oscf'] = 'x';
+  //  $game['olcf'] = 'x';
+
+  // HANDLE MOVES:
+  // resign                            resign
+  // O-O                               short castling
+  // O-O-O                             long castling
+  // draw?                             offer a draw
+  // accept_draw                       accept the draw
+  // refuse_draw                       refuse the draw
+  // [PRNBQK][a-h][1-8][-:x][a-h][1-8] unshortened move
+  if ($move == 'draw?' && $game->get_curstate() == '?') {
+    // Offer draw
+    $game->set_curstate('D');
+    $result = 'You have offered a draw.';
+    $draw_handled = 1;
+    $game['lastmove'] = 'DrawOffered';
+  }
+  elseif ($move == 'refuse_draw' && $game->get_curstate() == 'D') {
+    // Refuse draw
+    $game->set_curstate('?');
+    $draw_handled = 1;
+    $result = 'You refused the draw.';
+    $game['lastmove'] = 'DrawRefused';
+  }
+  elseif ($move == 'accept_draw' && $game->get_curstate() == 'D') {
+    // Accept draw
+    $game->set_curstate('-');
+    $draw_handled = 1;
+    $result = 'You accepted the draw.';
+    $game->set_last_move('DrawAccepted');
+    if ($game['curplyr'] == 'b') {
+      $game['curmove']++; // new move as white offered
+    }
+    $game['mhistory'][count($game['mhistory'])] = 'draw';
+  }
+  elseif ($move == 'O-O') {
+    // Short castling
+    if ($may_castle_short != 1 || $may_castle_long == 9) {
+      return 'ERROR: You cannot castle short anymore!';
+    }
+    if ($game['turn'] == 'b' && $board[61] == '' && $board[62] == '') {
+      if ($board->king_is_in_check('b')) {
+        return 'ERROR: You cannot escape check by castling!';
+      }
+      if (vchess_square_is_under_attack('w', 62, $board) ||
+          vchess_square_is_under_attack('w', 61, $board)) {
+        return 'ERROR: Either king or rook would be under attack after short castling!';
+      }
+      $may_castle_short = 9;
+      $board[60] = '';
+      $board[62] = 'bK';
+      $board[61] = 'bR';
+      $board[63] = '';
+    }
+    if ($game['turn'] == 'w' && $board[5] == '' && $board[6] == '') {
+      if ($board->king_is_in_check('w')) {
+        return 'ERROR: You cannot escape check by castling!';
+      }
+      if (vchess_square_is_under_attack('b', 5, $board) ||
+          vchess_square_is_under_attack('b', 6, $board)) {
+        return 'ERROR: Either king or rook would be under attack after short castling!';
+      }
+      $may_castle_short = 9;
+      $board[4] = '';
+      $board[6] = 'wK';
+      $board[5] = 'wR';
+      $board[7] = '';
+    }
+    if ($may_castle_short != 9) {
+      return 'ERROR: Cannot castle short because the way is blocked!';
+    }
+    $result = 'You castled short.';
+    $move_handled = 1;
+    $game['lastmove'] = 'O-O';
+  }
+  elseif ($move == 'O-O-O') {
+    // Long castling
+    if ($may_castle_long != 1 || $may_castle_short == 9) {
+      return 'ERROR: You cannot castle long anymore!';
+    }
+    if ($game['turn'] == 'b' && $board[57] == '' && $board[58] == '' &&
+        $board[59] == '') {
+      if ($board->king_is_in_check('b')) {
+        return 'ERROR: You cannot escape check by castling!';
+      }
+      if (vchess_square_is_under_attack('w', 58, $board) ||
+          vchess_square_is_under_attack('w', 59, $board)) {
+        return 'ERROR: Either king or rook would be under attack after short castling!';
+      }
+      $may_castle_long = 9;
+      $board[56] = '';
+      $board[58] = 'bK';
+      $board[59] = 'bR';
+      $board[60] = '';
+    }
+    if ($game['turn'] == 'w' && $board[1] == '' && $board[2] == '' &&
+        $board[3] == '') {
+      if ($board->king_is_in_check('w')) {
+        return 'ERROR: You cannot escape check by castling!';
+      }
+      if (vchess_square_is_under_attack('b', 2, $board) ||
+          vchess_square_is_under_attack('b', 3, $board)) {
+        return 'ERROR: Either king or rook would be under attack after short castling!';
+      }
+      $may_castle_long = 9;
+      $board[0] = '';
+      $board[2] = 'wK';
+      $board[3] = 'wR';
+      $board[4] = '';
+    }
+    if ($may_castle_long != 9) {
+      return 'ERROR: Cannot castle long because the way is blocked!';
+    }
+    $result = 'You castled long.';
+    $move_handled = 1;
+    $game['lastmove'] = 'O-O-O';
+  }
+  else {
+    // Normal move: [PRNBQK][a-h][1-8][-:x][a-h][1-8][RNBQK]
+
+    // Autocomplete short notation (or keep full)
+    $acmove = vchess_short_to_long_move($game->get_turn(), $move, $board);
+    if ($acmove == NULL) {
+      return 'ERROR: autocomplete: ' . $acerror;
+    }
+    else {
+      $move = $acmove;
+    }
+
+    // A final capital letter may only be N,B,R,Q for the
+    // appropiate chessman.
+    // FIXME it is not checked whether multiple promotion identifiers are
+    // there. In that case last one is used and move executed properly
+    // but the history browsing will be broken.
+    $c = $move[strlen($move) -1];
+    if ($c >= 'A' && $c <= 'Z' &&
+        $c != 'N' && $c != 'B' && $c != 'R' && $c != 'Q') {
+      return 'ERROR: only N (knight),B (bishop),R (rook) and Q (queen) are valid chessman';
+    }
+
+    // Validate piece and position.
+    // Move is e.g. "Nb1-c3"
+    $piece_type = $move[0];
+    $piece = new Piece();
+    $piece->set_type($piece_type);
+    $piece->set_color($game->get_turn());
+    //     $piece_name = vchess_get_piece_name($piece_type);
+    //     if ($piece_name == BLANK) {
+    //       return 'ERROR: Piece ' . $piece_type . ' is unknown!';
+    //     }
+    $piece_coord = $move[1] . $move[2];
+    $piece_pos = vchess_coord2i($piece_coord);
+    //     if ($piece_pos == 64) {
+    //       return 'ERROR: ' . $piece_coord . ' is invalid!';
+    //     }
+    /* DEBUG  echo 'piece_type: $piece_type,piece_pos: $piece_pos<BR>'; */
+    //     if ($board[$piece_pos] == '') {
+    //       return 'ERROR: ' . $piece_coord . ' is empty.';
+    //     }
+    //     if ($board[$piece_pos][0] != $game->get_turn()) {
+    //       return 'ERROR: Piece does not belong to you!';
+    //     }
+    //     if ($board[$piece_pos][1] != $piece_type) {
+    //       return 'ERROR: Piece does not exist!';
+    //     }
+
+    // Get target square
+    $move_obj = new Move();
+    $move_obj->initialise($move);
+    $dest_coord = $move_obj->dest_coord();
+    if ($dest_coord == $piece_coord) {
+      return 'ERROR: Current position and destination are equal!';
+    }
+
+    // Get action
+    if ($move[3] == '-') {
+      $action = MOVE; /* move */
+    }
+    elseif ($move[3] == 'x') {
+      $action = CAPTURE; /* attack */
+    }
+    else {
+      return 'ERROR: ' . $action . ' is unknown! Please use "-" for move and "x" for attack.';
+    }
+    // Replace - with x if this is meant to be en-passant.
+    $dest_pos = vchess_coord2i($dest_coord);
+    if ($piece_type == 'P' && (abs($piece_pos - $dest_pos) == 7 || abs($piece_pos - $dest_pos) == 9)) {
+      $action = CAPTURE;
+      $history_move = str_replace('-', 'x', $history_move);
+      $move = str_replace('-', 'x', $move);
+    }
+
+    // Save for undo
+    $game->set_last_move(str_replace('?', '', $move));
+
+    // If attacking, an enemy unit must be present on square
+    // and if move then square must be empty. In both cases
+    // the king must not be in check after moving.
+
+    // Check whether the move is along a valid path and
+    // whether all squares in between are empty thus the path
+    // is not blocked. The final destination square is not
+    // checked here.
+    $piece_name = $piece->get_name();
+    $piece_coord = vchess_i2coord($piece_pos);
+    $dest_coord = vchess_i2coord($dest_pos);
+    if ($piece_type != 'P') {
+      if (!$board->square_is_reachable($piece_type, $piece_coord, $dest_coord)) {
+        return 'ERROR: ' . $dest_coord . ' is not a legal move of ' . $piece_name . ' at ' . $piece_coord . '!';
+      }
+    }
+    else {
+      if ($action == MOVE && !$board->pawn_may_move_to_square($piece_coord, $dest_coord)) {
+        return 'ERROR: ' . $dest_coord . ' is not a legal advancing move of ' . $piece_name . ' at ' . $piece_coord . '!';
+      }
+      elseif ($action == CAPTURE && !$board->check_pawn_attacks($piece_coord, $dest_coord)) {
+        return 'ERROR: ' . $dest_coord . ' is not a legal capturing move of ' . $piece_name . ' at ' . $piece_coord . '!';
+      }
+    }
+
+    $en_passant_okay = FALSE;
+    // Check action
+    $coord = vchess_i2coord($dest_pos);
+    if ($action == MOVE && !$board->square_is_empty($coord)) {
+      return 'ERROR: ' . $dest_coord . ' is occupied!';
+    }
+    if ($action == CAPTURE && $board->square_is_empty($dest_coord)) {
+      // En passant of pawn?
+      if ($piece_type == 'P') {
+        if ($game['turn'] == 'w') {
+          if ($game['b2spm'] != 'x' &&
+              $dest_pos % 8 == $game['b2spm'] &&
+              floor($dest_pos / 8) == 5) {
+            $en_passant_okay = 1;
+          }
+        }
+        else {
+          if ($game['w2spm'] != 'x' &&
+              $dest_pos % 8 == $game['w2spm'] &&
+              floor($dest_pos / 8) == 2) {
+            $en_passant_okay = 1;
+          }
+        }
+        if ($en_passant_okay == 0) {
+          return 'ERROR: En-passant is not possible!';
+        }
+      }
+      else {
+        return 'ERROR: ' . $dest_coord . ' is empty!';
+      }
+    }
+    if ($action == CAPTURE && $board->get_piece($dest_coord)->get_color() == $game->get_turn()) {
+      return 'ERROR: You cannot attack own chessman at ' . $dest_coord . '!';
+    }
+
+    // Backup affected squares
+    $piece_coord = vchess_i2coord($piece_pos);
+    $dest_coord = vchess_i2coord($dest_pos);
+    $old_piece_square = $board->get_piece($piece_coord);
+    $old_dest_square = $board->get_piece($dest_coord);
+
+    // Get short notation of move for history before
+    // actually moving since this function relies on
+    // autocomplete which in turn requires the initial board
+    // to work properly (after move, first chessman is on
+    // destination square already and second can't reach it
+    // which would result in 'no one can reach' error)
+    if (strlen($history_move) >= 6) {
+      $history_move = vchess_long_to_short_move($game->get_turn(), $history_move, $board);
+    }
+    // DEBUG: echo 'Move: $move ($history_move)<BR>';
+
+    // Perform move
+    //    $board[$piece_pos] = '';
+    $dest_coord = vchess_i2coord($dest_pos);
+    if ($board->get_piece($dest_coord)->get_type() != BLANK) {
+      //      $game->set_last_kill(sprintf('%s%s', $board->get_piece_by_index($dest_pos), $dest_pos));
+      $game->set_last_kill($board->get_piece($dest_coord));
+    }
+    $board->move_piece($piece_coord, $dest_coord);
+    if ($en_passant_okay) {
+      // Kill pawn
+      if ($game['turn'] == 'w') {
+        //         $board[$dest_pos - 8] = '';
+        //        $game->set_last_kill(sprintf('bP%s', $dest_pos -8));
+        //         $game->set_last_kill(sprintf('bP%s', $dest_pos -8));
+      }
+      else {
+        //         $board[$dest_pos + 8] = '';
+        //         $game->set_last_kill(sprintf('wP%s', $dest_pos + 8));
+      }
+    }
+
+    // If king is in check undo
+    if ($board->king_is_in_check($game->get_turn())) {
+      //       $board[$piece_pos] = $old_piece_square;
+      //       $board[$dest_pos] = $old_dest_square;
+      //       if ($en_passant_okay) {
+      //         // Respawn en-passant pawn
+      //         if ($game->get_turn() == 'w') {
+      //           $board[$dest_pos -8] = 'bP';
+      //         }
+      //         else {
+      //           $board[$dest_pos + 8] = 'wP';
+      //         }
+      //       }
+      return 'ERROR: King is in check.';
+    }
+
+    // Check whether this forbids any castling
+    if ($piece_type == 'K') {
+      if ($may_castle_short) {
+        $may_castle_short = FALSE;
+      }
+      if ($may_castle_long) {
+        $may_castle_long = FALSE;
+      }
+    }
+    if ($piece_type == 'R') {
+      if ($may_castle_long && ($piece_pos % 8) == 0) {
+        $may_castle_long = FALSE;
+      }
+      if ($may_castle_short && ($piece_pos % 8) == 7) {
+        $may_castle_short = FALSE;
+      }
+    }
+
+    // If a pawn moved two squares this will allow 'en passant'
+    // for next turn.
+    //
+    if ($piece_type == 'P' && abs($piece_pos - $dest_pos) == 16) {
+      if ($game->get_turn() == 'w') {
+        $game->set_w2spm($piece_pos % 8);
+      }
+      else {
+        $game->set_b2spm($piece_pos % 8);
+      }
+    }
+    else {
+      // Clear 'en passant' of OUR last move
+      if ($game->get_turn() == 'w') {
+        $game->set_w2spm('x');
+      }
+      else {
+        $game->set_b2spm('x');
+      }
+    }
+
+    $result = 'Your last move: ' . vchess_long_to_short_move($game->get_player_color($uid),
+        str_replace('?', '', $move), $board);
+
+    // If pawn reached last line promote it
+    if ($piece_type == 'P') {
+      if (($game->get_turn() == 'w' && $dest_pos >= 56) ||
+          ($game->get_turn() == 'b' && $dest_pos <= 7)) {
+        $pawn_upg = $move[strlen($move) -1];
+        if ($pawn_upg == '?') {
+          $pawn_upg = 'Q';
+          $history_move = sprintf('%sQ', $history_move);
+        }
+        $board[$dest_pos] = $game->get_turn() . $pawn_upg;
+        $result = sprintf('%s... promotion to %s!',
+            $result, vchess_get_piece_name($pawn_upg));
+      }
+    }
+
+    $move_handled = TRUE;
+  }
+
+  // If move was executed update game state.
+  if ($move_handled) {
+    // Check checkmate/stalemate
+    if ($board->king_is_in_check($cur_opp)) {
+      // If this is check mate finish the game otherwise
+      // add '+' to the move.
+      if ($board->is_checkmate($cur_opp)) {
+        if ($game->get_turn() == 'w') {
+          $game->set_curstate(STATUS_WHITE_WIN);
+        }
+        else {
+          $game->set_curstate(STATUS_BLACK_WIN);
+        }
+        $mate_type = END_TYPE_CHECKMATE;
+      }
+      else {
+        $result = $result . '... CHECK!';
+      }
+      $history_move = sprintf('%s+', $history_move);
+    }
+    elseif ($board->is_stalemate($cur_opp, $game->get_w2spm(), $game->get_b2spm())) {
+      $game->set_curstate('-');
+      $mate_type = END_TYPE_STALEMATE;
+    }
+
+    // Backup castling info if rook or king has moved
+    //     if ($piece_type == 'R' || $piece_type == 'K') {
+    //       if ($game->get_turn() == 'w') {
+    //         // oscf = old short castle flag??
+    //         // olcf = old long castle flag??
+    //         // wcs = white castle short
+    //         // wcl = white castle long
+    //         $game['oscf'] = $game['wcs'];
+    //         $game['olcf'] = $game['wcl'];
+    //       }
+    //       else {
+    //         $game['oscf'] = $game['bcs'];
+    //         $game['olcf'] = $game['bcl'];
+    //       }
+    //     }
+
+    // Update castling flags
+    if ($game->get_turn() == 'w') {
+      $game->set_white_may_castle_short($may_castle_short);
+      $game->set_white_may_castle_long($may_castle_long);
+    }
+    else {
+      $game->set_black_may_castle_short($may_castle_short);
+      $game->set_black_may_castle_long($may_castle_long);
+    }
+
+    // Update move number and current player
+    if ($game->get_turn() == 'w') {
+      //      $game['curmove']++;
+      //        $game->set_curmove(1234); // Hugh default
+    }
+    //    $game['mhistory'][count($game['mhistory'])] = $history_move;
+    //    $game['mhistory'][42] = $history_move; // Hugh hardcoding 42!
+
+    // If other player can't move anymore end the game.
+    if ($mate_type == END_TYPE_CHECKMATE) {
+      $mate_name = 'mate';
+      $result = $result . '... CHECKMATE!';
+    }
+    elseif ($mate_type == END_TYPE_STALEMATE) {
+      $mate_name = 'stalemate';
+      $result = $result . '... STALEMATE!';
+    }
+
+
+    // $game['mhistory'][count($game['mhistory'])] = $mate_name;
+  }
+
+  // Save move
+  vchess_io_save_move($gid, $game->get_move_no(), $game->get_turn(), $move);
+
+  if ($move_handled || $draw_handled) {
+    // If game is over update user stats (includes resignation).
+    //    $game->set_curstate("?"); // Hugh default
+    //     if ($game->get_curstate() != '?' && $game->get_curstate() != 'D') {
+    //       vchess_update_stats($game->get_white_player(), $game->get_black_player(), $game->get_curstate());
+    //      drupal_set_message('game is over');
+    //     }
+
+    // Set next player
+    if ($game->get_turn() == 'b') {
+      $game->set_turn_white();
+    }
+    else {
+      $game->set_turn_black();
+    }
+
+    // Add comment to head of chatter. Right now we have only two
+    // chatter items. Strip backslashes and replace newlines to get
+    // a single line.
+    if (empty($comment)) {
+      $comment = '(silence)';
+    }
+    else {
+      $comment = str_replace("\\", '', strip_tags($comment));
+      $comment = str_replace("\n", '<br>', $comment);
+    }
+    $comment = '<u>' . $uid . '</u>: ' . $comment;
+    //    $game['chatter'][1] = $game['chatter'][0];
+    //    $game['chatter'][1] = "Hugh hard coding for now";
+    //    $game['chatter'][0] = $comment;
+
+    // Store changed board
+    $game->set_board($board);
+
+    // Save game
+    vchess_io_save_game($gid, $game);
+
+    // Send a notification if email address was supplied.
+    //    if ($cur_opp == 'b') {
+    //       $oid = $game['black'];
+    //     }
+    //     else {
+    //       $oid = $game['white'];
+    //     }
+    //	$email=ioLoadUserEmailAddress($oid);
+    $email = FALSE; // Hugh - force following condition to be FALSE
+    if ($email) {
+      $prot = ($GLOBALS['_SERVER']['HTTPS'] == 'on') ? 'https' : 'http';
+      $url = $prot . '://' . $GLOBALS['_SERVER']['HTTP_HOST'] . $GLOBALS['_SERVER']['SCRIPT_NAME'] . '?gid=' . $gid;
+      $message = "Dear $oid\n\n$uid has just moved.\n\nMove:\n$move\n\nComment:\n$comment\n\nIt is your turn now!\n\nEnter the game:\n$url";
+      mail($email, "[OCC] " . $game['white'] . "vs" . $game['black'] . ": $move",
+          $message, 'From: ' . $mail_from);
+    }
+
+  }
+  return $result;
+}
+
+/**
+ * Undo last move (only possible if game is not over yet).
+ */
+function vchess_handle_undo($gid, $uid) {
+  $game = new Game($gid);
+  if ($game == NULL) {
+    return 'ERROR: Game "' . $gid . '" does not exist!';
+  }
+  if (!$game['p_mayundo']) {
+    return 'ERROR: Undo is not possible!';
+  }
+
+  $move = $game['lastmove'];
+  $fixhist = 1;
+  if ($move == 'DrawOffered' || $move == 'DrawRefused') {
+    $fixhist = 0;
+  }
+  elseif ($move == 'O-O') {
+    if ($game['curplyr'] == 'b') {
+      // white castled short
+      $game['board'][5] = '';
+      $game['board'][6] = '';
+      $game['board'][4] = 'wK';
+      $game['board'][7] = 'wR';
+      $game['wcs'] = 1;
+    }
+    else {
+      // black castled short
+      $game['board'][61] = '';
+      $game['board'][62] = '';
+      $game['board'][60] = 'bK';
+      $game['board'][63] = 'bR';
+      $game['bcs'] = 1;
+    }
+  }
+  elseif ($move == 'O-O-O') {
+    if ($game['curplyr'] == 'b') {
+      // white castled long
+      $game['board'][2] = '';
+      $game['board'][3] = '';
+      $game['board'][4] = 'wK';
+      $game['board'][0] = 'wR';
+      $game['wcl'] = 1;
+    }
+    else {
+      // black castled long
+      $game['board'][58] = '';
+      $game['board'][59] = '';
+      $game['board'][60] = 'bK';
+      $game['board'][56] = 'bR';
+      $game['bcl'] = 1;
+    }
+  }
+  else {
+    // Undo normal move (includes en passant)
+    $src = vchess_coord2i($move[1] . $move[2]);
+    $dest = vchess_coord2i($move[4] . $move[5]);
+    if ($src >= 0 && $src < 64 && $dest >= 0 && $dest < 64) {
+      if ($game['curplyr'] == 'w') {
+        $oldclr = 'b';
+      }
+      else {
+        $oldclr = 'w';
+      }
+      $game['board'][$src] = $oldclr . $move[0];
+      $game['board'][$dest] = '';
+      if ($game['lastkill'] != 'x') {
+        $kill = $game['lastkill'];
+        $dest = $kill[2] . $kill[3];
+        $game['board'][$dest] = $kill[0] . $kill[1];
+      }
+      // Adjust castling flags
+      if ($move[0] == 'R' || $move[0] == 'K') {
+        if ($game['curplyr'] == 'b') {
+          // white castling info
+          $game['wcs'] = $game['oscf'];
+          $game['wcl'] = $game['olcf'];
+        }
+        else {
+          // black castling info
+          $game['bcs'] = $game['oscf'];
+          $game['bcl'] = $game['olcf'];
+        }
+      }
+    }
+  }
+
+  // Fix chatter. Fill in ... for lost chatter.
+  $game['chatter'][0] = $game['chatter'][1];
+  $game['chatter'][1] = '<u>' . $uid . '</u>: ...';
+  // Correct game state
+  if ($move == 'DrawRefused') {
+    $game['curstate'] = 'D';
+  }
+  else {
+    $game['curstate'] = '?';
+  }
+
+  // Clear own en passant flag
+  if ($game['curplyr'] == 'b') {
+    $game['w2spm'] = 'x';
+  }
+  else {
+    $game['b2spm'] = 'x';
+  }
+
+  // Modify history
+  if ($fixhist) {
+    // Adjust turn counter if nescessary
+    if ($game['curplyr'] == 'b') {
+      $game['curmove'] = $game['curmove'] -1;
+    }
+    // Delete last move
+    $square = count($game['mhistory']) -1;
+    unset($game['mhistory'][$square]);
+  }
+  // Switch players
+  if ($game['curplyr'] == 'b') {
+    $game['curplyr'] = 'w';
+  }
+  else {
+    $game['curplyr'] = 'b';
+  }
+
+  // Clear last move
+  $game['lastmove'] = 'x';
+  $game['lastkill'] = 'x';
+  $game['oscf'] = 'x';
+  $game['olcf'] = 'x';
+
+  // Save game
+  vchess_io_save_game($gid, $game);
+
+  return 'Move "' . $move . '" undone!';
+}
+
+
+
 
 
