@@ -439,7 +439,7 @@
     drupal_add_js($module_path . '/board.js');
   
     $game = new Game();
-    $game->load_game($gid);
+    $game->load($gid);
   
     // Find the player color
     $player_color = $game->get_player_color($user->uid);

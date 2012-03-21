@@ -43,7 +43,7 @@ function vchess_io_load_users_games($uid) {
     
     // Add a game to the list
     $game = new Game();
-    $game->load_game($gid);
+    $game->load($gid);
     $game_list[] = $game;
   }
 
@@ -55,77 +55,6 @@ function vchess_io_load_users_games($uid) {
   return $game_list;
 }
 
-/**
-/* Save an open game and update last move time stamp to current time. Chatter
- * must have been updated already (newest is first in list). 
- */
-function vchess_io_save_game($gid, $game) {
-  $timestamps = REQUEST_TIME;
-  
-  $sql = "SELECT gid FROM {vchess_games} WHERE gid = '" . $gid . "'";
-  // Converted to the D7 database API syntax.
-  $result = db_query($sql);
-  $exists = $result->fetchField();
-
-  if ($exists) {
-    // Converted to the D7 database API syntax.
-    db_update('vchess_games')->fields(array(
-      'turn' => $game->get_turn(),
-      'status' => $game->get_status(), 
-      'white_uid' => $game->get_white_uid(),
-      'black_uid' => $game->get_black_uid(),
-      'board' => $game->get_board()->to_FEN_string(),
-      'castling_availability' => $game->castling_availability(),
-    ))
-    ->condition('gid', $gid)
-    ->execute();
-  }
-}
-
-/**
- * Abort an open game. This is only possible if your opponent did not move
- * at all yet or did not move for more than four weeks. Aborting a game will
- * have NO influence on the game statistics. Return a status message. 
- */
-function vchess_ioAbortGame($gid, $uid) {
-  //	global $res_games;
-
-  $gamefolder =  variable_get('vchess_game_files_folder', 'vchess-data');
-  $res_games = $gamefolder;
-
-  //	ioLock();
-
-  $game = new Game($gid);
-  if ($game == NULL) {
-    return 'ERROR: Game "' . $gid . '" does not exist!';
-  }
-  if (!$game['p_mayabort']) {
-    return 'ERROR: You cannot abort the game!';
-  }
-  unlink("$res_games/$gid");
-
-  //	ioUnlock();
-
-  return 'Game "' . $gid . '" deleted.';
-}
-
-/**
- * Save a game move
- * 
- * @param int $gid Game id
- * @param int $move_no Number of move, e.g. 3
- * @param string $turn Whose turn it is, either "w" or "b"
- * @param string $move e.g. "Nb1-c3" or "Bc1xNf4"
- */
-function vchess_io_save_move($gid, $move_no, $turn, $move) {
-  db_insert('vchess_moves')
-	->fields(array(
-	  'gid' => $gid,
-	  'move_no' => $move_no,
-	  'color' => $turn,
-	  'move' => $move))
-	->execute();
-}
 
 
 /**

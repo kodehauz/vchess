@@ -47,17 +47,20 @@ function vchess_render_board($board, $player, $active, $gid) {
     // accessible by one user which won't do it twice the same time.
     //ioLock();
 
+    $game = new Game();
+    $game->load($gid);
+    
     if ($cmd == 'abort') {
-      $cmdres = vchess_ioAbortGame($gid, $uid);
+      $cmdres = $game->abort($uid);
     }
     elseif ($cmd == 'acceptdraw') {
-      $cmdres = vchess_handle_move($gid, $uid, 'accept_draw', $comment);
+      $cmdres = $game->handle_move($uid, 'accept_draw', $comment);
     }
     elseif ($cmd == 'refusedraw') {
-      $cmdres = vchess_handle_move($gid, $uid, 'refuse_draw', $comment);
+      $cmdres = $game->handle_move($uid, 'refuse_draw', $comment);
     }
     else { // try as chess move
-      $cmdres = vchess_handle_move($gid, $uid, $cmd, $comment);
+      $cmdres = $game->handle_move($uid, $cmd, $comment);
     }
     drupal_set_message(check_plain(t($cmdres)));
   }
@@ -259,7 +262,7 @@ function vchess_resign_clicked($form, &$form_state) {
   $gid = $form_state['values']['gid'];
   
   $game = new Game();
-  $game->load_game($gid);
+  $game->load($gid);
   $game->resign($user->uid);
 }
 
