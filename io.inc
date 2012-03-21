@@ -12,8 +12,6 @@
  * 'archive'.
  * Always returns an array but it may be empty if no matching games were found
  * and entries are sorted most recent first. 
- * 
- * @see http://drupal.org/node/1354
  */
 function vchess_compareTimestamp($a, $b) {
   // Bof!  I dunno.  Let's return 0.  Hugh
@@ -64,52 +62,20 @@ function vchess_io_load_users_games($uid) {
 function vchess_io_save_game($gid, $game) {
   $timestamps = REQUEST_TIME;
   
-  // Convert game array to string
-//   $board_white = vchess_board_to_string($game->get_board(), 'w');
-//   $board_black = vchess_board_to_string($game->get_board(), 'b');
-  /**
-  for ($i = 0; $i < 64; $i++) {
-    if ($game['board'][$i] != '' && $game['board'][$i][0] == 'w') {
-      $c = vchess_i2coord($i);
-      $board_white .= $game['board'][$i][1] . $c . ' ';
-    }
-  }
-  for ($i = 0; $i < 64; $i++) {
-    if ($game['board'][$i] != '' && $game['board'][$i][0] == 'b') {
-      $c = vchess_i2coord($i);
-      $board_black .= $game['board'][$i][1] . $c . ' ';
-    }
-  }
-  */
-
   $sql = "SELECT gid FROM {vchess_games} WHERE gid = '" . $gid . "'";
   // Converted to the D7 database API syntax.
   $result = db_query($sql);
-  $out = $result->fetchField();
+  $exists = $result->fetchField();
 
-  if (!$out) {
-    /**
-      // Converted to the D7 database API syntax.
-  $gid = db_insert('vchess_games')
-    ->fields(array(
-    'timestamps' => $timestamps,
-    'white' => $game['white'],
-    'black' => $game['black'],
-    'state' => $state,
-    'board_white' => $board_white,
-    'board_black' => $board_black
-    ))
-    ->execute();
-    **/
-  }
-  else {
+  if ($exists) {
     // Converted to the D7 database API syntax.
     db_update('vchess_games')->fields(array(
       'turn' => $game->get_turn(),
       'status' => $game->get_status(), 
       'white_uid' => $game->get_white_uid(),
       'black_uid' => $game->get_black_uid(),
-      'board' => $game->get_board()->to_FEN_string()
+      'board' => $game->get_board()->to_FEN_string(),
+      'castling_availability' => $game->castling_availability(),
     ))
     ->condition('gid', $gid)
     ->execute();

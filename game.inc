@@ -26,15 +26,15 @@ class Game {
   // curmove: number of current move (start at 0)
   // turn: color of whose turn it is to move (w or b)
   // curstate: state of game (w/b=white/black won,-=draw,D=draw offered,?=open)
-  // wcs: white may castle short
-  // wcl: white may castle long
-  // bcs, bcl: dito for black
-  // w2spm: 2-step pawn move of white (x or a-h)
-  // b2spm: dito for black
+  // white_may_castle_short: white may castle short
+  // white_may_castle_long: white may castle long
+  // black_may_castle_short, black_may_castle_long: dito for black
+  // w2spm: white 2-step pawn move (x or a-h)
+  // b2spm: black 2-step pawn move
   // lastmove: last move in full notation (e.g. Pd2-d4 or x)
   // lastkill: chessman captured in last move with board index (e.g. wP08 or x)
-  // oscf: old short castling flag (only set by king/rook move)
-  // olcf: dito for long castling
+  // old_castle_short: old short castling flag (only set by king/rook move)
+  // old_castle_long: dito for long castling
   // board: chess board array (0=a1,63=h8) with e.g. 'bP', 'wQ' or ''
   // mhistory: move history list (w1,b1,w2,b2,...)
   // chatter: list of chatter lines (first is newest)
@@ -64,16 +64,16 @@ class Game {
   	$this->game['white_uid'] = $white_uid;
   	$this->game['black_uid'] = $black_uid;
   	$this->game['curstate'] = '?';
-  	$this->game['wcs'] = 1;
-  	$this->game['wcl'] = 1;
-  	$this->game['bcs'] = 1;
-  	$this->game['bcl'] = 1;
+  	$this->game['white_may_castle_short'] = TRUE;  
+  	$this->game['white_may_castle_long'] = TRUE;  
+  	$this->game['black_may_castle_short'] = TRUE;
+  	$this->game['black_may_castle_long'] = TRUE;
   	$this->game['w2spm'] = 'x';
   	$this->game['b2spm'] = 'x';
   	$this->game['lastmove'] = 'x';
   	$this->game['lastkill'] = 'x';
-  	$this->game['oscf'] = 'x';
-  	$this->game['olcf'] = 'x';
+  	$this->game['old_castle_short'] = 'x';
+  	$this->game['old_castle_long'] = 'x';
   	$board = new Board();
   	$board->setup_as_standard();
   	$this->game['board'] = $board;
@@ -115,31 +115,20 @@ class Game {
   *
   */
   function load_game($gid) {
-	$sql = "SELECT gid, turn, white_uid, black_uid, status, board FROM {vchess_games} WHERE gid = '" .
+	$sql = "SELECT gid, turn, white_uid, black_uid, status, board, castling_availability, en_passant_target " .
+	 " FROM {vchess_games} WHERE gid = '" .
 			$gid . "'";
 	// Converted to the D7 database API syntax.
 	$result = db_query($sql);
 	$this->game = $result->fetchAssoc();
-	
-//	$white_player = user_load($this->game['white_uid']);
-//	$black_player = user_load($this->game['black_uid']);
-	
-//	$this->game['white'] = $white_player->name;
-//	$this->game['black'] = $black_player->name;
 	
 	// Fill chess board
 	$board = new Board;
 	$board->setup_with_FEN($this->game['board']);
 	$this->game['board'] = $board; 
 	
-// 	$wcm = explode(' ', trim($this->game['board']));
-// 	foreach ($wcm as $cm) {
-//       $this->game['board'][vchess_coord2i($cm[1] . $cm[2])] = 'w' . $cm[0];
-// 	}
-// 	$bcm = explode(' ', trim($this->game['board_black']));
-//     foreach ($bcm as $cm) {
-//       $this->game['board'][vchess_coord2i($cm[1] . $cm[2])] = 'b' . $cm[0];
-//     }
+	// Handle castling availability
+	$this->initialise_castling($this->game['castling_availability']);	
     
     // w2spm: 2-step pawn move of white (x or a-h)
     // b2spm: dito for black
@@ -148,6 +137,80 @@ class Game {
     
     $this->scoresheet->load($gid); 
   }	
+  
+  /**
+   * This sets up the castling state
+   * 
+   * If neither side can castle, this is "-". 
+   * Otherwise, this has one or more letters: 
+   * - "K" (White can castle kingside), 
+   * - "Q" (White can castle queenside), 
+   * - "k" (Black can castle kingside), and/or 
+   * - "q" (Black can castle queenside)
+   * 
+   * @see http://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation 
+   */
+  function initialise_castling($castling_availability) {
+    if (strpos($castling_availability, "K") !== FALSE) {
+      $this->game['white_may_castle_short'] = TRUE;
+    }
+    else {
+      $this->game['white_may_castle_short'] = FALSE;
+    }
+    if (strpos($castling_availability, "Q") !== FALSE) {
+      $this->game['white_may_castle_long'] = TRUE;
+    }
+    else {
+      $this->game['white_may_castle_long'] = FALSE;
+    }
+    if (strpos($castling_availability, "k") !== FALSE) {
+      $this->game['black_may_castle_short'] = TRUE;
+    }
+    else {
+      $this->game['black_may_castle_short'] = FALSE;
+    }
+    if (strpos($castling_availability, "q") !== FALSE) {
+      $this->game['black_may_castle_long'] = TRUE;
+    }
+    else {
+      $this->game['black_may_castle_long'] = FALSE;
+    }
+  }
+  
+  /** 
+   * Create $castling_availability string.
+   * 
+   * If neither side can castle, this is "-". 
+   * Otherwise, this has one or more letters: 
+   * - "K" (White can castle kingside), 
+   * - "Q" (White can castle queenside), 
+   * - "k" (Black can castle kingside), and/or 
+   * - "q" (Black can castle queenside)
+   * e.g. "KQkq"
+   * 
+   * @see http://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation 
+   */
+  function castling_availability() {
+    $castling_availability = "";
+    
+    if ($this->game['white_may_castle_short']) {
+      $castling_availability .= "K";
+    }
+    if ($this->game['white_may_castle_long']) {
+      $castling_availability .= "Q";
+    }
+    if ($this->game['black_may_castle_short']) {
+      $castling_availability .= "k";
+    }
+    if ($this->game['black_may_castle_long']) {
+      $castling_availability .= "q";
+    }
+    if ($castling_availability == "") {
+      $castling_availability = "-";
+    }
+    
+    return $castling_availability;
+  }
   
   /**
    * Get the white player
@@ -430,6 +493,16 @@ class Game {
   	return $this->game['b2spm'];
   }
   
+  function white_may_not_castle() {
+    $this->game['white_may_castle_short'] = FALSE;
+    $this->game['white_may_castle_long'] = FALSE;
+  }
+  
+  function black_may_not_castle() {
+    $this->game['black_may_castle_short'] = FALSE;
+    $this->game['black_may_castle_long'] = FALSE;
+  }
+  
   function set_white_may_castle_short($may_castle_short) {
     $this->game['white_may_castle_short'] = $may_castle_short;	
   }
@@ -446,6 +519,43 @@ class Game {
   	$this->game['black_may_castle_long'] = $may_castle_long;
   }
   
+  function black_may_castle_long() {
+    return $this->game['black_may_castle_long'];
+  }
+  
+  function black_may_castle_short() {
+    return $this->game['black_may_castle_short'];
+  }
+
+  function white_may_castle_long() {
+    return $this->game['white_may_castle_long'];
+  }
+  
+  function white_may_castle_short() {
+    return $this->game['white_may_castle_short'];
+  }
+  
+  function may_castle_short($player) {
+    if ($player == 'w') {
+      $may_castle_short = $this->white_may_castle_short();
+    }
+    else {
+      $may_castle_short = $this->black_may_castle_short();
+    }
+    
+    return $may_castle_short;
+  }
+  
+  function may_castle_long($player) {
+    if ($player == 'w') {
+      $may_castle_short = $this->white_may_castle_long();
+    }
+    else {
+      $may_castle_short = $this->black_may_castle_long();
+    }
+  
+    return $may_castle_short;
+  }
 }
 
 /**
@@ -495,7 +605,8 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
   if (!$game->is_players_move($uid)) {
     return 'It is not your turn!';
   }
-  if ($game->get_turn() == 'w') {
+  $turn = $game->get_turn();
+  if ($turn == 'w') {
     $cur_opp = 'b';
   }
   else {
@@ -506,22 +617,13 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
   //    return 'Game is over.';
   //  }
 
-  /* Castling meaning:
+  /* Old castling meaning:
    * 0 - rook or king moved
   * 1 - possible
   * 9 - performed */
-  /*
-   if ($game['turn'] == 'w') {
-  $may_castle_short = $game['wcs']; // wcs = white castle short
-  $may_castle_long = $game['wcl'];  // wcl = white castle long
-  }
-  else {
-  $may_castle_short = $game['bcs'];  // bcs = black castle short
-  $may_castle_long = $game['bcl'];   // bcl = black castle long
-  }
-  */
-  $may_castle_short = FALSE; // Hugh default
-  $may_castle_long = FALSE;  // Hugh default
+  
+  $may_castle_short = $game->may_castle_short($turn); 
+  $may_castle_long = $game->may_castle_long($turn);  
 
   /* DEBUG echo 'HANDLE: w=$game['white'],b=$game['black'],c=$game['turn'],';
    echo 'm=$cur_move,may_castle=$may_castle_short,';
@@ -552,8 +654,8 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
   // Clear last move
   //  $game['lastmove'] = 'x';
   //  $game['lastkill'] = 'x';
-  //  $game['oscf'] = 'x';
-  //  $game['olcf'] = 'x';
+  //  $game['old_castle_short'] = 'x';
+  //  $game['old_castle_long'] = 'x';
 
   // HANDLE MOVES:
   // resign                            resign
@@ -590,43 +692,43 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
   }
   elseif ($move == 'O-O') {
     // Short castling
-    if ($may_castle_short != 1 || $may_castle_long == 9) {
+    if (!$game->may_castle_short($game->get_turn())) {
       return 'ERROR: You cannot castle short anymore!';
     }
-    if ($game['turn'] == 'b' && $board[61] == '' && $board[62] == '') {
+    if ($turn == 'b' && $board->square_is_empty("f8") && $board->square_is_empty("g8")) {
       if ($board->king_is_in_check('b')) {
         return 'ERROR: You cannot escape check by castling!';
       }
-      if (vchess_square_is_under_attack('w', 62, $board) ||
-          vchess_square_is_under_attack('w', 61, $board)) {
+      if ($board->square_is_under_attack('w', 62) ||
+          $board->square_is_under_attack('w', 61)) {
         return 'ERROR: Either king or rook would be under attack after short castling!';
       }
-      $may_castle_short = 9;
-      $board[60] = '';
-      $board[62] = 'bK';
-      $board[61] = 'bR';
-      $board[63] = '';
+      
+      $board->move_piece("e8", "g8"); // Black king
+      $board->move_piece("h8", "f8"); // Black rook
+      
+      $game->black_may_not_castle();
     }
-    if ($game['turn'] == 'w' && $board[5] == '' && $board[6] == '') {
+    if ($turn == 'w' && $board->square_is_empty("f1") && $board->square_is_empty("g1")) {
       if ($board->king_is_in_check('w')) {
         return 'ERROR: You cannot escape check by castling!';
       }
-      if (vchess_square_is_under_attack('b', 5, $board) ||
-          vchess_square_is_under_attack('b', 6, $board)) {
+      if ($board->square_is_under_attack('b', 'f1') ||
+          $board->square_is_under_attack('b', 'g1')) {
         return 'ERROR: Either king or rook would be under attack after short castling!';
       }
-      $may_castle_short = 9;
-      $board[4] = '';
-      $board[6] = 'wK';
-      $board[5] = 'wR';
-      $board[7] = '';
+      
+      $board->move_piece("e1", "g1");  // White King
+      $board->move_piece("h1", "f1");  // Rook
+      
+      $game->white_may_not_castle();
     }
-    if ($may_castle_short != 9) {
-      return 'ERROR: Cannot castle short because the way is blocked!';
-    }
+//     if ($may_castle_short != 9) {
+//       return 'ERROR: Cannot castle short because the way is blocked!';
+//     }
     $result = 'You castled short.';
     $move_handled = 1;
-    $game['lastmove'] = 'O-O';
+    $game->set_last_move('O-O');
   }
   elseif ($move == 'O-O-O') {
     // Long castling
@@ -638,30 +740,30 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
       if ($board->king_is_in_check('b')) {
         return 'ERROR: You cannot escape check by castling!';
       }
-      if (vchess_square_is_under_attack('w', 58, $board) ||
-          vchess_square_is_under_attack('w', 59, $board)) {
+      if ($board->square_is_under_attack('w', 58) ||
+          $board->square_is_under_attack('w', 59)) {
         return 'ERROR: Either king or rook would be under attack after short castling!';
       }
-      $may_castle_long = 9;
-      $board[56] = '';
-      $board[58] = 'bK';
-      $board[59] = 'bR';
-      $board[60] = '';
+//       $may_castle_long = 9;
+//       $board[56] = '';
+//       $board[58] = 'bK';
+//       $board[59] = 'bR';
+//       $board[60] = '';
     }
     if ($game['turn'] == 'w' && $board[1] == '' && $board[2] == '' &&
         $board[3] == '') {
       if ($board->king_is_in_check('w')) {
         return 'ERROR: You cannot escape check by castling!';
       }
-      if (vchess_square_is_under_attack('b', 2, $board) ||
-          vchess_square_is_under_attack('b', 3, $board)) {
+      if ($board->square_is_under_attack('b', 2) ||
+          $board->square_is_under_attack('b', 3)) {
         return 'ERROR: Either king or rook would be under attack after short castling!';
       }
-      $may_castle_long = 9;
-      $board[0] = '';
-      $board[2] = 'wK';
-      $board[3] = 'wR';
-      $board[4] = '';
+//       $may_castle_long = 9;
+//       $board[0] = '';
+//       $board[2] = 'wK';
+//       $board[3] = 'wR';
+//       $board[4] = '';
     }
     if ($may_castle_long != 9) {
       return 'ERROR: Cannot castle long because the way is blocked!';
@@ -950,16 +1052,16 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
     // Backup castling info if rook or king has moved
     //     if ($piece_type == 'R' || $piece_type == 'K') {
     //       if ($game->get_turn() == 'w') {
-    //         // oscf = old short castle flag??
-    //         // olcf = old long castle flag??
-    //         // wcs = white castle short
-    //         // wcl = white castle long
-    //         $game['oscf'] = $game['wcs'];
-    //         $game['olcf'] = $game['wcl'];
+    //         // old_castle_short = old short castle flag??
+    //         // old_castle_long = old long castle flag??
+    //         // white_may_castle_short = white castle short
+    //         // white_may_castle_long = white castle long
+    //         $game['old_castle_short'] = $game['white_may_castle_short'];
+    //         $game['old_castle_long'] = $game['white_may_castle_long'];
     //       }
     //       else {
-    //         $game['oscf'] = $game['bcs'];
-    //         $game['olcf'] = $game['bcl'];
+    //         $game['old_castle_short'] = $game['black_may_castle_short'];
+    //         $game['old_castle_long'] = $game['black_may_castle_long'];
     //       }
     //     }
 
@@ -1080,7 +1182,7 @@ function vchess_handle_undo($gid, $uid) {
       $game['board'][6] = '';
       $game['board'][4] = 'wK';
       $game['board'][7] = 'wR';
-      $game['wcs'] = 1;
+      $game['white_may_castle_short'] = 1;
     }
     else {
       // black castled short
@@ -1088,7 +1190,7 @@ function vchess_handle_undo($gid, $uid) {
       $game['board'][62] = '';
       $game['board'][60] = 'bK';
       $game['board'][63] = 'bR';
-      $game['bcs'] = 1;
+      $game['black_may_castle_short'] = 1;
     }
   }
   elseif ($move == 'O-O-O') {
@@ -1098,7 +1200,7 @@ function vchess_handle_undo($gid, $uid) {
       $game['board'][3] = '';
       $game['board'][4] = 'wK';
       $game['board'][0] = 'wR';
-      $game['wcl'] = 1;
+      $game['white_may_castle_long'] = 1;
     }
     else {
       // black castled long
@@ -1106,7 +1208,7 @@ function vchess_handle_undo($gid, $uid) {
       $game['board'][59] = '';
       $game['board'][60] = 'bK';
       $game['board'][56] = 'bR';
-      $game['bcl'] = 1;
+      $game['black_may_castle_long'] = 1;
     }
   }
   else {
@@ -1131,13 +1233,13 @@ function vchess_handle_undo($gid, $uid) {
       if ($move[0] == 'R' || $move[0] == 'K') {
         if ($game['curplyr'] == 'b') {
           // white castling info
-          $game['wcs'] = $game['oscf'];
-          $game['wcl'] = $game['olcf'];
+          $game['white_may_castle_short'] = $game['old_castle_short'];
+          $game['white_may_castle_long'] = $game['old_castle_long'];
         }
         else {
           // black castling info
-          $game['bcs'] = $game['oscf'];
-          $game['bcl'] = $game['olcf'];
+          $game['black_may_castle_short'] = $game['old_castle_short'];
+          $game['black_may_castle_long'] = $game['old_castle_long'];
         }
       }
     }
@@ -1183,8 +1285,8 @@ function vchess_handle_undo($gid, $uid) {
   // Clear last move
   $game['lastmove'] = 'x';
   $game['lastkill'] = 'x';
-  $game['oscf'] = 'x';
-  $game['olcf'] = 'x';
+  $game['old_castle_short'] = 'x';
+  $game['old_castle_long'] = 'x';
 
   // Save game
   vchess_io_save_game($gid, $game);

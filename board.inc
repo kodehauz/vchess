@@ -674,7 +674,7 @@ class Board {
           else {
             $change += 1;
           }
-          if ($board->path_is_not_blocked($piece_pos + $change, $dest_pos, $change)) {
+          if ($this->path_is_not_blocked($piece_pos + $change, $dest_pos, $change)) {
             $reachable = TRUE;
           }
           break;
@@ -699,7 +699,7 @@ class Board {
               $change = 1;
             }
           }
-          if ($board->path_is_not_blocked($piece_pos + $change, $dest_pos, $change)) {
+          if ($this->path_is_not_blocked($piece_pos + $change, $dest_pos, $change)) {
             $reachable = TRUE;
           }
           break;
@@ -749,7 +749,7 @@ class Board {
               $change = 1;
             }
           }
-          if ($board->path_is_not_blocked($piece_pos + $change, $dest_pos, $change)) {
+          if ($this->path_is_not_blocked($piece_pos + $change, $dest_pos, $change)) {
             $reachable = TRUE;
           }
           break;
