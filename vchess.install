@@ -38,12 +38,14 @@ function vchess_schema() {
           'turn' => array(
               'description' => 'Whose turn it is to play, either "w" (white) or "b" (black)',
               'type' => 'enum',
+              'enum_items' => array('w', 'b'),
               'not null' => TRUE,
               'default' => 'w',
           ),
           'status' => array(
               'description' => 'Status of the game',
               'type' => 'enum',
+              'enum_items' => array('in progress', '1/2-1/2', '1-0', '0-1'),
               'not null' => TRUE,
               'default' => 'in progress',
           ),
@@ -103,6 +105,7 @@ function vchess_schema() {
           'color' => array(
               'description' => 'Move color',
               'type' => 'enum',
+              'enum_items' => array('w', 'b'),
               'not null' => TRUE,
           ),
           'move' => array(
@@ -115,7 +118,6 @@ function vchess_schema() {
               'description' => 'Exact date and time of the move',
               'type' => 'timestamp',
               'not null' => TRUE,
-              'default' => 'CURRENT_TIMESTAMP',
           ),
       ),
       'primary key' => array('gid', 'move_no', 'color'),
