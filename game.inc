@@ -691,17 +691,30 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
     $game['mhistory'][count($game['mhistory'])] = 'draw';
   }
   elseif ($move == 'O-O') {
-    // Short castling
-    if (!$game->may_castle_short($game->get_turn())) {
+    // Short castling - white
+    if ($turn == 'w' && $board->square_is_empty("f1") && $board->square_is_empty("g1")) {
+      if ($board->king_is_in_check('w')) {
+        return 'ERROR: You cannot escape check by castling!';
+      }
+      if ($board->square_is_under_attack('b', 'f1')) {
+        return 'ERROR: You cannot castle across check!';
+      }
+    
+      $board->move_piece("e1", "g1");  // White King
+      $board->move_piece("h1", "f1");  // Rook
+    
+      $game->white_may_not_castle();
+    }
+    // Short castling - black
+    if (!$game->may_castle_short($turn)) {
       return 'ERROR: You cannot castle short anymore!';
     }
     if ($turn == 'b' && $board->square_is_empty("f8") && $board->square_is_empty("g8")) {
       if ($board->king_is_in_check('b')) {
         return 'ERROR: You cannot escape check by castling!';
       }
-      if ($board->square_is_under_attack('w', 62) ||
-          $board->square_is_under_attack('w', 61)) {
-        return 'ERROR: Either king or rook would be under attack after short castling!';
+      if ($board->square_is_under_attack('w', 'f8')) {
+        return 'ERROR: You cannot castle across check!';
       }
       
       $board->move_piece("e8", "g8"); // Black king
@@ -709,68 +722,51 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
       
       $game->black_may_not_castle();
     }
-    if ($turn == 'w' && $board->square_is_empty("f1") && $board->square_is_empty("g1")) {
-      if ($board->king_is_in_check('w')) {
-        return 'ERROR: You cannot escape check by castling!';
-      }
-      if ($board->square_is_under_attack('b', 'f1') ||
-          $board->square_is_under_attack('b', 'g1')) {
-        return 'ERROR: Either king or rook would be under attack after short castling!';
-      }
-      
-      $board->move_piece("e1", "g1");  // White King
-      $board->move_piece("h1", "f1");  // Rook
-      
-      $game->white_may_not_castle();
-    }
-//     if ($may_castle_short != 9) {
-//       return 'ERROR: Cannot castle short because the way is blocked!';
-//     }
     $result = 'You castled short.';
     $move_handled = 1;
     $game->set_last_move('O-O');
   }
   elseif ($move == 'O-O-O') {
     // Long castling
-    if ($may_castle_long != 1 || $may_castle_short == 9) {
+    if (!$game->may_castle_long($turn)) {
       return 'ERROR: You cannot castle long anymore!';
     }
-    if ($game['turn'] == 'b' && $board[57] == '' && $board[58] == '' &&
-        $board[59] == '') {
+    if ($turn == 'b' 
+    && $board->square_is_empty("b8") 
+    && $board->square_is_empty("c8") 
+    && $board->square_is_empty("d8")) {
       if ($board->king_is_in_check('b')) {
         return 'ERROR: You cannot escape check by castling!';
       }
-      if ($board->square_is_under_attack('w', 58) ||
-          $board->square_is_under_attack('w', 59)) {
-        return 'ERROR: Either king or rook would be under attack after short castling!';
+      if ($board->square_is_under_attack('w', 'c8')
+      || $board->square_is_under_attack('w', 'd8')) {
+        return 'ERROR: You cannot castle across check!';
       }
-//       $may_castle_long = 9;
-//       $board[56] = '';
-//       $board[58] = 'bK';
-//       $board[59] = 'bR';
-//       $board[60] = '';
+
+      $board->move_piece("e8", "c8");  // Black King
+      $board->move_piece("a8", "d8");  // Rook
+      
+      $game->black_may_not_castle();
     }
-    if ($game['turn'] == 'w' && $board[1] == '' && $board[2] == '' &&
-        $board[3] == '') {
+    if ($turn == 'w' 
+    && $board->square_is_empty("b1") 
+    && $board->square_is_empty("c1") 
+    && $board->square_is_empty("d1")) {
       if ($board->king_is_in_check('w')) {
         return 'ERROR: You cannot escape check by castling!';
       }
-      if ($board->square_is_under_attack('b', 2) ||
-          $board->square_is_under_attack('b', 3)) {
-        return 'ERROR: Either king or rook would be under attack after short castling!';
+      if ($board->square_is_under_attack('b', 'c1')
+      || $board->square_is_under_attack('b', 'd1')    ) {
+        return 'ERROR: You cannot castle across check!';
       }
-//       $may_castle_long = 9;
-//       $board[0] = '';
-//       $board[2] = 'wK';
-//       $board[3] = 'wR';
-//       $board[4] = '';
+
     }
     if ($may_castle_long != 9) {
       return 'ERROR: Cannot castle long because the way is blocked!';
     }
     $result = 'You castled long.';
     $move_handled = 1;
-    $game['lastmove'] = 'O-O-O';
+    $game->set_last_move('O-O-O');
   }
   else {
     // Normal move: [PRNBQK][a-h][1-8][-:x][a-h][1-8][RNBQK]
@@ -1064,16 +1060,6 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
     //         $game['old_castle_long'] = $game['black_may_castle_long'];
     //       }
     //     }
-
-    // Update castling flags
-    if ($game->get_turn() == 'w') {
-      $game->set_white_may_castle_short($may_castle_short);
-      $game->set_white_may_castle_long($may_castle_long);
-    }
-    else {
-      $game->set_black_may_castle_short($may_castle_short);
-      $game->set_black_may_castle_long($may_castle_long);
-    }
 
     // Update move number and current player
     if ($game->get_turn() == 'w') {
