@@ -186,21 +186,9 @@ class Board {
    * 
    * No checking is done here as to the validity of the move
    */
-  function move_piece($source_bc, $dest_bc) {
-    $this->board[$dest_bc] = $this->board[$source_bc];
-    unset($this->board[$source_bc]);
-  }
-  
-  /**
-   * Check that a row or col coordinate is between 0 and 7
-   */
-  function _is_coord_ok($index) {
-  	$ok = false;  	
-  	if ($index >= 0 && $index <=7) {
-  		$ok = true;
-  	}
-  	
-  	return $ok;
+  function move_piece($source_coord, $dest_coord) {
+    $this->board[$dest_coord] = $this->board[$source_coord];
+    unset($this->board[$source_coord]);
   }
   
   /**

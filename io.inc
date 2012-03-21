@@ -146,7 +146,10 @@ function vchess_ioAbortGame($gid, $uid) {
 /**
  * Save a game move
  * 
- * @param unknown_type $move
+ * @param int $gid Game id
+ * @param int $move_no Number of move, e.g. 3
+ * @param string $turn Whose turn it is, either "w" or "b"
+ * @param string $move e.g. "Nb1-c3" or "Bc1xNf4"
  */
 function vchess_io_save_move($gid, $move_no, $turn, $move) {
   db_insert('vchess_moves')

@@ -6,6 +6,9 @@
  * Chess game logic to handle the board. 
  */
 
+define('MOVE', 'M');
+define('CAPTURE', 'C');
+
 /**
  * Return the array of adjacent squares (<=8).  Squares are in the format
  * of a [0..63] index.
@@ -845,6 +848,10 @@ function vchess_is_stalemate($player, $w_ep, $b_ep, Board $board /*line of en-pa
 
 /**
  * Verify move (full notation), execute it and modify game.
+ * 
+ * @param $gid Game id
+ * @param $uid User id of current player
+ * @param $move Current move
  */
 function vchess_handle_move($gid, $uid, $move, $comment) {
 //  global $acerror, $mail_from;
@@ -865,11 +872,6 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
   $result = 'undefined';
   $move_handled = FALSE;
 
-  // Check whether moving is okay and get some vars.
-//  $player_w = $game['white'];
-//  $player_b = $game['black'];
-//  $cur_move = $game['turn'];
-  
   if (!$game->is_players_move($uid)) {
     return 'It is not your turn!';
   }
@@ -1107,10 +1109,10 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
 
     // Get action
     if ($move[3] == '-') {
-      $action = 'M'; /* move */
+      $action = MOVE; /* move */
     }
     elseif ($move[3] == 'x') {
-      $action = 'A'; /* attack */
+      $action = CAPTURE; /* attack */
     }
     else {
       return 'ERROR: ' . $action . ' is unknown! Please use "-" for move and "x" for attack.';
@@ -1118,7 +1120,7 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
     // Replace - with x if this is meant to be en-passant.
     $dest_pos = vchess_coord2i($dest_coord);
     if ($piece_type == 'P' && (abs($piece_pos - $dest_pos) == 7 || abs($piece_pos - $dest_pos) == 9)) {
-      $action = 'A';
+      $action = CAPTURE;
       $history_move = str_replace('-', 'x', $history_move);
       $move = str_replace('-', 'x', $move);
     }
@@ -1143,21 +1145,21 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
       }
     }
     else {
-      if ($action == 'M' && !vchess_check_pawn_move($piece_coord, $dest_coord, $board)) {
+      if ($action == MOVE && !vchess_check_pawn_move($piece_coord, $dest_coord, $board)) {
         return 'ERROR: ' . $dest_coord . ' is not a legal advancing move of ' . $piece_name . ' at ' . $piece_coord . '!';
       }
-      elseif ($action == 'A' && !vchess_check_pawn_attacks($piece_coord, $dest_coord, $board)) {
+      elseif ($action == CAPTURE && !vchess_check_pawn_attacks($piece_coord, $dest_coord, $board)) {
         return 'ERROR: ' . $dest_coord . ' is not a legal capturing move of ' . $piece_name . ' at ' . $piece_coord . '!';
       }
     }
 
-    $en_passant_okay = 0;
+    $en_passant_okay = FALSE;
     // Check action
     $coord = vchess_i2coord($dest_pos);
-    if ($action == 'M' && !$board->square_is_empty($coord)) {
+    if ($action == MOVE && !$board->square_is_empty($coord)) {
       return 'ERROR: ' . $dest_coord . ' is occupied!';
     }
-    if ($action == 'A' && $board->square_is_empty($dest_coord)) {
+    if ($action == CAPTURE && $board->square_is_empty($dest_coord)) {
       // En passant of pawn? 
       if ($piece_type == 'P') {
         if ($game['turn'] == 'w') {
@@ -1182,7 +1184,7 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
         return 'ERROR: ' . $dest_coord . ' is empty!';
       }
     }
-    if ($action == 'A' && $board->get_piece($dest_coord)->get_color() == $game->get_turn()) {
+    if ($action == CAPTURE && $board->get_piece($dest_coord)->get_color() == $game->get_turn()) {
       return 'ERROR: You cannot attack own chessman at ' . $dest_coord . '!';
     }
 
@@ -1289,8 +1291,7 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
         $pawn_upg = $move[strlen($move) -1];
         if ($pawn_upg == '?') {
           $pawn_upg = 'Q';
-          $history_move = sprintf('%sQ',
-          $history_move);
+          $history_move = sprintf('%sQ', $history_move);
         }
         $board[$dest_pos] = $game->get_turn() . $pawn_upg;
         $result = sprintf('%s... promotion to %s!',
@@ -1308,8 +1309,13 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
       // If this is check mate finish the game otherwise
       // add '+' to the move. 
       if (vchess_is_checkmate($cur_opp, $board)) {
-        $game->set_curstate($game->get_turn());
-        $mate_type = 1;
+        if ($game->get_turn() == 'w') {
+          $game->set_curstate(STATUS_WHITE_WIN);
+        }
+        else {
+          $game->set_curstate(STATUS_BLACK_WIN);          
+        }
+        $mate_type = END_TYPE_CHECKMATE;
       }
       else {
         $result = $result . '... CHECK!';
@@ -1318,7 +1324,7 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
     }
     elseif (vchess_is_stalemate($cur_opp, $game->get_w2spm(), $game->get_b2spm(), $board)) {
       $game->set_curstate('-');
-      $mate_type = 2;
+      $mate_type = END_TYPE_STALEMATE;
     }
 
     // Backup castling info if rook or king has moved
@@ -1356,33 +1362,29 @@ function vchess_handle_move($gid, $uid, $move, $comment) {
 //    $game['mhistory'][42] = $history_move; // Hugh hardcoding 42!
 
     // If other player can't move anymore end the game. 
-    if ($mate_type > 0) {
-      if ($mate_type == 1) {
-        $mate_name = 'mate';
-        $result = $result . '... CHECKMATE!';
-      }
-      else {
-        $mate_name = 'stalemate';
-        $result = $result . '... STALEMATE!';
-      }
- //     if ($game['curplyr'] == 'b') {
-//        $game['curmove']++;
-      //}
-//      $game['mhistory'][count($game['mhistory'])] = $mate_name;
+    if ($mate_type == END_TYPE_CHECKMATE) {
+      $mate_name = 'mate';
+      $result = $result . '... CHECKMATE!';
     }
+    elseif ($mate_type == END_TYPE_STALEMATE) {
+      $mate_name = 'stalemate';
+      $result = $result . '... STALEMATE!';
+    }
+
+    
+// $game['mhistory'][count($game['mhistory'])] = $mate_name;
   }
 
   // Save move
   vchess_io_save_move($gid, $game->get_move_no(), $game->get_turn(), $move);
   
   if ($move_handled || $draw_handled) {
-//    kpr($move_handled);
     // If game is over update user stats (includes resignation).
-    $game->set_curstate("?"); // Hugh default
-    if ($game->get_curstate() != '?' && $game->get_curstate() != 'D') {
-      vchess_update_stats($game->get_player('w'), $game->get_player('b'), $game['curstate']);
+//    $game->set_curstate("?"); // Hugh default
+//     if ($game->get_curstate() != '?' && $game->get_curstate() != 'D') {
+//       vchess_update_stats($game->get_white_player(), $game->get_black_player(), $game->get_curstate());
 //      drupal_set_message('game is over');
-    }
+//     }
 
     // Set next player
     if ($game->get_turn() == 'b') {

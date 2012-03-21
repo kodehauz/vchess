@@ -5,8 +5,14 @@
  * Functions concerning a game
  */
 
+define('STATUS_WHITE_WIN', '1-0');
+define('STATUS_BLACK_WIN', '0-1');
+define('STATUS_IN_PROGRESS', 'in progress');
+define('END_TYPE_STALEMATE', 'stalemate');
+define('END_TYPE_CHECKMATE', 'checkmate');
+
 class Game {
-	
+  
   protected $game = array();
   
   protected $scoresheet;
@@ -269,12 +275,14 @@ class Game {
   	$result = db_query($sql);
   	$row = $result->fetchAssoc();
   
-  	if ($row['status'] == 'in progress') {
-  		return FALSE;
+  	if ($row['status'] == STATUS_IN_PROGRESS) {
+  		$game_over = FALSE;
   	}
   	else {
-  		return TRUE;
+  		$game_over = TRUE;
   	}
+  	
+  	return $game_over;
   }
   
   /**
@@ -310,10 +318,10 @@ class Game {
   	vchess_update_stats_win($winner, $resigning_player);
   
   	if ($this->get_player_color($uid) == 'w') {
-  		$game_status = '0-1';
+  		$game_status = STATUS_BLACK_WIN;
   	}
   	else {
-  		$game_status = '1-0';
+  		$game_status = STATUS_WHITE_WIN;
   	}
   	$this->save_status($game_status);
   

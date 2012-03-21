@@ -10,12 +10,17 @@ class Piece {
   public $type;  // R, N, B, Q, K or a blank 
   public $color; // w or b
 
+  /**
+   * Set the type, one of R, N, B, Q, K or a blank
+   *  
+   * @param string $type
+   */
   function set_type($type) {
 	$this->type = strtoupper($type);
   }
 	
   /**
-   * Type is R, N, B, Q, K or a blank
+   * Get the type one of R, N, B, Q, K or a blank
    *  
    * @return string
    */
@@ -25,6 +30,8 @@ class Piece {
 	  
   /**
    * Get the piece color.  Color is w or b
+   * 
+   * @return string
    */
   function get_color() {
     return $this->color;
