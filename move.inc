@@ -86,7 +86,7 @@ class Move {
    * Get the source piece from a given move
    * e.g. "Ra1-a4" gives "R"
    */
-  function source_piece() {
+  function source_piece_type() {
     return $this->move[0];
   }
   
@@ -99,29 +99,16 @@ class Move {
    * "Qd1xBd7" returns "B"
    * "Ra1-a4" returns ""
    */
-  function dest_piece() {
+  function dest_piece_type() {
     if ($this->move[3] == "x") {
-      $dest_piece = $this->move[4];
+      $dest_piece_type = $this->move[4];
     }
     else {
-      $dest_piece = "";
+      $dest_piece_type = "";
     }
   
-    return $dest_piece;
+    return $dest_piece_type;
   }
-}
-
-
-
-
-
-/**
- * Get the source file (a..h)
- * 
- * @param move e.g. "Ra1-a4" or "Ra1xNa7" 
- */
-function vchess_move_source_file($move) {
-  return $move[1];
 }
 
 /**
@@ -398,73 +385,103 @@ function vchess_short_to_long_move($player, $move, $board) {
  * e.g. Pe2-e4 -> e4
  *      Re1xNa6 -> Rxa6
  *
- * XXX Use autocomplete for this in a pretty messy way.
- * If an error occurs the move is kept unchanged (no error is generated).
- *
+ * When two (or more) identical pieces can move to the same square, 
+ * the moving piece is uniquely identified by specifying the piece's letter, 
+ * followed by (in descending order of preference):
+ * - the file of departure (if they differ); or
+ * - the rank of departure (if the files are the same but the ranks differ); 
+ * - or both the rank and file (if neither alone is sufficient to identify the piece—which occurs only in rare cases where one or more pawns have promoted, resulting 
+ *   in a player having three or more identical pieces able to reach the same square).
+ *   
+ * For example, with knights on g1 and d2, either of which might move to f3, 
+ * the move is specified as Ngf3 or Ndf3, as appropriate. With knights on g5 and g1,
+ * the moves are N5f3 or N1f3. As above, an x can be inserted to indicate a capture, 
+ * for example: N5xf3.
+ * 
+ * Occasionally, it may be possible to disambiguate in two different ways - 
+ * for example, two rooks on d3 and h5, either one of which may move to d5. 
+ * If the rook on d3 moves to d5, it is possible to disambiguate with either Rdd5 
+ * or R3d5. In cases such as these the file takes precedence over the rank, 
+ * so Rdd5 is correct.
+ * 
+ * See http://en.wikipedia.org/wiki/Algebraic_notation_(chess) 
  */
-function vchess_long_to_short_move($player, $long_move_string, $board) {
+function vchess_long_to_short_move($player, $long_move_string, Board $board) {
   // If all else fails, just return the long move
   $short_move_string = $long_move_string;
   
   $move = new Move();
   $move->initialise($long_move_string);
 
-  $source_piece = $move->source_piece();
-  $dest_piece = $move->dest_piece();
+  $source_piece_type = $move->source_piece_type();
+  $dest_piece_type = $move->dest_piece_type();
   
   $source_coord = $move->source_coord();
   $dest_coord = $move->dest_coord();
 
-  switch ($source_piece) {
-    case 'P':
-      // Always skip P. For attacks skip source digit
-      // and for moves skip source pos and "-"
-      if ($move->type() == '-') {
-        $short_move_string = substr($long_move_string, 4);
-      }
-      else {
-        $short_move_string = $long_move_string[1] . "x" . $dest_coord;
-      }
-      break;
-    case 'B':
-    case 'Q':
-    case 'K':
-      // Since bishop always travels on its own color and the queen and king 
-      // are both unique, these pieces always have unambiguous moves
-      // @todo: In fact, the only piece which is unique is the king, since, with pawn promotion
-      // you can have 2 queens, 2 white bishops   
-      if ($move->type() == "x") {
-        $short_move_string = $source_piece . "x" . $move->dest_coord();
-      }
-      else {
-        $short_move_string = $source_piece . $move->dest_coord();
-      }
-      break;
-    default: 
-      // Try to remove the source position and check whether it
-      // is a non-ambigious move. If it is not add one of the components
-      // and check again.
-      //     if ($long_move_string[3] == '-') {
-      //       $dest = substr($long_move_string, 4);
-      //     }
-      //     elseif ($long_move_string[3] == 'x') {
-      //       $dest = substr($long_move_string, 3);
-      //     }
-      
-      //     $short_move_string = sprintf('%s%s', $long_move_string[0], $dest);
-      //     if (vchess_short_to_long_move($player, $short_move_string, $board) == NULL) {
-      //       // Add source column [a-h]
-      //       $short_move_string = sprintf('%s%s%s', $long_move_string[0], $long_move_string[1], $dest);
-      //       if (vchess_short_to_long_move($player, $short_move_string, $board) == NULL) {
-      //         // Add source row [1-8]
-      //         $short_move_string = sprintf('%s%s%s', $long_move_string[0], $long_move_string[2], $dest);
-      //         if (vchess_short_to_long_move($player, $short_move_string, $board) == NULL) {
-      //           $short_move_string = $long_move_string; // give up
-      //         }
-      //       }
-      //     }
-      
+  if ($source_piece_type == 'P') {
+    // P moves are always unambiguous. For attacks skip source digit
+    // and for moves skip source pos and "-"
+    if ($move->type() == '-') {
+      // e.g. e4
+      $short_move_string = $dest_coord;
+    }
+    else {
+      // e.g. cxd4
+      $short_move_string = $long_move_string[1] . "x" . $dest_coord;
+    }
   }
+  else {
+    // First find out how where all possible pieces of this type are
+    $pieces_coords = $board->get_pieces_coords($player, $source_piece_type);
+
+    // If there is only 1 piece of this type, then move is unambiguous
+//     if (count($pieces_coords) == 1) {
+    // For now, just treat all moves as unambiguous
+      if ($move->type() == '-') {
+        // e.g. Ne4
+        $short_move_string = $source_piece_type . $dest_coord;
+      }
+      else {
+        // e.g. Nxd4
+        $short_move_string = $source_piece_type . "x" . $dest_coord;
+      }  
+    }
+//     else {
+      // Find how many pieces of this type may move to the dest square
+//       $eligible_coords = array();
+//       foreach ($pieces_coords as $piece_coord) {
+//         if ($board->piece_may_move_to_square($piece_coord, $dest_coord)) {
+//           $eligible_coords[] = $piece_coord;
+//         }
+//       }
+      
+//       if (count($eligible_coords) == 1) {
+//         // Only 1 piece of this type can reach the square, so unambiguous
+//         if ($move->type() == '-') {
+//           // e.g. Ne4
+//           $short_move_string = $source_piece_type . $dest_coord;
+//         }
+//         else {
+//           // e.g. Nxd4
+//           $short_move_string = $source_piece_type . "x" . $dest_coord;
+//         }
+//       }
+//       else {
+//         // First get an array with just the coords of the piece(s) which
+//         // can also get to the square.  Unless there are 3 pieces of the same
+//         // type of the board, this will just be the square of the other piece.
+//         $source_coords = array($source_coord);
+//         $trouble_coords = array_diff($eligible_coords, $source_coords);
+        
+//         // First try to disambiguate by looking at the file, e.g. Ngf3
+// //        $source_file = 
+//         foreach ($trouble_coords as $trouble_coord) {
+          
+//         } 
+//       }
+//     } 
+//   }
 
   return $short_move_string;
 }

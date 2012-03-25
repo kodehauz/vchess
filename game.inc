@@ -618,18 +618,18 @@ class Game {
     echo '$may_castle_long  <BR>';*/
   
     // Allow two-step of king to indicate castling.
-    if ($this->get_turn() == 'w' && $move == 'Ke1-g1') {
-      $move = 'O-O';
-    }
-    elseif ($this->get_turn() == 'w' && $move == 'Ke1-c1') {
-      $move = 'O-O-O';
-    }
-    elseif ($this->get_turn() == 'b' && $move == 'Ke8-g8') {
-      $move = 'O-O';
-    }
-    elseif ($this->get_turn() == 'b' && $move == 'Ke8-c8') {
-      $move = 'O-O-O';
-    }
+//     if ($this->get_turn() == 'w' && $move == 'Ke1-g1') {
+//       $move = 'O-O';
+//     }
+//     elseif ($this->get_turn() == 'w' && $move == 'Ke1-c1') {
+//       $move = 'O-O-O';
+//     }
+//     elseif ($this->get_turn() == 'b' && $move == 'Ke8-g8') {
+//       $move = 'O-O';
+//     }
+//     elseif ($this->get_turn() == 'b' && $move == 'Ke8-c8') {
+//       $move = 'O-O-O';
+//     }
   
     // Accept "---" although it is now called resign.
     //  if ($move == '---' || $move == 'resign') {
@@ -678,12 +678,11 @@ class Game {
       }
       $game['mhistory'][count($game['mhistory'])] = 'draw';
     }
-    elseif ($move == 'O-O') {
+    elseif ($move == 'Ke1-g1' && $turn == 'w') {
       if (!$this->may_castle_short($turn)) {
         return ERROR_CANNOT_CASTLE_SHORT;
       }
       // Short castling - white
-      if ($turn == 'w') {
         if (!$board->square_is_empty("f1") || !$board->square_is_empty("g1")) {
           return ERROR_CASTLING_SQUARES_BLOCKED;
         }
@@ -698,69 +697,77 @@ class Game {
         $board->move_piece("h1", "f1");  // Rook
   
         $this->white_may_not_castle();
+        $move_handled = TRUE;
+        $this->set_last_move('Ke1-g1');
+    }
+    elseif ($move == 'Ke8-g8' && $turn == 'b') {
+      if (!$this->may_castle_short($turn)) {
+        return ERROR_CANNOT_CASTLE_SHORT;
       }
       // Short castling - black
-      if ($turn == 'b') {
-        if (!$board->square_is_empty("f8") || !$board->square_is_empty("g8")) {
-          return ERROR_CASTLING_SQUARES_BLOCKED;
-        }
-        if ($board->king_is_in_check('b')) {
-          return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
-        }
-        if ($board->square_is_under_attack('w', 'f8')) {
-          return ERROR_CANNOT_CASTLE_ACROSS_CHECK;
-        }
-  
-        $board->move_piece("e8", "g8"); // Black king
-        $board->move_piece("h8", "f8"); // Black rook
-  
-        $this->black_may_not_castle();
+      if (!$board->square_is_empty("f8") || !$board->square_is_empty("g8")) {
+        return ERROR_CASTLING_SQUARES_BLOCKED;
       }
-      $result = 'You castled short.';
-      $move_handled = 1;
-      $this->set_last_move('O-O');
+      if ($board->king_is_in_check('b')) {
+        return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
+      }
+      if ($board->square_is_under_attack('w', 'f8')) {
+        return ERROR_CANNOT_CASTLE_ACROSS_CHECK;
+      }
+  
+      $board->move_piece("e8", "g8"); // Black king
+      $board->move_piece("h8", "f8"); // Black rook
+  
+      $this->black_may_not_castle();
+      $result .= 'You castled short.';
+      $this->set_last_move('Ke8-g8');
+      $move_handled = TRUE;
     }
-    elseif ($move == 'O-O-O') {
-      // Long castling
+    elseif ($move == 'Ke1-c1' && $turn == 'w') {
+      // Long castling - white
       if (!$this->may_castle_long($turn)) {
         return ERROR_CANNOT_CASTLE_LONG;
       }
-      if ($turn == 'b') {
-        if (!$board->square_is_empty("b8") 
-        || !$board->square_is_empty("c8")
-        || !$board->square_is_empty("d8")) {
+      if (!$board->square_is_empty("b1")
+            || !$board->square_is_empty("c1")
+            || !$board->square_is_empty("d1")) {
           return ERROR_CASTLING_SQUARES_BLOCKED;
-        }
-        if ($board->king_is_in_check('b')) {
-          return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
-        }
-        if ($board->square_is_under_attack('w', 'c8')
-            || $board->square_is_under_attack('w', 'd8')) {
-          return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
-        }
-  
-        $board->move_piece("e8", "c8");  // Black King
-        $board->move_piece("a8", "d8");  // Rook
-  
-        $this->black_may_not_castle();
       }
-      if ($turn == 'w') {
-        if (!$board->square_is_empty("b1")
-        || !$board->square_is_empty("c1")
-        || !$board->square_is_empty("d1")) {
-          return ERROR_CASTLING_SQUARES_BLOCKED;
-        }
-        if ($board->king_is_in_check('w')) {
+      if ($board->king_is_in_check('w')) {
           return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
-        }
-        if ($board->square_is_under_attack('b', 'c1')
-            || $board->square_is_under_attack('b', 'd1')    ) {
-          return ERROR_CANNOT_CASTLE_ACROSS_CHECK;
-        }
       }
+      if ($board->square_is_under_attack('b', 'c1')
+          || $board->square_is_under_attack('b', 'd1')    ) {
+        return ERROR_CANNOT_CASTLE_ACROSS_CHECK;
+      }
+      $move_handled = TRUE;
+      $this->set_last_move('Ke1-c1');
+    }
+    elseif ($move == 'Ke8-c8' && $turn == 'b') {
+      if (!$this->may_castle_long($turn)) {
+        return ERROR_CANNOT_CASTLE_LONG;
+      }
+      if (!$board->square_is_empty("b8")
+      || !$board->square_is_empty("c8")
+      || !$board->square_is_empty("d8")) {
+        return ERROR_CASTLING_SQUARES_BLOCKED;
+      }
+      if ($board->king_is_in_check('b')) {
+        return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
+      }
+      if ($board->square_is_under_attack('w', 'c8')
+      || $board->square_is_under_attack('w', 'd8')) {
+        return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
+      }
+      
+      $board->move_piece("e8", "c8");  // Black King
+      $board->move_piece("a8", "d8");  // Rook
+      
+      $this->black_may_not_castle();
+
       $result = 'You castled long.';
-      $move_handled = 1;
-      $this->set_last_move('O-O-O');
+      $move_handled = TRUE;
+      $this->set_last_move('Ke8-c8');
     }
     else {
       // Normal move: [PRNBQK][a-h][1-8][-:x][a-h][1-8][RNBQK]
@@ -857,7 +864,7 @@ class Game {
         }
       }
       else {
-        if ($action == MOVE && !$board->pawn_may_move_to_square($piece_coord, $dest_coord)) {
+        if ($action == MOVE && !$board->piece_may_move_to_square($piece_coord, $dest_coord)) {
           return 'ERROR: ' . $dest_coord . ' is not a legal advancing move of ' . $piece_name . ' at ' . $piece_coord . '!';
         }
         elseif ($action == CAPTURE && !$board->check_pawn_attacks($piece_coord, $dest_coord)) {
@@ -993,9 +1000,6 @@ class Game {
         }
       }
   
-      $result = 'Your last move: ' . vchess_long_to_short_move($this->get_player_color($uid),
-          str_replace('?', '', $move), $board);
-  
       // If pawn reached last line promote it
       if ($piece_type == 'P') {
         if (($this->get_turn() == 'w' && $dest_pos >= 56) ||
@@ -1013,6 +1017,9 @@ class Game {
   
       $move_handled = TRUE;
     }
+    
+    $result = 'Your last move: ' . vchess_long_to_short_move($this->get_player_color($uid),
+        str_replace('?', '', $move), $board);
   
     // If move was executed update game state.
     if ($move_handled) {

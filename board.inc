@@ -113,6 +113,8 @@ class Board {
    * Get an array of coords for a given color and piece type.
    * e.g. array("a1", "h1") for white rooks
    * 
+   * This function is used for things like checking that the short move 
+   * is unique (e.g. Nbc3 rather than just Nc3).  
    */
   function get_pieces_coords($color, $search_type) {
     $pieces_coords = array();
@@ -606,7 +608,7 @@ class Board {
         $piece = $this->get_piece($coord);
         $piece_type = $piece->get_type();
         if ($piece->get_color() == $player) {
-          if (($piece_type == 'P' && $board->pawn_may_move_to_square($square, $pos))
+          if (($piece_type == 'P' && $board->piece_may_move_to_square($square, $pos))
               || ($piece_type != 'P' && $piece_type != 'K' && $this->square_is_reachable($piece_type, $square, $pos))) {
             //           $board[$pos] = $board[$square];
             //           $old = $board[$square];
@@ -846,6 +848,27 @@ class Board {
   }
   
   /**
+   * Check whether a given piece may legally move to the given square. 
+   */
+  function piece_may_move_to_square($piece_coord, $dest_coord) {
+    $move_ok = FALSE;
+    
+    $piece = $this->get_piece($piece_coord);
+    switch ($piece->get_type()) {
+      case 'P':
+        $move_ok = $this->_pawn_may_move_to_square($piece_coord, $dest_coord);
+        break;
+      case 'K':
+        $move_ok = $this->_king_may_move_to_square($piece_coord, $dest_coord);
+        break;
+      default:
+        break;
+    }
+    
+    return $move_ok;
+  }
+  
+  /**
    * Check whether pawn at $piece_coord may move to $dest_coord.
    * First move may be two squares instead of just one.
    *
@@ -854,7 +877,7 @@ class Board {
    *   FALSE if the destination square is occupied or if a square
    *     on the way is occupied for the first 2-square move
    */
-  function pawn_may_move_to_square($piece_coord, $dest_coord) {
+  function _pawn_may_move_to_square($piece_coord, $dest_coord) {
     $move_ok = FALSE;
   
     if ($this->square_is_empty($dest_coord)) {

@@ -59,7 +59,7 @@ class Scoresheet {
 	/**
 	 * Get the white move of a particular number
 	 * 
-	 * @param unknown_type $move_no
+	 * @param int $move_no
 	 */
 	function get_white_move($move_no) {
       return $this->_get_move($move_no, "w");
@@ -68,7 +68,7 @@ class Scoresheet {
 	/**
 	 * Get the black move of a particular number
 	 * 
-	 * @param unknown_type $move_no
+	 * @param int $move_no
 	 */
 	function get_black_move($move_no) {
 	  return $this->_get_move($move_no, "b");

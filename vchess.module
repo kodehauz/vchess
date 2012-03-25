@@ -18,8 +18,8 @@
   require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/scoresheet.inc';
   require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/piece.inc';
   require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/board.inc';
-  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/move.inc';  
-
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/move.inc';
+  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/coord.inc';
   
   define('HOME_ROOT', "http://localhost/");
   define('BASE_DIR', "chess_drupal_7/");
