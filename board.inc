@@ -341,7 +341,7 @@ class Board {
               if ($this->player_on_square($pos) == $player) {
                 continue;
               }
-              if (vchess_square_is_under_attack($opp, $pos, $board)) {
+              if ($this->square_is_under_attack($opp, $pos)) {
                 continue;
               }
               // Special case: if square is not actively under
@@ -524,7 +524,7 @@ class Board {
       }
       // If this adjacent square is under attack, then we cannot
       // move the king there
-      if (vchess_square_is_under_attack($opp, $dest_pos, $board)) {
+      if ($this->square_is_under_attack($opp, $dest_pos)) {
         continue;
       }
       //    $board[$king_pos] = $contents;
@@ -560,14 +560,14 @@ class Board {
         $piece_type = $this->get_piece($square_coord)->get_type();
         if (($piece_type == 'P' && $this->check_pawn_attacks($square_coord, $attacker_coords[0]))
             || ($piece_type != 'P' && $piece_type != 'K' && $this->square_is_reachable($piece_type, $square_coord, $attacker_coords[0]))
-            || ($piece_type == 'K' && $this->square_is_reachable($piece_type, $square_coord, $attacker_coords[0], $board) && !vchess_square_is_under_attack($opp, $attacker_coords[0]))) {
+            || ($piece_type == 'K' && $this->square_is_reachable($piece_type, $square_coord, $attacker_coords[0], $board) && !$this->square_is_under_attack($opp, $attacker_coords[0]))) {
           // DEBUG: echo 'candidate: $square ';
           $can_kill_attacker = FALSE;
           //           $contents_def = $board[$square];
           //           $contents_atk = $board[$dest_pos];
           //           $board[$dest_pos] = $board[$square];
           //           $board[$square] = '';
-          if (!vchess_square_is_under_attack($opp, $king_coord, $board)) {
+          if (!$this->square_is_under_attack($opp, $king_coord)) {
             $can_kill_attacker = TRUE;
           }
           //           $board[$square] = $contents_def;

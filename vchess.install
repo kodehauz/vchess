@@ -22,6 +22,12 @@
  *   - current grade
  *   - etc.
  *   
+ * N.B. There are a couple of problems with the enum and timestamp not
+ * currently being supported in core.  The patch solution is:
+ * - http://drupal.org/node/1464354
+ * - http://drupal.org/node/1466122
+ * or raise an issue in vchess issue queue and I will try harder to
+ * get these things into core for you!!
  */
 function vchess_schema() {
   
@@ -37,14 +43,14 @@ function vchess_schema() {
           ),
           'turn' => array(
               'description' => 'Whose turn it is to play, either "w" (white) or "b" (black)',
-              'type' => 'enum',
+              'type' => 'enum',  // See http://drupal.org/node/1464354 to get this working, or raise an issue on vchess!
               'enum_items' => array('w', 'b'),
               'not null' => TRUE,
               'default' => 'w',
           ),
           'status' => array(
               'description' => 'Status of the game',
-              'type' => 'enum',
+              'type' => 'enum',  // See http://drupal.org/node/1464354 to get this working, or raise an issue on vchess!
               'enum_items' => array('in progress', '1/2-1/2', '1-0', '0-1'),
               'not null' => TRUE,
               'default' => 'in progress',
@@ -116,7 +122,7 @@ function vchess_schema() {
           ),
           'timestamp' => array(
               'description' => 'Exact date and time of the move',
-              'type' => 'timestamp',
+              'type' => 'timestamp',  // See http://drupal.org/node/1466122 or raise an issue on vchess!
               'not null' => TRUE,
           ),
       ),

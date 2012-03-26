@@ -419,7 +419,15 @@ function vchess_long_to_short_move($player, $long_move_string, Board $board) {
   $source_coord = $move->source_coord();
   $dest_coord = $move->dest_coord();
 
-  if ($source_piece_type == 'P') {
+  // Castling short
+  if ($long_move_string == "Ke1-g1" || $long_move_string == "Ke8-g8") {
+    $short_move_string = "O-O";
+  }
+  // Castling long
+  elseif ($long_move_string == "Ke1-c1" || $long_move_string == "Ke8-c8") {
+    $short_move_string = "O-O-O";
+  }
+  elseif ($source_piece_type == 'P') {
     // P moves are always unambiguous. For attacks skip source digit
     // and for moves skip source pos and "-"
     if ($move->type() == '-') {
