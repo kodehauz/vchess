@@ -571,7 +571,7 @@ class Game {
    * @param int $uid User id of current player
    * @param $move Current move
    */
-  function handle_move($uid, $move, $comment) {
+  function handle_move($uid, $move_string, $comment) {
     //  global $acerror, $mail_from;
   
 //     $game = new Game();
@@ -579,6 +579,9 @@ class Game {
   
     $mate_type = "Hugh was here setting a default";
   
+    $move = new Move();
+    $move->initialise($move_string);
+    
     // w2spm = white 2 square piece move?
     // b2spm = black 2 square piece move?
     //  $game['w2spm'] = ""; // Hugh - added initialisation
@@ -586,7 +589,7 @@ class Game {
   
     $board = $this->get_board();
   
-    $move = trim($move);
+    $move_string = trim($move_string);
     $result = 'undefined';
     $move_handled = FALSE;
   
@@ -613,37 +616,13 @@ class Game {
     $may_castle_short = $this->may_castle_short($turn);
     $may_castle_long = $this->may_castle_long($turn);
   
-    /* DEBUG echo 'HANDLE: w=$game['white'],b=$game['black'],c=$game['turn'],';
-     echo 'm=$cur_move,may_castle=$may_castle_short,';
-    echo '$may_castle_long  <BR>';*/
-  
-    // Allow two-step of king to indicate castling.
-//     if ($this->get_turn() == 'w' && $move == 'Ke1-g1') {
-//       $move = 'O-O';
-//     }
-//     elseif ($this->get_turn() == 'w' && $move == 'Ke1-c1') {
-//       $move = 'O-O-O';
-//     }
-//     elseif ($this->get_turn() == 'b' && $move == 'Ke8-g8') {
-//       $move = 'O-O';
-//     }
-//     elseif ($this->get_turn() == 'b' && $move == 'Ke8-c8') {
-//       $move = 'O-O-O';
-//     }
-  
     // Accept "---" although it is now called resign.
-    //  if ($move == '---' || $move == 'resign') {
-    //    $move = 'resigned';
+    //  if ($move_string == '---' || $move_string == 'resign') {
+    //    $move_string = 'resigned';
     //  }
   
     // Remember move for history
-    $history_move = $move;
-  
-    // Clear last move
-    //  $game['lastmove'] = 'x';
-    //  $game['lastkill'] = 'x';
-    //  $game['old_castle_short'] = 'x';
-    //  $game['old_castle_long'] = 'x';
+//     $history_move = $move_string;
   
     // HANDLE MOVES:
     // resign                            resign
@@ -653,21 +632,21 @@ class Game {
     // accept_draw                       accept the draw
     // refuse_draw                       refuse the draw
     // [PRNBQK][a-h][1-8][-:x][a-h][1-8] unshortened move
-    if ($move == 'draw?' && $this->get_curstate() == '?') {
+    if ($move_string == 'draw?' && $this->get_curstate() == '?') {
       // Offer draw
       $this->set_curstate('D');
       $result = 'You have offered a draw.';
       $draw_handled = 1;
       $game['lastmove'] = 'DrawOffered';
     }
-    elseif ($move == 'refuse_draw' && $this->get_curstate() == 'D') {
+    elseif ($move_string == 'refuse_draw' && $this->get_curstate() == 'D') {
       // Refuse draw
       $this->set_curstate('?');
       $draw_handled = 1;
       $result = 'You refused the draw.';
       $game['lastmove'] = 'DrawRefused';
     }
-    elseif ($move == 'accept_draw' && $this->get_curstate() == 'D') {
+    elseif ($move_string == 'accept_draw' && $this->get_curstate() == 'D') {
       // Accept draw
       $this->set_curstate('-');
       $draw_handled = 1;
@@ -678,7 +657,7 @@ class Game {
       }
       $game['mhistory'][count($game['mhistory'])] = 'draw';
     }
-    elseif ($move == 'Ke1-g1' && $turn == 'w') {
+    elseif ($move_string == 'Ke1-g1' && $turn == 'w') {
       if (!$this->may_castle_short($turn)) {
         return ERROR_CANNOT_CASTLE_SHORT;
       }
@@ -700,7 +679,7 @@ class Game {
         $move_handled = TRUE;
         $this->set_last_move('Ke1-g1');
     }
-    elseif ($move == 'Ke8-g8' && $turn == 'b') {
+    elseif ($move_string == 'Ke8-g8' && $turn == 'b') {
       if (!$this->may_castle_short($turn)) {
         return ERROR_CANNOT_CASTLE_SHORT;
       }
@@ -723,7 +702,7 @@ class Game {
       $this->set_last_move('Ke8-g8');
       $move_handled = TRUE;
     }
-    elseif ($move == 'Ke1-c1' && $turn == 'w') {
+    elseif ($move_string == 'Ke1-c1' && $turn == 'w') {
       // Long castling - white
       if (!$this->may_castle_long($turn)) {
         return ERROR_CANNOT_CASTLE_LONG;
@@ -743,7 +722,8 @@ class Game {
       $move_handled = TRUE;
       $this->set_last_move('Ke1-c1');
     }
-    elseif ($move == 'Ke8-c8' && $turn == 'b') {
+    elseif ($move_string == 'Ke8-c8' && $turn == 'b') {
+      // Long castling - black
       if (!$this->may_castle_long($turn)) {
         return ERROR_CANNOT_CASTLE_LONG;
       }
@@ -773,20 +753,20 @@ class Game {
       // Normal move: [PRNBQK][a-h][1-8][-:x][a-h][1-8][RNBQK]
   
       // Autocomplete short notation (or keep full)
-      $acmove = vchess_short_to_long_move($this->get_turn(), $move, $board);
-      if ($acmove == NULL) {
-        return 'ERROR: autocomplete: ' . $acerror;
-      }
-      else {
-        $move = $acmove;
-      }
+//       $acmove = $move->get_algebraic($this->get_turn(), $board);
+//       if ($acmove == NULL) {
+//         return 'ERROR: autocomplete: ' . $acerror;
+//       }
+//       else {
+//         $move = $acmove;
+//       }
   
       // A final capital letter may only be N,B,R,Q for the
       // appropiate chessman.
       // FIXME it is not checked whether multiple promotion identifiers are
       // there. In that case last one is used and move executed properly
       // but the history browsing will be broken.
-      $c = $move[strlen($move) -1];
+      $c = $move_string[strlen($move_string) -1];
       if ($c >= 'A' && $c <= 'Z' &&
           $c != 'N' && $c != 'B' && $c != 'R' && $c != 'Q') {
         return 'ERROR: only N (knight),B (bishop),R (rook) and Q (queen) are valid chessman';
@@ -794,7 +774,7 @@ class Game {
   
       // Validate piece and position.
       // Move is e.g. "Nb1-c3"
-      $piece_type = $move[0];
+      $piece_type = $move_string[0];
       $piece = new Piece();
       $piece->set_type($piece_type);
       $piece->set_color($this->get_turn());
@@ -802,8 +782,9 @@ class Game {
       //     if ($piece_name == BLANK) {
       //       return 'ERROR: Piece ' . $piece_type . ' is unknown!';
       //     }
-      $piece_coord = $move[1] . $move[2];
-      $piece_pos = vchess_coord2i($piece_coord);
+      $piece_coord = new Square();
+      $piece_coord->set_filerank($move_string[1] . $move_string[2]);
+      $piece_pos = $piece_coord->convert2i();
       //     if ($piece_pos == 64) {
       //       return 'ERROR: ' . $piece_coord . ' is invalid!';
       //     }
@@ -819,33 +800,31 @@ class Game {
       //     }
   
       // Get target square
-      $move_obj = new Move();
-      $move_obj->initialise($move);
-      $dest_coord = $move_obj->dest_coord();
+      $dest_coord = $move->dest_coord();
       if ($dest_coord == $piece_coord) {
         return 'ERROR: Current position and destination are equal!';
       }
   
       // Get action
-      if ($move[3] == '-') {
+      if ($move_string[3] == '-') {
         $action = MOVE; /* move */
       }
-      elseif ($move[3] == 'x') {
+      elseif ($move_string[3] == 'x') {
         $action = CAPTURE; /* attack */
       }
       else {
         return 'ERROR: ' . $action . ' is unknown! Please use "-" for move and "x" for attack.';
       }
       // Replace - with x if this is meant to be en-passant.
-      $dest_pos = vchess_coord2i($dest_coord);
+      $dest_pos = $dest_coord->convert2i();
       if ($piece_type == 'P' && (abs($piece_pos - $dest_pos) == 7 || abs($piece_pos - $dest_pos) == 9)) {
         $action = CAPTURE;
-        $history_move = str_replace('-', 'x', $history_move);
-        $move = str_replace('-', 'x', $move);
+//         $history_move = str_replace('-', 'x', $history_move);
+        $move_string = str_replace('-', 'x', $move_string);
       }
   
       // Save for undo
-      $this->set_last_move(str_replace('?', '', $move));
+      $this->set_last_move(str_replace('?', '', $move_string));
   
       // If attacking, an enemy unit must be present on square
       // and if move then square must be empty. In both cases
@@ -919,10 +898,10 @@ class Game {
       // to work properly (after move, first chessman is on
       // destination square already and second can't reach it
       // which would result in 'no one can reach' error)
-      if (strlen($history_move) >= 6) {
-        $history_move = vchess_long_to_short_move($this->get_turn(), $history_move, $board);
-      }
-      // DEBUG: echo 'Move: $move ($history_move)<BR>';
+//       if (strlen($history_move) >= 6) {
+//         $history_move = get_algebraic($this->get_turn(), $history_move, $board);
+//       }
+      // DEBUG: echo 'Move: $move_string ($history_move)<BR>';
   
       // Perform move
       //    $board[$piece_pos] = '';
@@ -1004,7 +983,7 @@ class Game {
       if ($piece_type == 'P') {
         if (($this->get_turn() == 'w' && $dest_pos >= 56) ||
             ($this->get_turn() == 'b' && $dest_pos <= 7)) {
-          $pawn_upg = $move[strlen($move) -1];
+          $pawn_upg = $move_string[strlen($move_string) -1];
           if ($pawn_upg == '?') {
             $pawn_upg = 'Q';
             $history_move = sprintf('%sQ', $history_move);
@@ -1018,8 +997,7 @@ class Game {
       $move_handled = TRUE;
     }
     
-    $result = 'Your last move: ' . vchess_long_to_short_move($this->get_player_color($uid),
-        str_replace('?', '', $move), $board);
+    $result = 'Your last move: ' . $move->get_algebraic($this->get_player_color($uid), $board);
   
     // If move was executed update game state.
     if ($move_handled) {
@@ -1085,7 +1063,7 @@ class Game {
     }
   
     // Save move
-    $this->save_move($this->get_move_no(), $this->get_turn(), $move);
+    $this->save_move($this->get_move_no(), $this->get_turn(), $move->get_long_move());
   
     if ($move_handled || $draw_handled) {
       // If game is over update user stats (includes resignation).
@@ -1137,7 +1115,7 @@ class Game {
         $prot = ($GLOBALS['_SERVER']['HTTPS'] == 'on') ? 'https' : 'http';
         $url = $prot . '://' . $GLOBALS['_SERVER']['HTTP_HOST'] . $GLOBALS['_SERVER']['SCRIPT_NAME'] . '?gid=' . $gid;
         $message = "Dear $oid\n\n$uid has just moved.\n\nMove:\n$move\n\nComment:\n$comment\n\nIt is your turn now!\n\nEnter the game:\n$url";
-        mail($email, "[OCC] " . $game['white'] . "vs" . $game['black'] . ": $move",
+        mail($email, "[OCC] " . $game['white'] . "vs" . $game['black'] . ": $move_string",
             $message, 'From: ' . $mail_from);
       }
   
@@ -1273,8 +1251,8 @@ class Game {
     }
     else {
       // Undo normal move (includes en passant)
-      $src = vchess_coord2i($move[1] . $move[2]);
-      $dest = vchess_coord2i($move[4] . $move[5]);
+//       $src = convert2i($move[1] . $move[2]);
+//       $dest = convert2i($move[4] . $move[5]);
       if ($src >= 0 && $src < 64 && $dest >= 0 && $dest < 64) {
         if ($this->game['curplyr'] == 'w') {
           $oldclr = 'b';

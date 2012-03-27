@@ -133,9 +133,9 @@ class Board {
    * 
    * @param coord $coord coordinate, e.g. "a1" 
    */
-  function square_is_empty($coord) {
+  function square_is_empty(Square $coord) {
     $empty = TRUE;
-	if (array_key_exists($coord, $this->board)) {
+	if (array_key_exists($coord->get_filerank(), $this->board)) {
 	  $empty = FALSE;
 	}
 
@@ -173,10 +173,11 @@ class Board {
   function to_FEN_string() {
   	$FEN_string = "";
     
+  	$coord = new Square;
    	for ($row = 8; $row >= 1; $row--) {
    	  $empty_squares = 0;
    	  for ($col = 1; $col <= 8; $col++) {
-   	    $coord = vchess_col_row2coord($col, $row);
+   	    $coord->set_filerank(vchess_col2file($col) . $row);
   	    if ($this->square_is_empty($coord)) {
    	      $empty_squares++;
    	    }
@@ -324,8 +325,8 @@ class Board {
     }
   
     // Look at each square to find each of the opponent pieces
-    for ($square = 0; $square < 64; $square++) {
-      $coord = vchess_i2coord($square);
+    for ($square_index = 0; $square_index < 64; $square_index++) {
+      $coord = vchess_i2coord($square_index);
       if (!$this->square_is_empty($coord)) {
         if ($this->player_on_square($coord) != $player) {
           // If the square doesn't have an opponent piece, then skip to the next square
@@ -333,10 +334,10 @@ class Board {
         }
         // Can the piece move theoretically thus is there
         // at least one tile free for one piece?
-        //      switch ($board[$square][1]) {
+        //      switch ($board[$square_index][1]) {
         switch ($this->get_piece($coord)->get_type()) {
           case 'K':
-            $adj_squares = vchess_get_adjacent_squares($square);
+            $adj_squares = vchess_get_adjacent_squares($square_index);
             foreach ($adj_squares as $pos) {
               if ($this->player_on_square($pos) == $player) {
                 continue;
@@ -364,81 +365,81 @@ class Board {
             break;
           case 'P':
             if ($player == 'w') {
-              if ($board[$square + 8] == '' && $this->move_is_ok($player, $square, $square + 8)) {
+              if ($board[$square_index + 8] == '' && $this->move_is_ok($player, $square_index, $square_index + 8)) {
                 return FALSE;
               }
-              if (($square % 8) > 0 && ($this->player_on_square($square + 7) == $opp || vchess_en_passant_is_ok('w', $square, $square + 7, $b_ep))) {
-                if ($this->move_is_ok($player, $square, $square + 7)) {
+              if (($square_index % 8) > 0 && ($this->player_on_square($square_index + 7) == $opp || vchess_en_passant_is_ok('w', $square_index, $square + 7, $b_ep))) {
+                if ($this->move_is_ok($player, $square_index, $square_index + 7)) {
                   return FALSE;
                 }
               }
-              if (($square % 8) < 7 && ($this->player_on_square($square + 9) == $opp || vchess_en_passant_is_ok('w', $square, $square + 9, $b_ep))) {
-                if ($this->move_is_ok($player, $square, $square + 9)) {
+              if (($square_index % 8) < 7 && ($this->player_on_square($square_index + 9) == $opp || vchess_en_passant_is_ok('w', $square_index, $square_index + 9, $b_ep))) {
+                if ($this->move_is_ok($player, $square_index, $square_index + 9)) {
                   return FALSE;
                 }
               }
             }
             else {
-              $coord = vchess_i2coord($square - 8);
-              if ($this->square_is_empty($coord) && $this->move_is_ok($player, $square, $square -8)) {
+              $coord = vchess_i2coord($square_index - 8);
+              if ($this->square_is_empty($coord) && $this->move_is_ok($player, $square_index, $square_index -8)) {
                 return FALSE;
               }
-              if (($square % 8) > 0 && ($this->player_on_square($square -9) == $opp || vchess_en_passant_is_ok('b', $square, $square -9, $w_ep))) {
-                if ($this->move_is_ok($player, $square, $square -9)) {
+              if (($square_index % 8) > 0 && ($this->player_on_square($square_index -9) == $opp || vchess_en_passant_is_ok('b', $square_index, $square_index -9, $w_ep))) {
+                if ($this->move_is_ok($player, $square_index, $square_index -9)) {
                   return FALSE;
                 }
               }
-              if (($square % 8) < 7 && ($this->player_on_square($square -7) == $opp || vchess_en_passant_is_ok('b', $square, $square -7, $w_ep))) {
-                if ($this->move_is_ok($player, $square, $square -7)) {
+              if (($square_index % 8) < 7 && ($this->player_on_square($square_index -7) == $opp || vchess_en_passant_is_ok('b', $square_index, $square_index -7, $w_ep))) {
+                if ($this->move_is_ok($player, $square_index, $square_index -7)) {
                   return FALSE;
                 }
               }
             }
             break;
           case 'B':
-            if ($square -9 >= 0   && $this->player_on_square($square -9) != $player &&
-            $this->move_is_ok($player, $square, $square -9)) {
+            if ($square_index -9 >= 0   && $this->player_on_square($square_index -9) != $player &&
+            $this->move_is_ok($player, $square_index, $square_index -9)) {
               return FALSE;
             }
-            if ($square -7 >= 0   && $this->player_on_square($square -7) != $player &&
-                $this->move_is_ok($player, $square, $square -7)) {
+            if ($square_index -7 >= 0   && $this->player_on_square($square_index -7) != $player &&
+                $this->move_is_ok($player, $square_index, $square_index -7)) {
               return FALSE;
             }
-            if ($square + 9 <= 63 && $this->player_on_square($square + 9) != $player &&
-                $this->move_is_ok($player, $square, $square + 9)) {
+            if ($square_index + 9 <= 63 && $this->player_on_square($square_index + 9) != $player &&
+                $this->move_is_ok($player, $square_index, $square_index + 9)) {
               return FALSE;
             }
-            if ($square + 7 <= 63 && $this->player_on_square($square + 7) != $player &&
-                $this->move_is_ok($player, $square, $square + 7)) {
+            if ($square_index + 7 <= 63 && $this->player_on_square($square_index + 7) != $player &&
+                $this->move_is_ok($player, $square_index, $square_index + 7)) {
               return FALSE;
             }
             break;
           case 'R':
-            //          kpr($board);
-            if ($square -8 >= 0 && $this->player_on_square($square -8) != $player
-            && $this->move_is_ok($player, $square, $square -8)) {
+            $square_below = vchess_i2coord($square_index - 8);
+            if ($square_index - 8 >= 0 && $this->player_on_square($square_below) != $player
+            && $this->move_is_ok($player, $square_index, $square_below)) {
               return FALSE;
             }
-            if ($square -1 >= 0 && $this->player_on_square($square -1) != $player &&
-                $this->move_is_ok($player, $square, $square -1)) {
+            if ($square_index -1 >= 0 && $this->player_on_square($square_index -1) != $player &&
+                $this->move_is_ok($player, $square_index, $square_index -1)) {
               return FALSE;
             }
-            if ($square + 8 <= 63 && $this->player_on_square($square + 8) != $player &&
-                $this->move_is_ok($player, $square, $square + 8)) {
+            if ($square_index + 8 <= 63 && $this->player_on_square($square_index + 8) != $player &&
+                $this->move_is_ok($player, $square_index, $square_index + 8)) {
               return FALSE;
             }
-            if ($square + 1 <= 63 && $this->player_on_square($square + 1) != $player &&
-                $this->move_is_ok($player, $square, $square + 1)) {
+            if ($square_index + 1 <= 63 && $this->player_on_square($square_index + 1) != $player &&
+                $this->move_is_ok($player, $square_index, $square_index + 1)) {
               return FALSE;
             }
             break;
           case 'Q':
-            $adj_squares = vchess_get_adjacent_squares($square);
+            $adj_squares = vchess_get_adjacent_squares($square_index);
             foreach ($adj_squares as $pos) {
               $coord = vchess_i2coord($pos);
               //            if ($board[$pos][0] != $player) {
               if ($this->player_on_square($pos) != $player) {
-                if ($this->move_is_ok($player, $square, $pos)) {
+                if ($this->move_is_ok($player, $square_index, $pos)) {
                   return FALSE;
                 }
               }
@@ -446,36 +447,36 @@ class Board {
             break;
           case 'N':
             //          kpr($board);
-            if ($square -17 >= 0   && $this->player_on_square($square -17) != $player &&
-            $this->move_is_ok($player, $square, $square -17)) {
+            if ($square_index -17 >= 0   && $this->player_on_square($square_index -17) != $player &&
+            $this->move_is_ok($player, $square_index, $square_index -17)) {
               return FALSE;
             }
-            if ($square -15 >= 0   && $this->player_on_square($square -15) != $player &&
-                $this->move_is_ok($player, $square, $square -15)) {
+            if ($square_index -15 >= 0   && $this->player_on_square($square_index -15) != $player &&
+                $this->move_is_ok($player, $square_index, $square_index -15)) {
               return FALSE;
             }
-            if ($square -6 >= 0   && $this->player_on_square($square -6) != $player &&
-                $this->move_is_ok($player, $square, $square -6)) {
+            if ($square_index -6 >= 0   && $this->player_on_square($square_index -6) != $player &&
+                $this->move_is_ok($player, $square_index, $square_index -6)) {
               return FALSE;
             }
-            if ($square + 10 <= 63 && $this->player_on_square($square + 10) != $player &&
-                $this->move_is_ok($player, $square, $square + 10)) {
+            if ($square_index + 10 <= 63 && $this->player_on_square($square_index + 10) != $player &&
+                $this->move_is_ok($player, $square_index, $square_index + 10)) {
               return FALSE;
             }
-            if ($square + 17 <= 63 && $this->player_on_square($square + 17) != $player &&
-                $this->move_is_ok($player, $square, $square + 17)) {
+            if ($square_index + 17 <= 63 && $this->player_on_square($square_index + 17) != $player &&
+                $this->move_is_ok($player, $square_index, $square_index + 17)) {
               return FALSE;
             }
-            if ($square + 15 <= 63 && $this->player_on_square($square + 15) != $player &&
-                $this->move_is_ok($player, $square, $square + 15)) {
+            if ($square_index + 15 <= 63 && $this->player_on_square($square_index + 15) != $player &&
+                $this->move_is_ok($player, $square_index, $square_index + 15)) {
               return FALSE;
             }
-            if ($square + 6 <= 63 && $this->player_on_square($square + 6) != $player &&
-                $this->move_is_ok($player, $square, $square + 6)) {
+            if ($square_index + 6 <= 63 && $this->player_on_square($square_index + 6) != $player &&
+                $this->move_is_ok($player, $square_index, $square_index + 6)) {
               return FALSE;
             }
-            if ($square -10 >= 0   && $this->player_on_square($square -10) != $player &&
-                $this->move_is_ok($player, $square, $square -10)) {
+            if ($square_index -10 >= 0   && $this->player_on_square($square_index -10) != $player &&
+                $this->move_is_ok($player, $square_index, $square_index -10)) {
               return FALSE;
             }
             break;
@@ -637,8 +638,8 @@ class Board {
     $reachable = FALSE;
   
     if ($piece_coord != $dest_coord) {
-      $piece_pos = vchess_coord2i($piece_coord);
-      $dest_pos = vchess_coord2i($dest_coord);
+      $piece_pos = $piece_coord->convert2i();
+      $dest_pos = $dest_coord->convert2i();
   
       $piece_y = floor($piece_pos / 8);
       $piece_x = $piece_pos % 8;
@@ -787,12 +788,12 @@ class Board {
   /**
    * Get the piece on a given square
    *
-   * @param Coordinate $coord e.g. "a1"
+   * @param $coord e.g. "a1"
    */
-    function get_piece($coord) {
+    function get_piece(Square $coord) {
       $piece = new Piece;
-      if (array_key_exists($coord, $this->board)) {
-        $piece = $this->board[$coord];
+      if (array_key_exists($coord->get_filerank(), $this->board)) {
+        $piece = $this->board[$coord->get_filerank()];
       }
   
       return $piece;
@@ -803,9 +804,9 @@ class Board {
    * 
    * No checking is done here as to the validity of the move
    */
-  function move_piece($source_coord, $dest_coord) {
-    $this->board[$dest_coord] = $this->board[$source_coord];
-    unset($this->board[$source_coord]);
+  function move_piece(Square $source_coord, Square $dest_coord) {
+    $this->board[$dest_coord->get_filerank()] = $this->board[$source_coord->get_filerank()];
+    unset($this->board[$source_coord->get_filerank()]);
   }
   
   /**
@@ -819,17 +820,17 @@ class Board {
    * @param $dest_coord Coordinate (e.g. "e3") of attacked square
    * @param $board Board
    */
-  function check_pawn_attacks($piece_coord, $dest_coord) {
+  function check_pawn_attacks(Square $piece_coord, Square $dest_coord) {
     $attacks = FALSE;
   
     $piece_color = $this->get_piece($piece_coord)->get_color();
   
     // Convert coord like "d4" into col=4 rank=4
-    $piece_col = vchess_file2col(vchess_coord_file($piece_coord)); // e.g. d -> 4
-    $piece_rank = vchess_coord_rank($piece_coord);
+    $piece_col = vchess_file2col($piece_coord->get_file()); // e.g. d -> 4
+    $piece_rank = $piece_coord->get_rank();
   
-    $dest_col = vchess_file2col(vchess_coord_file($dest_coord));  // e.g. e -> 5
-    $dest_rank = vchess_coord_rank($dest_coord);
+    $dest_col = vchess_file2col($dest_coord->get_file());  // e.g. e -> 5
+    $dest_rank = $dest_coord->get_rank();
   
     if ($piece_color == 'w') {
       if ($dest_rank == $piece_rank + 1
@@ -882,10 +883,10 @@ class Board {
   
     if ($this->square_is_empty($dest_coord)) {
       $piece = $this->get_piece($piece_coord);
-      $piece_file = vchess_coord_file($piece_coord); // e.g. e
-      $piece_rank = vchess_coord_rank($piece_coord); // e.g. 2
-      $dest_file = vchess_coord_file($dest_coord);  // e.g. e
-      $dest_rank = vchess_coord_rank($dest_coord);  // e.g. 4
+      $piece_file = $piece_coord->get_file(); // e.g. e
+      $piece_rank = $piece_coord->get_rank(); // e.g. 2
+      $dest_file = $dest_coord->get_file();  // e.g. e
+      $dest_rank = $dest_coord->get_rank();  // e.g. 4
   
       // Check pawn stays on same file.
       // Captures are checked in check_pawn_attacks()
@@ -896,7 +897,8 @@ class Board {
         // white pawn
         if ($piece_rank == 2 && $dest_rank == 4) {
           // Pawn moving 2 squares, so check if intermediate square is empty
-          $intermediate_coord = $piece_file . "3";
+          $intermediate_coord = new Square;
+          $intermediate_coord->set_filerank($piece_file . "3");
           if ($this->square_is_empty($intermediate_coord)) {
             $move_ok = TRUE;
           }
@@ -909,7 +911,8 @@ class Board {
         // black pawn
         if ($piece_rank == 7 && $dest_rank == 5) {
           // Pawn moving 2 squares, so check if intermediate square is empty
-          $intermediate_coord = $piece_file . "6";
+          $intermediate_coord = new Square;
+          $intermediate_coord->set_filerank($piece_file . "6");
           if ($this->square_is_empty($intermediate_coord)) {
             $move_ok = TRUE;
           }
@@ -974,82 +977,38 @@ function vchess_col_row2coord($col, $row) {
  * Convert index [0..63] to coordinate [a1..h8]
  */
 function vchess_i2coord($index) {
+  $coord = new Square();
+  
   if ($index < 0 || $index > 63) {
-	$coord = '';
+	$coord->set_filerank('');
   }
   else {
     $y = floor($index / 8) + 1;
     $x = chr(($index % 8) + 97);
-    $coord = $x . $y;
+    $coord->set_filerank($x . $y);
   }
   
   return $coord;
 }
 
 /**
- * Extract the rank (1..8) from a coordinate (a1..h8)
- */
-function vchess_coord_rank($coord) {
-  return substr($coord, 1, 1);
-}
-
-/**
- * Extract the file (a..h) from a coordinate (a1..h8)
- */
-function vchess_coord_file($coord) {
-  return substr($coord, 0, 1);
-}
-
-/**
  * Convert a file (a..h) into a numerical column (1..8)
  */
 function vchess_file2col($file) {
-  // a = ascii 97
+  // "a" = ascii 97
   $col = ord($file) - 96;
   
   return $col;
 }
 
 /**
- * Convert coordinate [a1..h8] to 1dim index [0..63]
+ * Convert column (1..8) as number to a file (a..h) 
  */
-function vchess_coord2i($coord) {
-	$row = $coord[0];
-	$col = $coord[1];
-	switch ($row) {
-		case 'a':
-			$x = 0;
-			break;
-		case 'b':
-			$x = 1;
-			break;
-		case 'c':
-			$x = 2;
-			break;
-		case 'd':
-			$x = 3;
-			break;
-		case 'e':
-			$x = 4;
-			break;
-		case 'f':
-			$x = 5;
-			break;
-		case 'g':
-			$x = 6;
-			break;
-		case 'h':
-			$x = 7;
-			break;
-		default:
-			return 64; /* error code */
-	}
-	$y = $col - 1;
-	if ($y < 0 || $y > 7 ) {
-		return 64; /* error code */
-	}
-	$index = $y * 8 + $x;
-	return $index;
+function vchess_col2file($col) {
+  // "a" = ascii 97
+  $file = chr($col + 96);
+
+  return $file;
 }
 
 /**
