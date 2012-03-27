@@ -127,10 +127,10 @@ function vchess_render_board($board, $player, $active, $gid) {
         // normal square 
         $coord = new Square();
         if ($player == 'w') {
-          $coord->set_filerank(vchess_col2file($col) . $row);
+          $coord->set_coord(vchess_col2file($col) . $row);
         }
         else {
-          $coord->set_filerank(vchess_col2file(9 - $col) . (9 - $row));
+          $coord->set_coord(vchess_col2file(9 - $col) . (9 - $row));
         }
         $piece = $board->get_piece($coord);
         $piece_name = $piece->get_name();
@@ -150,13 +150,13 @@ function vchess_render_board($board, $player, $active, $gid) {
           // square with a piece and player has the ability to move
           if ($active) {
           	// Build the first part of the move e.g. "Nb1"
-            $cmdpart = sprintf('%s%s', $board->get_piece($coord)->get_type(), $coord->get_filerank());
+            $cmdpart = sprintf('%s%s', $board->get_piece($coord)->get_type(), $coord->get_coord());
             // if the piece is the opposition then the cmdpart becomes e.g. "xNb1"
             if ($piece_color <> $player) {
               $cmdpart = "x" . $cmdpart;
             }
 //          $content .= '<td id="btd' . $index . '" class="' . $class . '"><A href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><IMG border=0 src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></A></td>';
-            $content .= '<td id="' . $coord->get_filerank() . '" class="' . $class . '"><A href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><IMG border=0 src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></A></td>';
+            $content .= '<td id="' . $coord->get_coord() . '" class="' . $class . '"><A href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><IMG border=0 src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></A></td>';
           }
           else {
               $content .= '<td class="' . $class . '"><IMG src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></td>';
@@ -165,8 +165,8 @@ function vchess_render_board($board, $player, $active, $gid) {
         else {
           if ($active) {
           	// Build the target part of the move e.g. "-c3", so the move will end up as "Nb1-c3"
-            $cmdpart = sprintf('-%s', vchess_i2coord($index)->get_filerank());
-            $content .= '<td id="' . $coord->get_filerank() . '" class="' . $class . '"><A href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><IMG border=0 src="' . $path . '/images/' . $theme . '/empty.gif"></A></td>';            
+            $cmdpart = sprintf('-%s', vchess_i2square($index)->get_coord());
+            $content .= '<td id="' . $coord->get_coord() . '" class="' . $class . '"><A href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><IMG border=0 src="' . $path . '/images/' . $theme . '/empty.gif"></A></td>';            
           }
           else {
             $content .= '<td class="' . $class . '"><IMG src="' . $path . '/images/' . $theme . '/empty.gif"></td>';

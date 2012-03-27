@@ -572,21 +572,12 @@ class Game {
    * @param $move Current move
    */
   function handle_move($uid, $move_string, $comment) {
-    //  global $acerror, $mail_from;
-  
-//     $game = new Game();
-//     $this->load($gid);
   
     $mate_type = "Hugh was here setting a default";
   
     $move = new Move();
     $move->initialise($move_string);
     
-    // w2spm = white 2 square piece move?
-    // b2spm = black 2 square piece move?
-    //  $game['w2spm'] = ""; // Hugh - added initialisation
-    //  $game['b2spm'] = ""; // Hugh - added initialisation
-  
     $board = $this->get_board();
   
     $move_string = trim($move_string);
@@ -782,15 +773,15 @@ class Game {
       //     if ($piece_name == BLANK) {
       //       return 'ERROR: Piece ' . $piece_type . ' is unknown!';
       //     }
-      $piece_coord = new Square();
-      $piece_coord->set_filerank($move_string[1] . $move_string[2]);
-      $piece_pos = $piece_coord->convert2i();
+      $piece_square = new Square();
+      $piece_square->set_coord($move_string[1] . $move_string[2]);
+      $piece_pos = $piece_square->convert2i();
       //     if ($piece_pos == 64) {
-      //       return 'ERROR: ' . $piece_coord . ' is invalid!';
+      //       return 'ERROR: ' . $piece_square . ' is invalid!';
       //     }
       /* DEBUG  echo 'piece_type: $piece_type,piece_pos: $piece_pos<BR>'; */
       //     if ($board[$piece_pos] == '') {
-      //       return 'ERROR: ' . $piece_coord . ' is empty.';
+      //       return 'ERROR: ' . $piece_square . ' is empty.';
       //     }
       //     if ($board[$piece_pos][0] != $this->get_turn()) {
       //       return 'ERROR: Piece does not belong to you!';
@@ -800,8 +791,8 @@ class Game {
       //     }
   
       // Get target square
-      $dest_coord = $move->dest_coord();
-      if ($dest_coord == $piece_coord) {
+      $to_square = $move->to_square();
+      if ($to_square == $piece_square) {
         return 'ERROR: Current position and destination are equal!';
       }
   
@@ -816,7 +807,7 @@ class Game {
         return 'ERROR: ' . $action . ' is unknown! Please use "-" for move and "x" for attack.';
       }
       // Replace - with x if this is meant to be en-passant.
-      $dest_pos = $dest_coord->convert2i();
+      $dest_pos = $to_square->convert2i();
       if ($piece_type == 'P' && (abs($piece_pos - $dest_pos) == 7 || abs($piece_pos - $dest_pos) == 9)) {
         $action = CAPTURE;
 //         $history_move = str_replace('-', 'x', $history_move);
@@ -835,29 +826,27 @@ class Game {
       // is not blocked. The final destination square is not
       // checked here.
       $piece_name = $piece->get_name();
-      $piece_coord = vchess_i2coord($piece_pos);
-      $dest_coord = vchess_i2coord($dest_pos);
       if ($piece_type != 'P') {
-        if (!$board->square_is_reachable($piece_type, $piece_coord, $dest_coord)) {
-          return 'ERROR: ' . $dest_coord . ' is not a legal move of ' . $piece_name . ' at ' . $piece_coord . '!';
+        if (!$board->square_is_reachable($piece_square, $to_square)) {
+          return 'ERROR: ' . $to_square->get_coord() . ' is not a legal move of ' . $piece_name . ' at ' . $piece_square->get_coord() . '!';
         }
       }
       else {
-        if ($action == MOVE && !$board->piece_may_move_to_square($piece_coord, $dest_coord)) {
-          return 'ERROR: ' . $dest_coord . ' is not a legal advancing move of ' . $piece_name . ' at ' . $piece_coord . '!';
+        if ($action == MOVE && !$board->piece_may_move_to_square($piece_square, $to_square)) {
+          return 'ERROR: ' . $to_square->get_coord() . ' is not a legal advancing move of ' . $piece_name . ' at ' . $piece_square->get_coord() . '!';
         }
-        elseif ($action == CAPTURE && !$board->check_pawn_attacks($piece_coord, $dest_coord)) {
-          return 'ERROR: ' . $dest_coord . ' is not a legal capturing move of ' . $piece_name . ' at ' . $piece_coord . '!';
+        elseif ($action == CAPTURE && !$board->check_pawn_attacks($piece_square, $to_square)) {
+          return 'ERROR: ' . $to_square->get_coord() . ' is not a legal capturing move of ' . $piece_name . ' at ' . $piece_square->get_coord() . '!';
         }
       }
   
       $en_passant_okay = FALSE;
       // Check action
-      $coord = vchess_i2coord($dest_pos);
+      $coord = vchess_i2square($dest_pos);
       if ($action == MOVE && !$board->square_is_empty($coord)) {
-        return 'ERROR: ' . $dest_coord . ' is occupied!';
+        return 'ERROR: ' . $to_square->get_coord() . ' is occupied!';
       }
-      if ($action == CAPTURE && $board->square_is_empty($dest_coord)) {
+      if ($action == CAPTURE && $board->square_is_empty($to_square)) {
         // En passant of pawn?
         if ($piece_type == 'P') {
           if ($game['turn'] == 'w') {
@@ -879,18 +868,18 @@ class Game {
           }
         }
         else {
-          return 'ERROR: ' . $dest_coord . ' is empty!';
+          return 'ERROR: ' . $to_square->get_coord() . ' is empty!';
         }
       }
-      if ($action == CAPTURE && $board->get_piece($dest_coord)->get_color() == $this->get_turn()) {
-        return 'ERROR: You cannot attack own chessman at ' . $dest_coord . '!';
+      if ($action == CAPTURE && $board->get_piece($to_square)->get_color() == $this->get_turn()) {
+        return 'ERROR: You cannot attack own chessman at ' . $to_square->get_coord() . '!';
       }
   
       // Backup affected squares
-      $piece_coord = vchess_i2coord($piece_pos);
-      $dest_coord = vchess_i2coord($dest_pos);
-      $old_piece_square = $board->get_piece($piece_coord);
-      $old_dest_square = $board->get_piece($dest_coord);
+      $piece_square = vchess_i2square($piece_pos);
+      $to_square = vchess_i2square($dest_pos);
+      $old_piece_square = $board->get_piece($piece_square);
+      $old_to_square = $board->get_piece($to_square);
   
       // Get short notation of move for history before
       // actually moving since this function relies on
@@ -898,19 +887,19 @@ class Game {
       // to work properly (after move, first chessman is on
       // destination square already and second can't reach it
       // which would result in 'no one can reach' error)
-//       if (strlen($history_move) >= 6) {
-//         $history_move = get_algebraic($this->get_turn(), $history_move, $board);
-//       }
+      $algebraic_move = $move->get_algebraic($this->get_player_color($uid), $board);
+      
       // DEBUG: echo 'Move: $move_string ($history_move)<BR>';
   
+      
       // Perform move
       //    $board[$piece_pos] = '';
-      $dest_coord = vchess_i2coord($dest_pos);
-      if ($board->get_piece($dest_coord)->get_type() != BLANK) {
+      $to_square = vchess_i2square($dest_pos);
+      if ($board->get_piece($to_square)->get_type() != BLANK) {
         //      $this->set_last_kill(sprintf('%s%s', $board->get_piece_by_index($dest_pos), $dest_pos));
-        $this->set_last_kill($board->get_piece($dest_coord));
+        $this->set_last_kill($board->get_piece($to_square));
       }
-      $board->move_piece($piece_coord, $dest_coord);
+      $board->move_piece($piece_square, $to_square);
       if ($en_passant_okay) {
         // Kill pawn
         if ($game['turn'] == 'w') {
@@ -927,7 +916,7 @@ class Game {
       // If king is in check undo
       if ($board->king_is_in_check($this->get_turn())) {
         //       $board[$piece_pos] = $old_piece_square;
-        //       $board[$dest_pos] = $old_dest_square;
+        //       $board[$dest_pos] = $old_to_square;
         //       if ($en_passant_okay) {
         //         // Respawn en-passant pawn
         //         if ($this->get_turn() == 'w') {
@@ -997,7 +986,7 @@ class Game {
       $move_handled = TRUE;
     }
     
-    $result = 'Your last move: ' . $move->get_algebraic($this->get_player_color($uid), $board);
+    $result = 'Your last move: ' . $algebraic_move;
   
     // If move was executed update game state.
     if ($move_handled) {

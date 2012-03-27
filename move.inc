@@ -27,7 +27,7 @@ class Move {
   }
   
   /**
-   * Get the destination coord from a given move
+   * Get the destination square from a given move
    *
    * In a move like "Bf5xPe4":
    *   $move[0] = source piece
@@ -42,17 +42,17 @@ class Move {
    *   $move[3] = move type, "-"
    *   $move[4-5] = dest square
    */
-  function dest_coord() {
-    $dest_coord = new Square();
+  function to_square() {
+    $to_square = new Square();
     
     if ($this->long_move[3] == "x") {
-      $dest_coord->set_filerank(substr($this->long_move, 5, 2));
+      $to_square->set_coord(substr($this->long_move, 5, 2));
     }
     else { // Move type = "-"
-      $dest_coord->set_filerank(substr($this->long_move, 4, 2));
+      $to_square->set_coord(substr($this->long_move, 4, 2));
     }
   
-    return $dest_coord;
+    return $to_square;
   }
   
   /**
@@ -61,11 +61,11 @@ class Move {
    * In a move like "Bf5xPe4" return "f5"
    * In a move like "Rh4-d4" return "h4"
    */
-  function source_coord() {
-    $source_coord = new Square();
-    $source_coord->set_filerank(substr($this->long_move, 1, 2));
+  function from_square() {
+    $from_square = new Square();
+    $from_square->set_coord(substr($this->long_move, 1, 2));
   
-    return $source_coord;
+    return $from_square;
   }
   
   /**
@@ -138,8 +138,8 @@ class Move {
     $source_piece_type = $this->source_piece_type();
     $dest_piece_type = $this->dest_piece_type();
   
-    $source_coord = $this->source_coord();
-    $dest_coord = $this->dest_coord();
+    $from_square = $this->from_square();
+    $to_square = $this->to_square();
   
     // Castling short
     if ($this->long_move == "Ke1-g1" || $this->long_move == "Ke8-g8") {
@@ -154,67 +154,104 @@ class Move {
       // and for moves skip source pos and "-"
       if ($this->type() == '-') {
         // e.g. e4
-        $short_move_string = $dest_coord->get_filerank();
+        $short_move_string = $to_square->get_coord();
       }
       else {
         // e.g. cxd4
-        $short_move_string = $this->long_move[1] . "x" . $dest_coord->get_filerank();
+        $short_move_string = $this->long_move[1] . "x" . $to_square->get_coord();
       }
     }
     else {
       // First find out how where all possible pieces of this type are
-      $pieces_coords = $board->get_pieces_coords($player, $source_piece_type);
+      $pieces_squares = $board->get_pieces_squares($player, $source_piece_type);
   
       // If there is only 1 piece of this type, then move is unambiguous
-      if (count($pieces_coords) == 1) {
+      if (count($pieces_squares) == 1) {
         if ($this->type() == '-') {
           // e.g. Ne4
-          $short_move_string = $source_piece_type . $dest_coord->get_filerank();
+          $short_move_string = $source_piece_type . $to_square->get_coord();
         }
         else {
           // e.g. Nxd4
-          $short_move_string = $source_piece_type . "x" . $dest_coord->get_filerank();
+          $short_move_string = $source_piece_type . "x" . $to_square->get_coord();
         }
       }
       else {
-        // Find how many pieces of this type may move to the dest square
-        $eligible_coords = array();
-        foreach ($pieces_coords as $piece_coord) {
-          if ($board->piece_may_move_to_square($piece_coord, $dest_coord)) {
-            $eligible_coords[] = $piece_coord;
+        // Find how many other pieces of this type may move to the dest square
+        $trouble_squares = array();
+        foreach ($pieces_squares as $piece_square) {
+          // Only look at the other pieces
+          if ($piece_square != $from_square) {
+            if ($board->piece_may_move_to_square($piece_square, $to_square)) {
+              $trouble_squares[] = $piece_square;
+            }
           }
         }
   
-        if (count($eligible_coords) == 1) {
-          // Only 1 piece of this type can reach the square, so unambiguous
+        if (count($trouble_squares) == 0) {
+          // No other piece of this type can reach the square, so unambiguous
           if ($this->type() == '-') {
             // e.g. Ne4
-            $short_move_string = $source_piece_type . $dest_coord->get_filerank();
+            $short_move_string = $source_piece_type . $to_square->get_coord();
           }
           else {
             // e.g. Nxd4
-            $short_move_string = $source_piece_type . "x" . $dest_coord->get_filerank();
+            $short_move_string = $source_piece_type . "x" . $to_square->get_coord();
           }
         }
         else {
-          // First get an array with just the coords of the piece(s) which
-          // can also get to the square.  Unless there are 3 pieces of the same
-          // type of the board, this will just be the square of the other piece.
-          $source_coords = array($source_coord);
-          $trouble_coords = array_diff($eligible_coords, $source_coords);
-  
           // First try to disambiguate by looking at the file, e.g. Ngf3
-          $source_file = $source_coord->get_file();
+          $source_file = $from_square->get_file();
           $file_unique = TRUE;
-          foreach ($trouble_coords as $trouble_coord) {
+          foreach ($trouble_squares as $trouble_coord) {
             if ($trouble_coord->get_file() == $source_file) {
               $file_unique = FALSE;
             }
           }
   
+          // In this case the file is enough to make the move unique, e.g. Ngf3
           if ($file_unique) {
             if ($this->type() == '-') {
-              $short_move_string = $source_piece_type . $source_file . $dest_coord->get_filerank();
+              $short_move_string = $source_piece_type . $source_file . $to_square->get_coord();
+            }
+            else {
+              // e.g. Nxd4
+              $short_move_string = $source_piece_type . $source_file . "x" . $to_square->get_coord();
+            }
+          }
+          else {
+            // Try to disambiguate by looking at the rank, e.g. N1f3
+            $source_rank = $from_square->get_rank();
+            $rank_unique = TRUE;
+            foreach ($trouble_squares as $trouble_coord) {
+              if ($trouble_coord->get_rank() == $source_rank) {
+                $rank_unique = FALSE;
+              }
+            }
+            
+            // In this case the rank is enough to make the move unique, e.g. N1f3
+            if ($rank_unique) {
+              if ($this->type() == '-') {
+                // e.g. N1f3
+                $short_move_string = $source_piece_type . $source_rank . $to_square->get_coord();
+              }
+              else {
+                // e.g. N1xf3
+                $short_move_string = $source_piece_type . $source_rank . "x" . $to_square->get_coord();
+              } 
+            }
+            else {
+              // File is not unique, rank is not unique, so we need full source square, e.g. Ng1f3  
+              // This can only ever happen when promotion to a third piece has occured.
+              $prefix = $source_piece_type . $source_rank . $source_file;
+              if ($this->type() == '-') {
+                // e.g. Ng1f3
+                $short_move_string = $prefix . $to_square->get_coord();
+              }
+              else {
+                // e.g. Ng1xf3
+                $short_move_string = $prefix . "x" . $to_square->get_coord();
+              }
             }
           }
         }
@@ -321,7 +358,7 @@ class Move {
 //             $not_found = 1;
 //           }
 //         }
-//         $pos = vchess_i2coord($pos);
+//         $pos = vchess_i2square($pos);
 //         if ($not_found || $pos == '') {
 //           $acerror = 'could not find ' . $player . ' pawn in ' . $move[0];
 //           drupal_set_message(check_plain($acerror), 'error');
@@ -372,7 +409,7 @@ class Move {
 //   }
 
 //   // Other chessman move
-//   $dest_coord = substr($move, strlen($move) -2, 2);
+//   $to_square = substr($move, strlen($move) -2, 2);
 //   $action = $move[strlen($move) - 3];
 //   if ($action != 'x') {
 //     $action = '-';
@@ -384,7 +421,7 @@ class Move {
 //     //   $move[0] = "N" if $move = "Nc3"
 //     //   $board[$square] = "wN" for white Knight
 
-//     $coord = vchess_i2coord($square);
+//     $coord = vchess_i2square($square);
 //     // Check if the piece on $square matches the player color
 //     // and the color of the piece moved
 //     //    if ($board[$square] == $player . $move[0]) {
@@ -392,10 +429,10 @@ class Move {
 //     if ($piece->get_color() == $player && $piece->get_type() == $move[0]) {
 //       $piece_count++;
 //       if ($piece_count == 1) {
-//         $coord1 = vchess_i2coord($square);
+//         $coord1 = vchess_i2square($square);
 //       }
 //       else {
-//         $coord2 = vchess_i2coord($square);
+//         $coord2 = vchess_i2square($square);
 //       }
 //     }
 //   }
@@ -408,12 +445,12 @@ class Move {
 //     return NULL;
 //   }
 //   if ($piece_count == 1) {
-//     return sprintf('%s%s%s%s', $move[0], $coord1, $action, $dest_coord);
+//     return sprintf('%s%s%s%s', $move[0], $coord1, $action, $to_square);
 //   }
 //   // Two chessmen - may cause ambiguity
-//   $dest_pos = convert2i($dest_coord);
+//   $dest_pos = convert2i($to_square);
 //   if ($dest_pos == 64) {
-//     $acerror = 'coordinate ' . $dest_coord . ' is invalid';
+//     $acerror = 'coordinate ' . $to_square . ' is invalid';
 //     drupal_set_message(check_plain($acerror), 'error');
 //     return NULL;
 //   }
@@ -421,16 +458,16 @@ class Move {
 //   // Check if 2 pieces of the same type can reach the destination square
 //   $piece1_can_reach = FALSE; // Hugh setting default
 //   $piece2_can_reach = FALSE; // Hugh setting default
-//   if ($board->square_is_reachable($move[0], $coord1, $dest_coord)) {
+//   if ($board->square_is_reachable($move[0], $coord1, $to_square)) {
 //     $piece1_can_reach = TRUE;
 //   }
-//   if ($board->square_is_reachable($move[0], $coord2, $dest_coord)) {
+//   if ($board->square_is_reachable($move[0], $coord2, $to_square)) {
 //     $piece2_can_reach = TRUE;
 //   }
 //   if (!$piece1_can_reach && !$piece2_can_reach) {
 //     $piece = new Piece();
 //     $piece->set_type($move[0]);
-//     $acerror = sprintf('no %s can reach %s', $piece->get_name(), $dest_coord);
+//     $acerror = sprintf('no %s can reach %s', $piece->get_name(), $to_square);
 //     drupal_set_message(check_plain($acerror), 'error');
 //     return NULL;
 //   }
@@ -442,7 +479,7 @@ class Move {
 //       $hint = $move[1];
 //     }
 //     if (empty($hint)) {
-//       $acerror = sprintf('both %s can reach %s', vchess_get_piece_name($move[0]), $dest_coord);
+//       $acerror = sprintf('both %s can reach %s', vchess_get_piece_name($move[0]), $to_square);
 //       drupal_set_message(check_plain($acerror), 'error');
 //       return NULL;
 //     }
@@ -469,21 +506,21 @@ class Move {
 //     }
 //     if ($move_piece1) {
 //       return sprintf('%s%s%s%s', $move[0], $coord1, $action,
-//           $dest_coord);
+//           $to_square);
 //     }
 //     else {
 //       return sprintf('%s%s%s%s', $move[0], $coord2, $action,
-//           $dest_coord);
+//           $to_square);
 //     }
 //   }
 //   else {
 //     if ($piece1_can_reach) {
 //       return sprintf('%s%s%s%s', $move[0], $coord1, $action,
-//           $dest_coord);
+//           $to_square);
 //     }
 //     else {
 //       return sprintf('%s%s%s%s', $move[0], $coord2, $action,
-//           $dest_coord);
+//           $to_square);
 //     }
 //   }
 
