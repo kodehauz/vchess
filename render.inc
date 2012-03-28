@@ -180,6 +180,13 @@ function vchess_render_board($board, $player, $active, $gid) {
   }
   $content .= "</table></td></tr></table>";
   
+  $content .= "<br />";
+  
+  // Prepare the scoresheet
+  $scoresheet = new Scoresheet();
+  $scoresheet->load($gid);
+  $content .= $scoresheet->get_table();
+  
   return $content;
 }
 

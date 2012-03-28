@@ -115,7 +115,7 @@ function vchess_schema() {
               'not null' => TRUE,
           ),
           'move' => array(
-              'description' => 'The actual move, e.g. "e4", "Nf6", "O-O-O"',
+              'description' => 'The actual move in full detail format, e.g. "Pe2-e4", "Nf6xBg8", "Ke1-g1"',
               'type' => 'varchar',
               'length' => '10',
               'not null' => TRUE,
