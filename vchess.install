@@ -114,8 +114,14 @@ function vchess_schema() {
               'enum_items' => array('w', 'b'),
               'not null' => TRUE,
           ),
-          'move' => array(
+          'long_move' => array(
               'description' => 'The actual move in full detail format, e.g. "Pe2-e4", "Nf6xBg8", "Ke1-g1"',
+              'type' => 'varchar',
+              'length' => '10',
+              'not null' => TRUE,
+          ),
+          'algebraic' => array(
+              'description' => 'Move in algebraic notation (e.g. e4, Nc3, O-O)',
               'type' => 'varchar',
               'length' => '10',
               'not null' => TRUE,
