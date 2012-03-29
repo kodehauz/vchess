@@ -153,18 +153,28 @@ class Board {
 
 	return $empty;
   }
+  
+  /**
+   * Returns TRUE if the square at the given coord is empty
+   */
+  function square_at_coord_is_empty($coord) {
+    $square = new Square;
+    $square->set_coord($coord);
+    
+    return $this->square_is_empty($square);
+  }
 
   /**
    * Get the player color whose piece is on a given square
    * 
-   * @param coord $coord e.g. "a1"
+   * @param $square e.g. "a1"
    *
    * @return 'w', 'b' or ''
    */
-  function player_on_square($coord) {
+  function player_on_square(Square $square) {
 	$player_color = "";
-	if (!$this->square_is_empty($coord)) {
-	  $player_color = $this->get_piece($coord)->get_color();
+	if (!$this->square_is_empty($square)) {
+	  $player_color = $this->get_piece($square)->get_color();
 	}
 
 	return $player_color;
@@ -229,8 +239,8 @@ class Board {
     $blocked = FALSE;
   
     for ($pos = $start; $pos != $end; $pos += $change) {
-      $coord = vchess_i2square($pos);
-      if (!$this->square_is_empty($coord)) {
+      $square = vchess_i2square($pos);
+      if (!$this->square_is_empty($square)) {
         $blocked = TRUE;
       }
     }
@@ -341,16 +351,16 @@ class Board {
   
     // Look at each square to find each of the opponent pieces
     for ($square_index = 0; $square_index < 64; $square_index++) {
-      $coord = vchess_i2square($square_index);
-      if (!$this->square_is_empty($coord)) {
-        if ($this->player_on_square($coord) != $player) {
+      $square = vchess_i2square($square_index);
+      if (!$this->square_is_empty($square)) {
+        if ($this->player_on_square($square) != $player) {
           // If the square doesn't have an opponent piece, then skip to the next square
           continue;
         }
         // Can the piece move theoretically thus is there
         // at least one tile free for one piece?
         //      switch ($board[$square_index][1]) {
-        switch ($this->get_piece($coord)->get_type()) {
+        switch ($this->get_piece($square)->get_type()) {
           case 'K':
             $adj_squares = vchess_get_adjacent_squares($square_index);
             foreach ($adj_squares as $pos) {
@@ -395,8 +405,8 @@ class Board {
               }
             }
             else {
-              $coord = vchess_i2square($square_index - 8);
-              if ($this->square_is_empty($coord) && $this->move_is_ok($player, $square_index, $square_index -8)) {
+              $square = vchess_i2square($square_index - 8);
+              if ($this->square_is_empty($square) && $this->move_is_ok($player, $square_index, $square_index -8)) {
                 return FALSE;
               }
               if (($square_index % 8) > 0 && ($this->player_on_square($square_index -9) == $opp || vchess_en_passant_is_ok('b', $square_index, $square_index -9, $w_ep))) {
@@ -451,7 +461,7 @@ class Board {
           case 'Q':
             $adj_squares = vchess_get_adjacent_squares($square_index);
             foreach ($adj_squares as $pos) {
-              $coord = vchess_i2square($pos);
+              $square = vchess_i2square($pos);
               //            if ($board[$pos][0] != $player) {
               if ($this->player_on_square($pos) != $player) {
                 if ($this->move_is_ok($player, $square_index, $pos)) {
@@ -516,8 +526,8 @@ class Board {
   
     // Find the position of the player's king
     for ($square = 0; $square < 64; $square++) {
-      $coord = vchess_i2square($square);
-      $piece = $this->get_piece($coord);
+      $square = vchess_i2square($square);
+      $piece = $this->get_piece($square);
       if ($piece->get_type() == 'K' && $piece->get_color() == $player) {
         $king_pos = $square;
         $king_coord = vchess_i2square($king_pos);
@@ -532,10 +542,10 @@ class Board {
     //  $contents = $board[$king_pos];
     //  $board[$king_pos] = '';
     foreach ($adj_squares as $dest_pos) {
-      $coord = vchess_i2square($dest_pos);
+      $square = vchess_i2square($dest_pos);
       // If this adjacent square has a piece of the same color, then
       // we cannot move the king there
-      if ($this->get_piece($coord)->get_color() == $player) {
+      if ($this->get_piece($square)->get_color() == $player) {
         continue;
       }
       // If this adjacent square is under attack, then we cannot
@@ -621,7 +631,7 @@ class Board {
     foreach ($path as $pos) {
       for ($square_index = 0; $square_index < 64; $square_index++) {
         $square = vchess_i2square($square_index);
-        $piece = $this->get_piece($coord);
+        $piece = $this->get_piece($square);
         $piece_type = $piece->get_type();
         if ($piece->get_color() == $player) {
           if (($piece_type == 'P' && $board->piece_may_move_to_square($square, $pos))
@@ -778,9 +788,9 @@ class Board {
           $kings = 0;
           $adj_squares = vchess_get_adjacent_squares($dest_pos);
           foreach ($adj_squares as $square) {
-            $coord = vchess_i2square($square);
+            $square = vchess_i2square($square);
             //        if ($board[$tile][1] == 'K') {
-            if ($this->get_piece($coord)->get_type() == 'K') {
+            if ($this->get_piece($square)->get_type() == 'K') {
               $kings++;
             }
           }
@@ -799,7 +809,7 @@ class Board {
   /**
    * Get the piece on a given square
    *
-   * @param $coord e.g. "a1"
+   * @param $square e.g. "a1"
    */
     function get_piece(Square $square) {
       $piece = new Piece;
@@ -871,16 +881,10 @@ class Board {
         $move_ok = $this->_pawn_may_move_to_square($piece_square, $to_square);
         break;
       case 'N':
-        $move_ok = $this->_knight_may_move_to_square($piece_square, $to_square);
-        break;
       case 'B':
-        $move_ok = $this->_bishop_may_move_to_square($piece_square, $to_square);
-        break;
       case 'Q':
-        $move_ok = $this->_bishop_may_move_to_square($piece_square, $to_square);
-        break;
       case 'K':
-        $move_ok = $this->_king_may_move_to_square($piece_square, $to_square);
+        $move_ok = $this->_piece_may_move_to_square($piece_square, $to_square);
         break;
       default:
         break;
@@ -947,13 +951,13 @@ class Board {
   }
   
   /**
-   * Check whether knight at $piece_square may move to $to_square.
+   * Check whether piece at $piece_square may move to $to_square.
    *
    * @return
    *   TRUE if the knight may move to the given square
    *   FALSE if the knight may not legally move to the given square
    */
-  function _knight_may_move_to_square($piece_square, $to_square) {
+  function _piece_may_move_to_square($piece_square, $to_square) {
     $move_ok = FALSE;
   
     $color = $this->get_piece($piece_square)->get_color();

@@ -136,7 +136,7 @@
       }
     }
   
-    $table['header'] = array('uid', 'name', 'rating', 'played', 'won', 'lost', 'drawn', 'rchange');
+    $table['header'] = array('uid', 'name', 'rating', 'played', 'won', 'lost', 'drawn', 'rating change');
     $table['attributes'] = array();
     $table['caption'] = array();
     $table['colgroups'] = array();
@@ -507,7 +507,7 @@
   
     $stats = vchess_io_load_user_stats($uid);
   
-    $header = array('Played', 'Won', 'Drawn', 'Lost', 'Rating', 'Rating change?');
+    $header = array('Played', 'Won', 'Drawn', 'Lost', 'Rating', 'Rating change');
     $rows = array(array($stats['played'], $stats['won'], $stats['drawn'],
         $stats['lost'], $stats['rating'], $stats['rchange']));
   
@@ -524,5 +524,7 @@
         'sticky' => array(),
         'empty' => NULL
     ));
+    
+    return $html;
   }
   

@@ -16,12 +16,11 @@ class Scoresheet {
    * Load the moves for a scoresheet
    */
   function load($gid) {
-	$sql = "SELECT move_no, color, move, timestamp FROM {vchess_moves} WHERE gid = :gid";
+	$sql = "SELECT move_no, color, long_move, algebraic, timestamp FROM {vchess_moves} WHERE gid = :gid";
 	$result = db_query($sql, array('gid' => $gid));
 		
-	//  while ($data = db_fetch_object($result)) {  /* Hugh removed 9/1/2012 */
 	foreach ($result as $row) {
-	  $this->scoresheet[$row->move_no][$row->color] = $row->move;
+	  $this->scoresheet[$row->move_no][$row->color] = $row->algebraic;
 	}
   }
 	

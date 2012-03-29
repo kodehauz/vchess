@@ -653,29 +653,29 @@ class Game {
         return ERROR_CANNOT_CASTLE_SHORT;
       }
       // Short castling - white
-        if (!$board->square_is_empty("f1") || !$board->square_is_empty("g1")) {
-          return ERROR_CASTLING_SQUARES_BLOCKED;
-        }
-        if ($board->king_is_in_check('w')) {
-          return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
-        }
-        if ($board->square_is_under_attack('b', 'f1')) {
-          return ERROR_CANNOT_CASTLE_ACROSS_CHECK;
-        }
-  
-        $board->move_piece("e1", "g1");  // White King
-        $board->move_piece("h1", "f1");  // Rook
-  
-        $this->white_may_not_castle();
-        $move_handled = TRUE;
-        $this->set_last_move('Ke1-g1');
+      if (!$board->square_at_coord_is_empty("f1") || !$board->square_at_coord_is_empty("g1")) {
+        return ERROR_CASTLING_SQUARES_BLOCKED;
+      }
+      if ($board->king_is_in_check('w')) {
+        return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
+      }
+      if ($board->square_is_under_attack('b', 'f1')) {
+        return ERROR_CANNOT_CASTLE_ACROSS_CHECK;
+      }
+
+      $board->move_piece("e1", "g1");  // White King
+      $board->move_piece("h1", "f1");  // Rook
+
+      $this->white_may_not_castle();
+      $move_handled = TRUE;
+      $this->set_last_move('Ke1-g1');
     }
     elseif ($move_string == 'Ke8-g8' && $turn == 'b') {
       if (!$this->may_castle_short($turn)) {
         return ERROR_CANNOT_CASTLE_SHORT;
       }
       // Short castling - black
-      if (!$board->square_is_empty("f8") || !$board->square_is_empty("g8")) {
+      if (!$board->square_at_coord_is_empty("f8") || !$board->square_at_coord_is_empty("g8")) {
         return ERROR_CASTLING_SQUARES_BLOCKED;
       }
       if ($board->king_is_in_check('b')) {
@@ -698,9 +698,9 @@ class Game {
       if (!$this->may_castle_long($turn)) {
         return ERROR_CANNOT_CASTLE_LONG;
       }
-      if (!$board->square_is_empty("b1")
-            || !$board->square_is_empty("c1")
-            || !$board->square_is_empty("d1")) {
+      if (!$board->square_at_coord_is_empty("b1")
+            || !$board->square_at_coord_is_empty("c1")
+            || !$board->square_at_coord_is_empty("d1")) {
           return ERROR_CASTLING_SQUARES_BLOCKED;
       }
       if ($board->king_is_in_check('w')) {
@@ -718,9 +718,9 @@ class Game {
       if (!$this->may_castle_long($turn)) {
         return ERROR_CANNOT_CASTLE_LONG;
       }
-      if (!$board->square_is_empty("b8")
-      || !$board->square_is_empty("c8")
-      || !$board->square_is_empty("d8")) {
+      if (!$board->square_at_coord_is_empty("b8")
+      || !$board->square_at_coord_is_empty("c8")
+      || !$board->square_at_coord_is_empty("d8")) {
         return ERROR_CASTLING_SQUARES_BLOCKED;
       }
       if ($board->king_is_in_check('b')) {
@@ -1052,7 +1052,7 @@ class Game {
     }
   
     // Save move
-    $this->save_move($this->get_move_no(), $this->get_turn(), $move->get_long_move());
+    $this->save_move($this->get_move_no(), $this->get_turn(), $move->get_long_move(), $algebraic_move);
   
     if ($move_handled || $draw_handled) {
       // If game is over update user stats (includes resignation).
@@ -1117,21 +1117,22 @@ class Game {
    *
    * @param int $gid Game id
    * @param int $move_no Number of move, e.g. 3
-   * @param string $turn Whose turn it is, either "w" or "b"
-   * @param string $move e.g. "Nb1-c3" or "Bc1xNf4"
+   * @param $turn Whose turn it is, either "w" or "b"
+   * @param $move e.g. "Nb1-c3" or "Bc1xNf4"
    */
-  function save_move($move_no, $turn, $move) {
+  function save_move($move_no, $turn, $long_move, $algebraic) {
     db_insert('vchess_moves')
     ->fields(array(
         'gid' => $this->game['gid'],
         'move_no' => $move_no,
         'color' => $turn,
-        'move' => $move))
+        'long_move' => $long_move,
+        'algebraic' => $algebraic))
         ->execute();
   }
   
   /**
-   /* Save an open game and update last move time stamp to current time. Chatter
+   * Save an open game and update last move time stamp to current time. Chatter
    * must have been updated already (newest is first in list).
    */
   function save() {
