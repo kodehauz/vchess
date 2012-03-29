@@ -543,6 +543,12 @@ class Game {
     return $this->game['white_may_castle_short'];
   }
   
+  /**
+   * Find out if the given player may castle short
+   * 
+   * @param unknown_type $player
+   * @return TRUE if player may castle short
+   */
   function may_castle_short($player) {
     if ($player == 'w') {
       $may_castle_short = $this->white_may_castle_short();
@@ -648,97 +654,34 @@ class Game {
       }
       $game['mhistory'][count($game['mhistory'])] = 'draw';
     }
-    elseif ($move_string == 'Ke1-g1' && $turn == 'w') {
-      if (!$this->may_castle_short($turn)) {
-        return ERROR_CANNOT_CASTLE_SHORT;
+    elseif ($move_string == 'Ke1-g1' || $move_string == 'Ke8-g8' 
+         || $move_string == 'Ke1-c1' || $move_string == 'Ke8-c8') {
+      switch ($move_string) {
+        case 'Ke1-g1':
+          $error = $this->handle_castling('w', 'e1', 'g1', 'h1', 'f1', array('f1', 'g1'), $board);
+          $algebraic_move = 'O-O';
+          break;
+        case 'Ke1-c1':  
+          $error = $this->handle_castling('w', 'e1', 'c1', 'a1', 'd1', array('b1', 'c1', 'd1'), $board);
+          $algebraic_move = 'O-O-O';
+          break;
+        case 'Ke8-g8':
+          $error = $this->handle_castling('b', 'e8', 'g8', 'h8', 'f8', array('f8', 'g8'), $board);
+          $algebraic_move = 'O-O';
+          break;
+        case 'Ke8-c8':
+          $error = $this->handle_castling('b', 'e8', 'c8', 'a8', 'd8', array('b8', 'c8', 'd8'), $board);
+          $algebraic_move = 'O-O-O';
+          break;
+        default:
+          break;  
       }
-      // Short castling - white
-      if (!$board->square_at_coord_is_empty("f1") || !$board->square_at_coord_is_empty("g1")) {
-        return ERROR_CASTLING_SQUARES_BLOCKED;
+      if ($error == "") {
+        $move_handled = TRUE;
       }
-      if ($board->king_is_in_check('w')) {
-        return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
+      else {
+        return $error;
       }
-      if ($board->square_is_under_attack('b', 'f1')) {
-        return ERROR_CANNOT_CASTLE_ACROSS_CHECK;
-      }
-
-      $board->move_piece("e1", "g1");  // White King
-      $board->move_piece("h1", "f1");  // Rook
-
-      $this->white_may_not_castle();
-      $move_handled = TRUE;
-      $this->set_last_move('Ke1-g1');
-    }
-    elseif ($move_string == 'Ke8-g8' && $turn == 'b') {
-      if (!$this->may_castle_short($turn)) {
-        return ERROR_CANNOT_CASTLE_SHORT;
-      }
-      // Short castling - black
-      if (!$board->square_at_coord_is_empty("f8") || !$board->square_at_coord_is_empty("g8")) {
-        return ERROR_CASTLING_SQUARES_BLOCKED;
-      }
-      if ($board->king_is_in_check('b')) {
-        return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
-      }
-      if ($board->square_is_under_attack('w', 'f8')) {
-        return ERROR_CANNOT_CASTLE_ACROSS_CHECK;
-      }
-  
-      $board->move_piece("e8", "g8"); // Black king
-      $board->move_piece("h8", "f8"); // Black rook
-  
-      $this->black_may_not_castle();
-      $result .= 'You castled short.';
-      $this->set_last_move('Ke8-g8');
-      $move_handled = TRUE;
-    }
-    elseif ($move_string == 'Ke1-c1' && $turn == 'w') {
-      // Long castling - white
-      if (!$this->may_castle_long($turn)) {
-        return ERROR_CANNOT_CASTLE_LONG;
-      }
-      if (!$board->square_at_coord_is_empty("b1")
-            || !$board->square_at_coord_is_empty("c1")
-            || !$board->square_at_coord_is_empty("d1")) {
-          return ERROR_CASTLING_SQUARES_BLOCKED;
-      }
-      if ($board->king_is_in_check('w')) {
-          return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
-      }
-      if ($board->square_is_under_attack('b', 'c1')
-          || $board->square_is_under_attack('b', 'd1')    ) {
-        return ERROR_CANNOT_CASTLE_ACROSS_CHECK;
-      }
-      $move_handled = TRUE;
-      $this->set_last_move('Ke1-c1');
-    }
-    elseif ($move_string == 'Ke8-c8' && $turn == 'b') {
-      // Long castling - black
-      if (!$this->may_castle_long($turn)) {
-        return ERROR_CANNOT_CASTLE_LONG;
-      }
-      if (!$board->square_at_coord_is_empty("b8")
-      || !$board->square_at_coord_is_empty("c8")
-      || !$board->square_at_coord_is_empty("d8")) {
-        return ERROR_CASTLING_SQUARES_BLOCKED;
-      }
-      if ($board->king_is_in_check('b')) {
-        return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
-      }
-      if ($board->square_is_under_attack('w', 'c8')
-      || $board->square_is_under_attack('w', 'd8')) {
-        return ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
-      }
-      
-      $board->move_piece("e8", "c8");  // Black King
-      $board->move_piece("a8", "d8");  // Rook
-      
-      $this->black_may_not_castle();
-
-      $result = 'You castled long.';
-      $move_handled = TRUE;
-      $this->set_last_move('Ke8-c8');
     }
     else {
       // Normal move: [PRNBQK][a-h][1-8][-:x][a-h][1-8][RNBQK]
@@ -1113,6 +1056,86 @@ class Game {
   }
   
   /**
+   * Handle castling
+   * 
+   * @param $turn either 'w' or 'b'
+   * @param $king_coord the coord of the king, e.g. "e1"
+   * @param $castling_coords array of the coords of all the squares involved, from
+   * left to right, e.g. array("e1", "f1", "g1", "h1"
+   *       
+   */
+  function handle_castling($turn, $king_from, $king_to, $rook_from, $rook_to, $gap_coords, $board) {
+    $error = "";  
+    
+    if ($turn == 'w') {
+      $opponent = 'b';
+    }
+    else {
+      $opponent = 'w';
+    }
+  
+    if (count($gap_coords) == 2) {
+      if (!$this->may_castle_short($turn)) {
+        $error = ERROR_CANNOT_CASTLE_SHORT;
+      }
+    }
+    else { // count == 3
+      if (!$this->may_castle_long($turn)) {
+        $error = ERROR_CANNOT_CASTLE_LONG;
+      }
+    }
+    
+    if ($error == "") {
+      foreach ($gap_coords as $gap_coord) {    
+        if (!$board->square_at_coord_is_empty($gap_coord)) {
+          $error = ERROR_CASTLING_SQUARES_BLOCKED;
+        }
+      }
+    }
+    
+    if ($error == "") {      
+      if ($board->king_is_in_check($turn)) {
+        $error = ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
+      }
+    }
+    
+    if ($error == "") {
+      foreach ($gap_coords as $gap_coord) {
+        $square = new Square;
+        $square->set_coord($gap_coord);
+        if ($board->square_is_under_attack($opponent, $square)) {
+          $error = ERROR_CANNOT_CASTLE_ACROSS_CHECK;
+        }
+      }
+    }
+
+    if ($error == "") {
+      $board->move_piece(vchess_coord2square($king_from), vchess_coord2square($king_to));  // White King
+      $board->move_piece(vchess_coord2square($rook_from), vchess_coord2square($rook_to));  // Rook
+      
+      $this->may_not_castle($turn);
+//       $move_handled = TRUE;
+      $this->set_last_move('Ke1-g1');
+    }
+    
+    return $error;
+  }
+  
+  /**
+   * Set the fact that player may not castle
+   * 
+   * @param $turn 'w' or 'b'
+   */
+  function may_not_castle($turn) {
+    if ($turn == 'w') {
+      $this->white_may_not_castle();
+    }
+    else {
+      $this->black_may_not_castle();
+    }
+  }
+  
+  /**
    * Save a game move
    *
    * @param int $gid Game id
@@ -1341,9 +1364,6 @@ function vchess_en_passant_is_ok($player, $pos, $dest, $opp_ep_flag) {
   }
   return 0;
 }
-
-
-
 
 
 

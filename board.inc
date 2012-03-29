@@ -1042,6 +1042,17 @@ function vchess_i2square($index) {
 }
 
 /**
+ * Convert a coord [a1..h8] into a square
+ */
+function vchess_coord2square($coord) {
+  $square = new Square;
+  
+  $square->set_coord($coord);
+  
+  return $square;
+}
+
+/**
  * Convert a file (a..h) into a numerical column (1..8)
  */
 function vchess_file2col($file) {
