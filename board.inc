@@ -34,6 +34,8 @@ define('CAPTURE', 'x');
  * Game class.  This Board class only contains what you would see if you came to a 
  * room and saw a chessboard setup in a particular position; you would not know the
  * move history, nor whose move it was etc.
+ * 
+ * This class acts as the MODEL for the board.
  */
 class Board {
   // The board is stored as an array where the key is the coord and the elements
@@ -133,7 +135,7 @@ class Board {
   /**
    * Get the square that the king is on
    */
-  function get_king_square($color) {
+  function king_square($color) {
     $squares = $this->get_pieces_squares($color, "K");
     
     // There should be only 1 square returned 
@@ -147,7 +149,7 @@ class Board {
    */
   function square_is_empty(Square $square) {
     $empty = TRUE;
-	if (array_key_exists($square->get_coord(), $this->board)) {
+	if (array_key_exists($square->coord(), $this->board)) {
 	  $empty = FALSE;
 	}
 
@@ -260,7 +262,7 @@ class Board {
    * @param $board
    *
    */
-  function square_is_under_attack($attacker, $to_square) {
+  function square_is_under_attack($attacker, Square $to_square) {
     $under_attack = FALSE;
   
     for ($square_index = 0; $square_index < 64; $square_index++) {
@@ -295,7 +297,7 @@ class Board {
 //         $index++;
 //       }
 //     }
-    $king_square = $this->get_king_square($player_color);
+    $king_square = $this->king_square($player_color);
   
     if ($player_color == 'w') {
       $in_check = $this->square_is_under_attack('b', $king_square);
@@ -362,9 +364,10 @@ class Board {
         //      switch ($board[$square_index][1]) {
         switch ($this->get_piece($square)->get_type()) {
           case 'K':
-            $adj_squares = vchess_get_adjacent_squares($square_index);
-            foreach ($adj_squares as $pos) {
-              if ($this->player_on_square($pos) == $player) {
+            $adj_squares = $this->get_adjacent_squares($square);
+//             foreach ($adj_squares as $pos) {
+            foreach ($adj_squares as $square) {
+              if ($this->player_on_square($square) == $player) {
                 continue;
               }
               if ($this->square_is_under_attack($opp, $pos)) {
@@ -373,15 +376,15 @@ class Board {
               // Special case: if square is not actively under
               // attack it may still be blocked due to close
               // opponent king
-              $kingtooclose = 0;
-              $adj_squares2 = vchess_get_adjacent_squares($pos);
+              $king_too_close = FALSE;
+              $adj_squares2 = $this->get_adjacent_squares($square);
               foreach ($adj_squares2 as $coord2) {
                 if ($board[$coord2] == $opp . 'K') {
-                  $kingtooclose = 1;
+                  $king_too_close = TRUE;
                   break;
                 }
               }
-              if ($kingtooclose) {
+              if ($king_too_close) {
                 continue;
               }
               return FALSE;
@@ -459,7 +462,7 @@ class Board {
             }
             break;
           case 'Q':
-            $adj_squares = vchess_get_adjacent_squares($square_index);
+            $adj_squares = $this->get_adjacent_squares($square);
             foreach ($adj_squares as $pos) {
               $square = vchess_i2square($pos);
               //            if ($board[$pos][0] != $player) {
@@ -512,6 +515,48 @@ class Board {
     return TRUE;
   }
   
+  /**
+   * Return the array of adjacent squares (<=8).  
+   * 
+   * @return 
+   *   Returns an array of Squares.
+   */
+  function get_adjacent_squares(Square $square) {
+    $adj_squares = array();
+    
+    $square_index = $square->convert2i();
+    $i = 0;
+    $x = $square_index % 8;
+    $y = floor($square_index / 8);
+  
+    if ($x > 0 && $y > 0) {
+      $adj_squares[$i++] = vchess_i2square($square_index - 9);
+    }
+    if ($y > 0) {
+      $adj_squares[$i++] = vchess_i2square($square_index - 8);
+    }
+    if ($x < 7 && $y > 0) {
+      $adj_squares[$i++] = vchess_i2square($square_index - 7);
+    }
+    if ($x < 7) {
+      $adj_squares[$i++] = vchess_i2square($square_index + 1);
+    }
+    if ($x < 7 && $y < 7) {
+      $adj_squares[$i++] = vchess_i2square($square_index + 9);
+    }
+    if ($y < 7) {
+      $adj_squares[$i++] = vchess_i2square($square_index + 8);
+    }
+    if ($x > 0 && $y < 7) {
+      $adj_squares[$i++] = vchess_i2square($square_index + 7);
+    }
+    if ($x > 0) {
+      $adj_squares[$i++] = vchess_i2square($square_index - 1);
+    }
+  
+    return $adj_squares;
+  }
+  
   
   /**
    * Check whether player's king is in checkmate
@@ -525,32 +570,21 @@ class Board {
     }
   
     // Find the position of the player's king
-    for ($square = 0; $square < 64; $square++) {
-      $square = vchess_i2square($square);
-      $piece = $this->get_piece($square);
-      if ($piece->get_type() == 'K' && $piece->get_color() == $player) {
-        $king_pos = $square;
-        $king_coord = vchess_i2square($king_pos);
-        $king_x = $square % 8;
-        $king_y = floor($square / 8);
-        break;
-      }
-    }
+    $king_square = $this->king_square($player);
   
     // Test adjacent squares while king is temporarily removed
-    $adj_squares = vchess_get_adjacent_squares($king_pos);
+    $adj_squares = $this->get_adjacent_squares($king_square);
     //  $contents = $board[$king_pos];
     //  $board[$king_pos] = '';
-    foreach ($adj_squares as $dest_pos) {
-      $square = vchess_i2square($dest_pos);
+    foreach ($adj_squares as $adj_square) {
       // If this adjacent square has a piece of the same color, then
       // we cannot move the king there
-      if ($this->get_piece($square)->get_color() == $player) {
+      if ($this->get_piece($adj_square)->get_color() == $player) {
         continue;
       }
       // If this adjacent square is under attack, then we cannot
       // move the king there
-      if ($this->square_is_under_attack($opp, $dest_pos)) {
+      if ($this->square_is_under_attack($opp, $adj_square)) {
         continue;
       }
       //    $board[$king_pos] = $contents;
@@ -653,9 +687,16 @@ class Board {
   }
    
   /**
-   * Check whether dest_coord is in reach for piece of piece_type
-   * at square piece_coord. It is not checked whether the square
+   * Check whether $to_square is in reach for piece on the
+   * $piece_square. It is not checked whether the square
    * itself is occupied but only the squares in between.
+   * 
+   * @param $piece_square
+   *   Square on which piece starts from
+   *   
+   * @param $to_square
+   *   Square where piece would like to go to if possible
+   * 
    */
   function square_is_reachable($piece_square, $to_square) {
     $reachable = FALSE;
@@ -675,7 +716,7 @@ class Board {
         case 'P':
           $reachable = $this->check_pawn_attacks($piece_square, $to_square);
           break;
-          // knight
+        // knight
         case 'N':
           if (abs($piece_x - $dest_x) == 1 && abs($piece_y - $dest_y) == 2) {
             $reachable = TRUE;
@@ -705,7 +746,7 @@ class Board {
             $reachable = TRUE;
           }
           break;
-          // rook
+        // rook
         case 'R':
           if ($piece_x != $dest_x && $piece_y != $dest_y) {
             break;
@@ -730,7 +771,7 @@ class Board {
             $reachable = TRUE;
           }
           break;
-          // queen
+        // queen
         case 'Q':
           if (abs($piece_x - $dest_x) != abs($piece_y - $dest_y) && $piece_x != $dest_x && $piece_y != $dest_y) {
             break;
@@ -780,17 +821,15 @@ class Board {
             $reachable = TRUE;
           }
           break;
-          // king
+        // king
         case 'K':
           if (abs($piece_x - $dest_x) > 1 || abs($piece_y - $dest_y) > 1) {
             break;
           }
           $kings = 0;
-          $adj_squares = vchess_get_adjacent_squares($dest_pos);
-          foreach ($adj_squares as $square) {
-            $square = vchess_i2square($square);
-            //        if ($board[$tile][1] == 'K') {
-            if ($this->get_piece($square)->get_type() == 'K') {
+          $adj_squares = $this->get_adjacent_squares($piece_square);
+          foreach ($adj_squares as $adj_square) {
+            if ($this->get_piece($adj_square)->get_type() == 'K') {
               $kings++;
             }
           }
@@ -813,8 +852,8 @@ class Board {
    */
     function get_piece(Square $square) {
       $piece = new Piece;
-      if (array_key_exists($square->get_coord(), $this->board)) {
-        $piece = $this->board[$square->get_coord()];
+      if (array_key_exists($square->coord(), $this->board)) {
+        $piece = $this->board[$square->coord()];
       }
   
       return $piece;
@@ -826,8 +865,19 @@ class Board {
    * No checking is done here as to the validity of the move
    */
   function move_piece(Square $source_square, Square $to_square) {
-    $this->board[$to_square->get_coord()] = $this->board[$source_square->get_coord()];
-    unset($this->board[$source_square->get_coord()]);
+    $this->board[$to_square->coord()] = $this->board[$source_square->coord()];
+    unset($this->board[$source_square->coord()]);
+  }
+  
+  /**
+   * Promote a pawn.  This is effectively a move of a pawn with a change
+   * of piece type.
+   */
+  function promotion(Square $from_square, Square $to_square, $new_type) {
+    $this->move_piece($from_square, $to_square);
+    
+    $coord = $to_square->coord();
+    $this->board[$coord]->set_type($new_type);
   }
   
   /**
@@ -1175,48 +1225,4 @@ function vchess_get_path_change($piece_type, $piece_index, $dest_index) {
   }
   return $change;
 }
-
-/**
- * Return the array of adjacent squares (<=8).  Squares are in the format
- * of a [0..63] index.
- */
-function vchess_get_adjacent_squares($piece_pos) {
-  $adj_squares = array();
-  $i = 0;
-  $x = $piece_pos % 8;
-  $y = floor($piece_pos / 8);
-
-  if ($x > 0 && $y > 0) {
-    $adj_squares[$i++] = $piece_pos - 9;
-  }
-  if ($y > 0) {
-    $adj_squares[$i++] = $piece_pos - 8;
-  }
-  if ($x < 7 && $y > 0) {
-    $adj_squares[$i++] = $piece_pos - 7;
-  }
-  if ($x < 7) {
-    $adj_squares[$i++] = $piece_pos + 1;
-  }
-  if ($x < 7 && $y < 7) {
-    $adj_squares[$i++] = $piece_pos + 9;
-  }
-  if ($y < 7) {
-    $adj_squares[$i++] = $piece_pos + 8;
-  }
-  if ($x > 0 && $y < 7) {
-    $adj_squares[$i++] = $piece_pos + 7;
-  }
-  if ($x > 0) {
-    $adj_squares[$i++] = $piece_pos - 1;
-  }
-
-  /* DEBUG: foreach($adj_squares as $tile)
-   echo 'adj: '.$tile.' '; */
-
-  return $adj_squares;
-}
-
-
-
 

@@ -154,11 +154,11 @@ class Move {
       // and for moves skip source pos and "-"
       if ($this->type() == '-') {
         // e.g. e4
-        $short_move_string = $to_square->get_coord();
+        $short_move_string = $to_square->coord();
       }
       else {
         // e.g. cxd4
-        $short_move_string = $this->long_move[1] . "x" . $to_square->get_coord();
+        $short_move_string = $this->long_move[1] . "x" . $to_square->coord();
       }
     }
     else {
@@ -169,11 +169,11 @@ class Move {
       if (count($pieces_squares) == 1) {
         if ($this->type() == '-') {
           // e.g. Ne4
-          $short_move_string = $source_piece_type . $to_square->get_coord();
+          $short_move_string = $source_piece_type . $to_square->coord();
         }
         else {
           // e.g. Nxd4
-          $short_move_string = $source_piece_type . "x" . $to_square->get_coord();
+          $short_move_string = $source_piece_type . "x" . $to_square->coord();
         }
       }
       else {
@@ -192,11 +192,11 @@ class Move {
           // No other piece of this type can reach the square, so unambiguous
           if ($this->type() == '-') {
             // e.g. Ne4
-            $short_move_string = $source_piece_type . $to_square->get_coord();
+            $short_move_string = $source_piece_type . $to_square->coord();
           }
           else {
             // e.g. Nxd4
-            $short_move_string = $source_piece_type . "x" . $to_square->get_coord();
+            $short_move_string = $source_piece_type . "x" . $to_square->coord();
           }
         }
         else {
@@ -212,11 +212,11 @@ class Move {
           // In this case the file is enough to make the move unique, e.g. Ngf3
           if ($file_unique) {
             if ($this->type() == '-') {
-              $short_move_string = $source_piece_type . $source_file . $to_square->get_coord();
+              $short_move_string = $source_piece_type . $source_file . $to_square->coord();
             }
             else {
               // e.g. Nxd4
-              $short_move_string = $source_piece_type . $source_file . "x" . $to_square->get_coord();
+              $short_move_string = $source_piece_type . $source_file . "x" . $to_square->coord();
             }
           }
           else {
@@ -233,11 +233,11 @@ class Move {
             if ($rank_unique) {
               if ($this->type() == '-') {
                 // e.g. N1f3
-                $short_move_string = $source_piece_type . $source_rank . $to_square->get_coord();
+                $short_move_string = $source_piece_type . $source_rank . $to_square->coord();
               }
               else {
                 // e.g. N1xf3
-                $short_move_string = $source_piece_type . $source_rank . "x" . $to_square->get_coord();
+                $short_move_string = $source_piece_type . $source_rank . "x" . $to_square->coord();
               } 
             }
             else {
@@ -246,11 +246,11 @@ class Move {
               $prefix = $source_piece_type . $source_rank . $source_file;
               if ($this->type() == '-') {
                 // e.g. Ng1f3
-                $short_move_string = $prefix . $to_square->get_coord();
+                $short_move_string = $prefix . $to_square->coord();
               }
               else {
                 // e.g. Ng1xf3
-                $short_move_string = $prefix . "x" . $to_square->get_coord();
+                $short_move_string = $prefix . "x" . $to_square->coord();
               }
             }
           }

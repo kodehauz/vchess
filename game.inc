@@ -771,15 +771,15 @@ class Game {
       $piece_name = $piece->get_name();
       if ($piece_type != 'P') {
         if (!$board->square_is_reachable($piece_square, $to_square)) {
-          return 'ERROR: ' . $to_square->get_coord() . ' is not a legal move of ' . $piece_name . ' at ' . $piece_square->get_coord() . '!';
+          return 'ERROR: ' . $to_square->coord() . ' is not a legal move of ' . $piece_name . ' at ' . $piece_square->coord() . '!';
         }
       }
       else {
         if ($action == MOVE && !$board->piece_may_move_to_square($piece_square, $to_square)) {
-          return 'ERROR: ' . $to_square->get_coord() . ' is not a legal advancing move of ' . $piece_name . ' at ' . $piece_square->get_coord() . '!';
+          return 'ERROR: ' . $to_square->coord() . ' is not a legal advancing move of ' . $piece_name . ' at ' . $piece_square->coord() . '!';
         }
         elseif ($action == CAPTURE && !$board->check_pawn_attacks($piece_square, $to_square)) {
-          return 'ERROR: ' . $to_square->get_coord() . ' is not a legal capturing move of ' . $piece_name . ' at ' . $piece_square->get_coord() . '!';
+          return 'ERROR: ' . $to_square->coord() . ' is not a legal capturing move of ' . $piece_name . ' at ' . $piece_square->coord() . '!';
         }
       }
   
@@ -787,7 +787,7 @@ class Game {
       // Check action
       $coord = vchess_i2square($dest_pos);
       if ($action == MOVE && !$board->square_is_empty($coord)) {
-        return 'ERROR: ' . $to_square->get_coord() . ' is occupied!';
+        return 'ERROR: ' . $to_square->coord() . ' is occupied!';
       }
       if ($action == CAPTURE && $board->square_is_empty($to_square)) {
         // En passant of pawn?
@@ -811,11 +811,11 @@ class Game {
           }
         }
         else {
-          return 'ERROR: ' . $to_square->get_coord() . ' is empty!';
+          return 'ERROR: ' . $to_square->coord() . ' is empty!';
         }
       }
       if ($action == CAPTURE && $board->get_piece($to_square)->get_color() == $this->get_turn()) {
-        return 'ERROR: You cannot attack own chessman at ' . $to_square->get_coord() . '!';
+        return 'ERROR: You cannot attack own chessman at ' . $to_square->coord() . '!';
       }
   
       // Backup affected squares
@@ -915,14 +915,18 @@ class Game {
       if ($piece_type == 'P') {
         if (($this->get_turn() == 'w' && $dest_pos >= 56) ||
             ($this->get_turn() == 'b' && $dest_pos <= 7)) {
-          $pawn_upg = $move_string[strlen($move_string) -1];
-          if ($pawn_upg == '?') {
-            $pawn_upg = 'Q';
+          $promote_to = $move_string[strlen($move_string) -1];
+          if ($promote_to == '?') {
+            $promote_to = 'Q';
             $history_move = sprintf('%sQ', $history_move);
           }
-          $board[$dest_pos] = $this->get_turn() . $pawn_upg;
+          // turn will be something like "w" or "b"
+          // $promote_to looks like the piece which it is promoted to
+          // i.e. assigning something like "wQ"
+          //$board[$dest_pos] = $this->get_turn() . $promote_to;
+          $board->promotion($move->from_square(), $move->to_square(), $promote_to);
           $result = sprintf('%s... promotion to %s!',
-              $result, vchess_get_piece_name($pawn_upg));
+              $result, vchess_get_piece_name($promote_to));
         }
       }
   
