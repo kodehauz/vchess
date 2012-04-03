@@ -22,7 +22,7 @@ class Move {
   /**
    * Get the long move notation
    */
-  function get_long_move() {
+  function long_format() {
     return $this->long_move;
   }
   

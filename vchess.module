@@ -268,8 +268,8 @@
         $startdate = date('M jS Y H:i');
         $lastdate = date('M jS Y H:i');
         $gc .= '<tr><td><img alt="" src="' . $full_path . '/images/' . $theme . '/' . $mark . '"></td>';
-        $gc .= "<td><a href=" . url("vchess/player/" . $game->get_white_player()->get_name()) . ">" . $game->get_white_player()->get_name() . "</a></td>";
-        $gc .= "<td><a href=" . url("vchess/player/" . $game->get_black_player()->get_name()) . ">" . $game->get_black_player()->get_name() . "</a></td>";
+        $gc .= "<td><a href=" . url("vchess/player/" . $game->get_white_player()->name()) . ">" . $game->get_white_player()->name() . "</a></td>";
+        $gc .= "<td><a href=" . url("vchess/player/" . $game->get_black_player()->name()) . ">" . $game->get_black_player()->name() . "</a></td>";
   
         //      $game['moves'] = 42; // Hugh - hard-coding for now
         //      $gc .= '<td>' . 42 . '</td>'; // Hugh - hard-coding for now
@@ -446,7 +446,7 @@
   
     // Display game heading, e.g. "white: admin - black: hugh"
     $out = '<div style="text-align:center;">white: <b>' .
-        $game->get_white_player()->get_name() . '</b> -   black: <b>' . $game->get_black_player()->get_name() . '</b></div><br />';
+        $game->get_white_player()->name() . '</b> -   black: <b>' . $game->get_black_player()->name() . '</b></div><br />';
   
     $out .= '<table width=100% border=0 cellspacing=0 cellpadding=0><tr><td valign="top" rowspan=2>';
   

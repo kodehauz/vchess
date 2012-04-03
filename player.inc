@@ -25,7 +25,7 @@ class Player {
 	/**
 	 * Get a players name
 	 */
-	function get_name() {
+	function name() {
 		return $this->name;
 	}
 	

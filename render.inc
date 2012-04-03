@@ -133,8 +133,8 @@ function vchess_render_board($board, $player, $active, $gid) {
           $coord->set_coord(vchess_col2file(9 - $col) . (9 - $row));
         }
         $piece = $board->get_piece($coord);
-        $piece_name = $piece->get_name();
-        $piece_color = $piece->get_color();
+        $piece_name = $piece->name();
+        $piece_color = $piece->color();
 
         if ((($row + 1) + ($col)) % 2 == 0) {
           $class = 'boardSquareWhite';
@@ -150,7 +150,7 @@ function vchess_render_board($board, $player, $active, $gid) {
           // square with a piece and player has the ability to move
           if ($active) {
           	// Build the first part of the move e.g. "Nb1"
-            $cmdpart = sprintf('%s%s', $board->get_piece($coord)->get_type(), $coord->coord());
+            $cmdpart = sprintf('%s%s', $board->get_piece($coord)->type(), $coord->coord());
             // if the piece is the opposition then the cmdpart becomes e.g. "xNb1"
             if ($piece_color <> $player) {
               $cmdpart = "x" . $cmdpart;
@@ -236,12 +236,12 @@ function vchess_command_form($form, $context, Game $game, $cmdres, $move) {
   
   $form['white'] = array(
     '#type' => 'hidden',
-    '#value' => $game->get_white_player()->get_name()
+    '#value' => $game->get_white_player()->name()
   );
   
   $form['black'] = array(
     '#type' => 'hidden',
-    '#value' => $game->get_black_player()->get_name()
+    '#value' => $game->get_black_player()->name()
   );
   
   $form['turn'] = array(

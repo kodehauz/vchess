@@ -24,7 +24,7 @@ class Piece {
    *  
    * @return string
    */
-  function get_type() {
+  function type() {
 	return $this->type;
   }
 	  
@@ -33,7 +33,7 @@ class Piece {
    * 
    * @return string
    */
-  function get_color() {
+  function color() {
     return $this->color;
   }
   
@@ -44,8 +44,8 @@ class Piece {
 	$this->color = $color;
   }
   
-  function get_name() {
-    return $this->_get_name_from_type($this->type);
+  function name() {
+    return $this->_name_from_type($this->type);
   }
   
   /** 
@@ -54,8 +54,8 @@ class Piece {
    * and black pieces as lower case letters
    */
   function get_FEN_type() {
-    $type = $this->get_type(); // by default already upper case
-    if ($this->get_color() == 'b') {
+    $type = $this->type(); // by default already upper case
+    if ($this->color() == 'b') {
       $type = strtolower($type);
     }
     
@@ -65,7 +65,7 @@ class Piece {
   /**
    * Get full name of chessman from chessman identifier.
    */
-  function _get_name_from_type($type) {
+  function _name_from_type($type) {
     $name = BLANK;
   
     $type = strtoupper($type);
