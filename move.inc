@@ -221,10 +221,10 @@ class Move {
           }
           else {
             // Try to disambiguate by looking at the rank, e.g. N1f3
-            $source_rank = $from_square->get_rank();
+            $source_rank = $from_square->rank();
             $rank_unique = TRUE;
             foreach ($trouble_squares as $trouble_coord) {
-              if ($trouble_coord->get_rank() == $source_rank) {
+              if ($trouble_coord->rank() == $source_rank) {
                 $rank_unique = FALSE;
               }
             }

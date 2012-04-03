@@ -460,20 +460,6 @@ class Game {
   }
   
   /**
-   * Get last kill
-   */
-  function get_last_kill() {
-  	return $this->game['last_kill'];
-  }
-  
-  /** 
-   * Set last kill
-   */
-  function set_last_kill($last_kill) {
-  	$this->game['last_kill'] = $last_kill;
-  }
-  
-  /**
    * Set w2spm
    */
   function set_w2spm($value) {
@@ -716,10 +702,10 @@ class Game {
                     
       }
     
-        $en_passant_okay = FALSE;
+        $en_passant_ok = FALSE;
         // Check action
-        $coord = vchess_i2square($dest_pos);
-        if ($move->type() == "-" && !$board->square_is_empty($coord)) {
+//         $coord = vchess_i2square($dest_pos);
+        if ($move->type() == "-" && !$board->square_is_empty($to_square)) {
           return 'ERROR: ' . $to_square->coord() . ' is occupied!';
         }
         if ($move->type() == "x" && $board->square_is_empty($to_square)) {
@@ -729,17 +715,17 @@ class Game {
               if ($game['b2spm'] != 'x' &&
                   $dest_pos % 8 == $game['b2spm'] &&
                   floor($dest_pos / 8) == 5) {
-                $en_passant_okay = 1;
+                $en_passant_ok = 1;
               }
             }
             else {
               if ($game['w2spm'] != 'x' &&
                   $dest_pos % 8 == $game['w2spm'] &&
                   floor($dest_pos / 8) == 2) {
-                $en_passant_okay = 1;
+                $en_passant_ok = 1;
               }
             }
-            if ($en_passant_okay == 0) {
+            if ($en_passant_ok == 0) {
               return 'ERROR: En-passant is not possible!';
             }
           }
@@ -760,9 +746,9 @@ class Game {
         $algebraic_move = $move->get_algebraic($this->get_player_color($uid), $board);
         
         // If pawn reached last line promote it
-        if ($piece_type == 'P') {
-          if (($this->get_turn() == 'w' && $dest_pos >= 56) ||
-              ($this->get_turn() == 'b' && $dest_pos <= 7)) {
+        if ($piece->type() == 'P') {
+          if (($this->get_turn() == 'w' && $move->to_square()->rank() == 8) ||
+              ($this->get_turn() == 'b' && $move->to_square()->rank() == 1)) {
             $promote_to = new Piece();
 //             $promote_to = $move_string[strlen($move_string) -1];
             $promote_to->set_type($move->dest_piece_type());
@@ -782,23 +768,17 @@ class Game {
           // Perform normal move
           //    $board[$piece_pos] = '';
           $to_square = vchess_i2square($dest_pos);
-          if ($board->get_piece($to_square)->type() != BLANK) {
-            //      $this->set_last_kill(sprintf('%s%s', $board->get_piece_by_index($dest_pos), $dest_pos));
-            $this->set_last_kill($board->get_piece($to_square));
-          }
+
           $board->move_piece($piece_square, $to_square);
         }
         
-        if ($en_passant_okay) {
+        if ($en_passant_ok) {
           // Kill pawn
           if ($game['turn'] == 'w') {
             //         $board[$dest_pos - 8] = '';
-            //        $this->set_last_kill(sprintf('bP%s', $dest_pos -8));
-            //         $this->set_last_kill(sprintf('bP%s', $dest_pos -8));
           }
           else {
             //         $board[$dest_pos + 8] = '';
-            //         $this->set_last_kill(sprintf('wP%s', $dest_pos + 8));
           }
         }
     
@@ -810,10 +790,10 @@ class Game {
         // If a pawn moved two squares this will allow 'en passant'
         // for next turn.
         if ($this->get_turn() == 'w') {
-          $this->set_w2spm($piece_pos % 8);
+//           $this->set_w2spm($piece_pos % 8);
         }
         else {
-          $this->set_b2spm($piece_pos % 8);
+//           $this->set_b2spm($piece_pos % 8);
         }
         
 //         else {

@@ -307,7 +307,7 @@
     $form['opponent'] = array(
         '#type' => 'textfield',
         '#title' => t('opponent'),
-        '#description' => t('Type opponent\'s name. Oppenent must be registered on this site.'),
+        '#description' => t('Type opponent\'s name. Opponent must be registered on this site.'),
         '#required' => TRUE,
     );
   

@@ -712,10 +712,12 @@ class Board {
           // For a pawn we need to take into account the colour since a pawn is the one
           // piece which cannot go backwards
           $piece = $this->get_piece($piece_square);
-          if ($piece->color() == "w" && ($dest_y - $piece_y) == 1) {
+          if ($piece->color() == "w" && (($dest_y - $piece_y) == 1) 
+          || ($piece->color() == "w" && $piece_y = 1 && (($dest_y - $piece_y) == 2))) {
             $reachable = TRUE;
           }
-          elseif (($dest_y - $piece_y) == -1) {
+          elseif (($dest_y - $piece_y) == -1
+          || ($piece_y = 1 && (($dest_y - $piece_y) == 2))) {
             $reachable = TRUE;
           }
           break;
@@ -901,10 +903,10 @@ class Board {
   
     // Convert coord like "d4" into col=4 rank=4
     $piece_col = vchess_file2col($piece_square->get_file()); // e.g. d -> 4
-    $piece_rank = $piece_square->get_rank();
+    $piece_rank = $piece_square->rank();
   
     $dest_col = vchess_file2col($to_square->get_file());  // e.g. e -> 5
-    $dest_rank = $to_square->get_rank();
+    $dest_rank = $to_square->rank();
   
     if ($piece_color == 'w') {
       if ($dest_rank == $piece_rank + 1
@@ -966,9 +968,9 @@ class Board {
     if ($this->square_is_empty($to_square)) {
       $piece = $this->get_piece($piece_square);
       $piece_file = $piece_square->get_file(); // e.g. e
-      $piece_rank = $piece_square->get_rank(); // e.g. 2
+      $piece_rank = $piece_square->rank(); // e.g. 2
       $dest_file = $to_square->get_file();  // e.g. e
-      $dest_rank = $to_square->get_rank();  // e.g. 4
+      $dest_rank = $to_square->rank();  // e.g. 4
   
       // Check pawn stays on same file.
       // Captures are checked in check_pawn_attacks()
