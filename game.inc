@@ -830,7 +830,6 @@ class Game {
           else {
             $result = $result . '... CHECK!';
           }
-          $history_move = sprintf('%s+', $history_move);
         }
         elseif ($board->is_stalemate($cur_opp, $this->get_w2spm(), $this->get_b2spm())) {
           $this->set_curstate('-');

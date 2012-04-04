@@ -113,7 +113,7 @@ class Board {
    * This function is used for things like checking that the short move 
    * is unique (e.g. Nbc3 rather than just Nc3).  
    */
-  function get_pieces_squares($color, $search_type) {
+  function piece_type_squares($search_type, $color) {
     $squares = array();
     
     foreach ($this->board as $piece_coord => $piece) {
@@ -128,10 +128,32 @@ class Board {
   }
   
   /**
+   * Get an array of squares for a given piece color
+   * e.g. array("a1", "a2", ..., "h2") for white at the start of the game
+   *
+   * @param $color
+   *   Player color whose pieces we would like an array of their locations
+   */
+  function pieces_squares($color) {
+    $squares = array();
+  
+    foreach ($this->board as $piece_coord => $piece) {
+      if ($piece->color() == $color) {
+        $square = new Square;
+        $square->set_coord($piece_coord);
+        $squares[] = $square;
+      }
+    }
+  
+    return $squares;
+  }
+  
+  
+  /**
    * Get the square that the king is on
    */
   function king_square($color) {
-    $squares = $this->get_pieces_squares($color, "K");
+    $squares = $this->piece_type_squares("K", $color);
     
     // There should be only 1 square returned 
     return $squares[0]; 
@@ -254,24 +276,42 @@ class Board {
    * @param $to_square
    *   The square which is being checked to see if it is under attack e.g. "d4"
    *
-   * @param $board
-   *
    */
   function square_is_under_attack($attacker, Square $to_square) {
     $under_attack = FALSE;
   
-    for ($square_index = 0; $square_index < 64; $square_index++) {
-      $piece_coord = vchess_i2square($square_index);
-      $piece = $this->get_piece($piece_coord);
-      $piece_type = $piece->type();
-      $piece_color = $piece->color();
-      if ($piece_type <> "" && $piece_color == $attacker
-          && $this->square_is_reachable($piece_coord, $to_square)) {
+    $pieces_squares = $this->pieces_squares($attacker);
+    foreach ($pieces_squares as $piece_square) {
+      if ($this->piece_attacks($piece_square, $to_square)) {
         $under_attack = TRUE;
       }
     }
   
     return $under_attack;
+  }
+  
+  /**
+   * Check if given piece attacks the given square
+   * 
+   * @param $attack_square
+   *   Square of piece trying to attack
+   * 
+   * @param $to_square
+   *   Square which is being tested to see if it is attacked or not
+   */
+  function piece_attacks($attack_square, $to_square) {
+    $attacks = FALSE;
+    
+    $piece = $this->get_piece($attack_square);
+    if ($piece->type() <> "P") {
+      $attacks = $this->square_is_reachable($attack_square, $to_square);
+    }
+    else {
+      // For a pawn, we have to check whether it actually attacks
+      $attacks = $this->check_pawn_attacks($attack_square, $to_square);     
+    }
+    
+    return $attacks;
   }
   
   /**
@@ -902,9 +942,10 @@ class Board {
    * Note that it is not necessary for a piece to be on the
    * destination square for that square to be attacked
    *
-   * @param $piece_square Coordinate (e.g. "d2") of piece
-   * @param $to_square Coordinate (e.g. "e3") of attacked square
-   * @param $board Board
+   * @param $piece_square 
+   *   Square of piece
+   * @param $to_square 
+   *   Square of attacked square
    */
   function check_pawn_attacks(Square $piece_square, Square $to_square) {
     $attacks = FALSE;
