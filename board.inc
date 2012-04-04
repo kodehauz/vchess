@@ -6,7 +6,13 @@
  */
 
 // Define as a FEN string the standard board starting position
+// For FEN, we start with the black side of the board (a8-h8), and finish with the white pieces (a1-h1).
+// For FEN, white pieces are stored in UPPER CASE, black pieces in lower case and blank squares as space.
+// 
+// e.g. after 1.e4 the FEN string will be:
+// rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR
 define("BOARD_DEFAULT", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
+define("BOARD_PROMOTION", "k7/4P3/8/8/8/8/8/K7");
 
 // Define the column letters
 define("COL_a", 1);

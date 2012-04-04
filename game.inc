@@ -65,7 +65,7 @@ class Game {
    * Create a new game. If $bcomment is not empty it is black's initial comment.
    */
   function new_game($white, $black, $white_uid, $black_uid, $bcomment) {
-  	/* Build new game context */
+  	// Build new game context 
   	$this->game['ts_start'] = REQUEST_TIME;
   	$this->game['white'] = $white;
   	$this->game['black'] = $black;
@@ -82,8 +82,10 @@ class Game {
   	$this->game['lastkill'] = 'x';
   	$this->game['old_castle_short'] = 'x';
   	$this->game['old_castle_long'] = 'x';
+  	
   	$board = new Board();
-  	$board->setup_as_standard();
+//  	$board->setup_as_standard();
+  	$board->setup_with_FEN(BOARD_PROMOTION);
   	$this->game['board'] = $board;
   	
   	if (empty($bcomment)) {
@@ -747,7 +749,7 @@ class Game {
         if (($this->get_turn() == 'w' && $move->to_square()->rank() == 8) ||
             ($this->get_turn() == 'b' && $move->to_square()->rank() == 1)) {
           $promote_to = new Piece();
-          $promote_to->set_type($move->dest_piece_type());
+          $promote_to->set_type($move->promotion_piece_type());
           if ($promote_to == '?') {
             $promote_to->set_type('Q');
           }

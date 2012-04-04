@@ -106,28 +106,27 @@ class Move {
   }
   
   /** 
-   * Get the piece for pawn promotion
+   * Get the piece type for pawn promotion
    * 
-   *  e.g. Ph7-h8=Q returns a Queen
+   *  e.g. Ph7-h8=Q returns "Q"
    *  
-   * @return returns the piece which is selected, one of:
-   * - Queen
-   * - Rook
-   * - Bishop
-   * - Knight
-   * If the move is not a valid promotion move then an empty piece is returned.
+   * @return returns the piece type which is selected, one of:
+   * - Q, R, B or K (Knight)
+   * 
+   * If the move is not a valid promotion move then "" is returned.
    * 
    */
-  function promotion_piece() {
-    $piece = new Piece();
+  function promotion_piece_type() {
+    $piece_type = "";
     
-    if (($this->type() == "P") 
+    if (($this->source_piece_type() == "P")
+    && ($this->type() == "-") 
     && (($this->from_square()->rank() == 7 && $this->to_square()->rank() == 8)
     || ($this->from_square()->rank() == 2 && $this->to_square()->rank() == 1))) {
-      $piece->set_type(substr($this->long_move, 7, 1)); 
+      $piece_type = substr($this->long_move, 7, 1); 
     }
     
-    return $piece;
+    return $piece_type;
   } 
   
   /**

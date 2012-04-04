@@ -148,13 +148,13 @@ function onClickMove()
 		// If pawn enters last line ask for promotion
 		if (move[0]=='P' && (move[5]=='8' || move[5]=='1')) {
 			if (confirm('Promote to Queen? (Press Cancel for other options)'))
-				move=move+'Q';
+				move = move + '=Q';
 			else if (confirm('Promote to Rook? (Press Cancel for other options)'))
-				move=move+'R';
+				move = move + '=R';
 			else if (confirm('Promote to Bishop? (Press Cancel for other options)'))
-				move=move+'B';
+				move = move + '=B';
 			else if (confirm('Promote to Knight? (Press Cancel to abort move)'))
-				move=move+'N';
+				move = move + '=N';
 			else
 				return;
 		}
