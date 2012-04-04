@@ -105,6 +105,31 @@ class Move {
     return $dest_piece_type;
   }
   
+  /** 
+   * Get the piece for pawn promotion
+   * 
+   *  e.g. Ph7-h8=Q returns a Queen
+   *  
+   * @return returns the piece which is selected, one of:
+   * - Queen
+   * - Rook
+   * - Bishop
+   * - Knight
+   * If the move is not a valid promotion move then an empty piece is returned.
+   * 
+   */
+  function promotion_piece() {
+    $piece = new Piece();
+    
+    if (($this->type() == "P") 
+    && (($this->from_square()->rank() == 7 && $this->to_square()->rank() == 8)
+    || ($this->from_square()->rank() == 2 && $this->to_square()->rank() == 1))) {
+      $piece->set_type(substr($this->long_move, 7, 1)); 
+    }
+    
+    return $piece;
+  } 
+  
   /**
    * Get short notation of move
    * e.g. Pe2-e4 -> e4
@@ -130,6 +155,12 @@ class Move {
    * so Rdd5 is correct.
    *
    * See http://en.wikipedia.org/wiki/Algebraic_notation_(chess)
+   * 
+   * @param $player
+   *   The color of the player making the move, either "b" or "w"
+   * 
+   * @param $board
+   *   The board on which the move is being made
    */
   function get_algebraic($player, Board $board) {
     // If all else fails, just return the long move

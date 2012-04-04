@@ -94,9 +94,11 @@ class Scoresheet {
 	
   /** 
    * Get the scoresheet as a table
+   * 
+   * @return
+   *   Returns a themed table of moves.
    */
   function get_table() {
-   
     $rows = array();
     foreach ($this->scoresheet as $move_no => $move) {
       if (array_key_exists('b', $move)) {
