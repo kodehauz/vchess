@@ -567,7 +567,7 @@ class Game {
    *   String of current move in long format (e.g. "Pe2-e4")
    *   
    * @param $comment
-   *   @todo ???
+   *   @todo Please document this parameter
    */
   function handle_move($uid, $move_string, $comment) {
   
@@ -763,12 +763,13 @@ class Game {
             $result = sprintf('%s... promotion to %s!',
                 $result, $promote_to->name());
           }
+          else {
+            // Perform normal move
+            $board->move_piece($piece_square, $to_square);
+          }
         }
         else {
           // Perform normal move
-          //    $board[$piece_pos] = '';
-          $to_square = vchess_i2square($dest_pos);
-
           $board->move_piece($piece_square, $to_square);
         }
         

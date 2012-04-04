@@ -701,9 +701,9 @@ class Board {
       $piece_pos = $piece_square->convert2i();
       $dest_pos = $to_square->convert2i();
   
-      $piece_y = floor($piece_pos / 8);
+      $piece_y = floor($piece_pos / 8) + 1;
       $piece_x = $piece_pos % 8;
-      $dest_y = floor($dest_pos / 8);
+      $dest_y = floor($dest_pos / 8) + 1;
       $dest_x = $dest_pos % 8;
   
       switch ($piece_type) {
@@ -711,14 +711,24 @@ class Board {
         case 'P':
           // For a pawn we need to take into account the colour since a pawn is the one
           // piece which cannot go backwards
-          $piece = $this->get_piece($piece_square);
-          if ($piece->color() == "w" && (($dest_y - $piece_y) == 1) 
-          || ($piece->color() == "w" && $piece_y = 1 && (($dest_y - $piece_y) == 2))) {
-            $reachable = TRUE;
+          $piece_color = $this->get_piece($piece_square)->color();
+          if ($piece_color == "w") {
+            if (($dest_y - $piece_y) == 1) { // Normal 1-square move
+              $reachable = TRUE;
+            }
+            elseif ($piece_y == 2 && (($dest_y - $piece_y) == 2)) { // Initial 2-square move
+              $reachable = TRUE;
+            }
           }
-          elseif (($dest_y - $piece_y) == -1
-          || ($piece_y = 1 && (($dest_y - $piece_y) == 2))) {
-            $reachable = TRUE;
+          else { // $piece_color == "b"
+            if (($dest_y - $piece_y) == -1) {
+              $reachable = TRUE;
+            }
+            else {
+              if ($piece_y == 7 && (($dest_y - $piece_y) == -2)) { // Initial 2-square move
+                $reachable = TRUE;
+              }
+            }
           }
           break;
         // Knight
