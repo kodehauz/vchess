@@ -56,8 +56,9 @@ class Move {
   }
   
   /**
-   * Get the source coord from a given move
+   * Get the from square for a given move
    *
+   * e.g.
    * In a move like "Bf5xPe4" return "f5"
    * In a move like "Rh4-d4" return "h4"
    */
@@ -119,10 +120,24 @@ class Move {
   function promotion_piece_type() {
     $piece_type = "";
     
+    // Check that a pawn promotion is happening
+    if ($this->from_square()->rank() == 7 && $this->to_square()->rank() == 8) {
+      $white_promotion = TRUE;
+    }
+    else {
+      $white_promotion = FALSE;
+      
+      if ($this->from_square()->rank() == 2 && $this->to_square()->rank() == 1) {
+        $black_promotion = TRUE;
+      }
+      else {
+        $black_promotion = FALSE;
+      }
+    }
+    
     if (($this->source_piece_type() == "P")
     && ($this->type() == "-") 
-    && (($this->from_square()->rank() == 7 && $this->to_square()->rank() == 8)
-    || ($this->from_square()->rank() == 2 && $this->to_square()->rank() == 1))) {
+    && ($white_promotion || $black_promotion)) {
       $piece_type = substr($this->long_move, 7, 1); 
     }
     

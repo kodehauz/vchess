@@ -940,11 +940,11 @@ class Board {
    * Promote a pawn.  This is effectively a move of a pawn with a change
    * of piece type.
    */
-  function promotion(Square $from_square, Square $to_square, $new_type) {
+  function promotion(Square $from_square, Square $to_square, Piece $new_piece) {
     $this->move_piece($from_square, $to_square);
     
     $coord = $to_square->coord();
-    $this->board[$coord]->set_type($new_type);
+    $this->board[$coord]->set_type($new_piece->type());
   }
   
   /**

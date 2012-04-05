@@ -84,8 +84,8 @@ class Game {
   	$this->game['old_castle_long'] = 'x';
   	
   	$board = new Board();
-//  	$board->setup_as_standard();
-  	$board->setup_with_FEN(BOARD_PROMOTION);
+  	$board->setup_as_standard();
+//  	$board->setup_with_FEN(BOARD_PROMOTION);
   	$this->game['board'] = $board;
   	
   	if (empty($bcomment)) {
@@ -572,7 +572,6 @@ class Game {
    *   @todo Please document this parameter
    */
   function handle_move($uid, $move_string, $comment) {
-  
     $mate_type = "";
   
     $move = new Move();
@@ -583,6 +582,8 @@ class Game {
     $result = "";
     $move_handled = FALSE;
     $move_ok = TRUE;
+    
+//    $result .= "move_string = $move_string. ";
   
     if (!$this->is_players_move($uid)) {
       $result .= 'It is not your turn!';
