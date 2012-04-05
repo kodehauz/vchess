@@ -132,7 +132,7 @@ function vchess_render_board($board, $player, $active, $gid) {
         else {
           $coord->set_coord(vchess_col2file(9 - $col) . (9 - $row));
         }
-        $piece = $board->get_piece($coord);
+        $piece = $board->piece($coord);
         $piece_name = $piece->name();
         $piece_color = $piece->color();
 
@@ -150,7 +150,7 @@ function vchess_render_board($board, $player, $active, $gid) {
           // square with a piece and player has the ability to move
           if ($active) {
           	// Build the first part of the move e.g. "Nb1"
-            $cmdpart = sprintf('%s%s', $board->get_piece($coord)->type(), $coord->coord());
+            $cmdpart = sprintf('%s%s', $board->piece($coord)->type(), $coord->coord());
             // if the piece is the opposition then the cmdpart becomes e.g. "xNb1"
             if ($piece_color <> $player) {
               $cmdpart = "x" . $cmdpart;

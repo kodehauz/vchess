@@ -596,38 +596,15 @@ class Game {
       else {
         $opponent = 'w';
       }
-    
-      // if ($game['curstate'] != '?' && $game['curstate'] != 'D') {
-      //    $result .=  'Game is over.';
-      //  }
-    
-      /* Old castling meaning:
-       * 0 - rook or king moved
-      * 1 - possible
-      * 9 - performed */
-    
-      // Accept "---" although it is now called resign.
-      //  if ($move_string == '---' || $move_string == 'resign') {
-      //    $move_string = 'resigned';
-      //  }
-    
+   
       // HANDLE MOVES:
-      // resign                            resign
-      // O-O                               short castling
-      // O-O-O                             long castling
-      // draw?                             offer a draw
-      // accept_draw                       accept the draw
-      // refuse_draw                       refuse the draw
-      // [PRNBQK][a-h][1-8][-:x][a-h][1-8] unshortened move
-//       if ($move_string == 'draw?' && $this->get_curstate() == '?') {
-      if ($move->type() == 'draw?' && $this->get_curstate() == '?') {
+     if ($move->type() == 'draw?' && $this->get_curstate() == '?') {
         // Offer draw
         $this->set_curstate('D');
         $result .= 'You have offered a draw.';
         $draw_handled = 1;
         $game['lastmove'] = 'DrawOffered';
       }
-//       elseif ($move_string == 'refuse_draw' && $this->get_curstate() == 'D') {
       elseif ($move->type() == 'refuse_draw' && $this->get_curstate() == 'D') {
         // Refuse draw
         $this->set_curstate('?');
@@ -635,7 +612,6 @@ class Game {
         $result .= 'You refused the draw.';
         $game['lastmove'] = 'DrawRefused';
       }
-//       elseif ($move_string == 'accept_draw' && $this->get_curstate() == 'D') {
       elseif ($move->type() == 'accept_draw' && $this->get_curstate() == 'D') {
         // Accept draw
         $this->set_curstate('-');
@@ -733,7 +709,8 @@ class Game {
           $result .= 'ERROR: ' . $to_square->coord() . ' is empty!';
         }
       }
-      if ($move->type() == "x" && $board->get_piece($to_square)->color() == $this->get_turn()) {
+      
+      if ($move->type() == "x" && $board->piece($to_square)->color() == $this->get_turn()) {
         $result .= 'ERROR: You cannot attack own chessman at ' . $to_square->coord() . '!';
       }
   
@@ -745,37 +722,14 @@ class Game {
       // which would result in 'no one can reach' error)
       $algebraic_move = $move->get_algebraic($this->get_player_color($uid), $board);
       
-      // If pawn reached last line promote it
-      if ($piece->type() == 'P') {
-        if (($this->get_turn() == 'w' && $move->to_square()->rank() == 8) ||
-            ($this->get_turn() == 'b' && $move->to_square()->rank() == 1)) {
-          $promote_to = new Piece();
-          $promote_to->set_type($move->promotion_piece_type());
-          if ($promote_to == '?') {
-            $promote_to->set_type('Q');
-          }
-          // turn will be something like "w" or "b"
-          // $promote_to looks like the piece which it is promoted to
-          // i.e. assigning something like "wQ"
-          //$board[$dest_pos] = $this->get_turn() . $promote_to;
-          $board->promotion($move->from_square(), $move->to_square(), $promote_to);
-          $result .= sprintf('%s... promotion to %s!',
-              $result, $promote_to->name());
-        }
-        else {
-          if ($move_ok) {
-            // Perform normal move
-            $board->move_piece($piece_square, $to_square);
-          }
-        }
-      }
-      else {
-        if ($move_ok) {
-          // Perform normal move
-          $board->move_piece($piece_square, $to_square);
-        }
-      }
+      // If pawn reached last rank, promote it
+      $pawn_promoted = $this->handle_pawn_promotion($move, $board);
       
+      if ($move_ok && !$pawn_promoted) {
+        // Perform normal move
+        $board->move_piece($piece_square, $to_square);
+      }
+           
       if ($en_passant_ok) {
         // Kill pawn
         if ($game['turn'] == 'w') {
@@ -898,6 +852,28 @@ class Game {
       }
     }
     return $result;
+  }
+  
+  /**
+   * Handle pawn promotion
+   */
+  function handle_pawn_promotion(Move $move, Board $board) {
+    $pawn_promoted = FALSE;
+    
+    $piece = $board->piece($move->from_square());
+    if ($piece->type() == 'P') {
+      if (($this->get_turn() == 'w' && $move->to_square()->rank() == 8) ||
+          ($this->get_turn() == 'b' && $move->to_square()->rank() == 1)) {
+        $promote_to = new Piece();
+        $promote_to->set_type($move->promotion_piece_type());
+    
+        $board->promotion($move->from_square(), $move->to_square(), $promote_to);
+        
+        $pawn_promoted = TRUE;
+      }
+    }
+    
+    return $pawn_promoted;
   }
   
   /**

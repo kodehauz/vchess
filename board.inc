@@ -199,7 +199,7 @@ class Board {
   function player_on_square(Square $square) {
 	$player_color = "";
 	if (!$this->square_is_empty($square)) {
-	  $player_color = $this->get_piece($square)->color();
+	  $player_color = $this->piece($square)->color();
 	}
 
 	return $player_color;
@@ -229,7 +229,7 @@ class Board {
    	      $empty_squares++;
    	    }
    	    else {
-   	      $piece = $this->get_piece($coord);
+   	      $piece = $this->piece($coord);
    	      if ($empty_squares > 0) {
    	        $FEN_string .= $empty_squares;
    	        $empty_squares = 0;
@@ -314,7 +314,7 @@ class Board {
   function piece_attacks($attack_square, $to_square) {
     $attacks = FALSE;
     
-    $piece = $this->get_piece($attack_square);
+    $piece = $this->piece($attack_square);
     if ($piece->type() == "P") {
       // For a pawn, we have to check whether it actually attacks
       $attacks = $this->pawn_attacks($attack_square, $to_square);
@@ -335,8 +335,8 @@ class Board {
 //     $index = 0;
 //     while (!$found && $index <= 63) {
 //       $coord = vchess_i2square($index);
-//       if ($this->get_piece($coord)->color() == $player_color
-//           && $this->get_piece($coord)->type() == "K") {
+//       if ($this->piece($coord)->color() == $player_color
+//           && $this->piece($coord)->type() == "K") {
 //         $king_pos = $coord;
 //         $found = TRUE;
 //       }
@@ -409,7 +409,7 @@ class Board {
         // Can the piece move theoretically thus is there
         // at least one tile free for one piece?
         //      switch ($board[$square_index][1]) {
-        switch ($this->get_piece($square)->type()) {
+        switch ($this->piece($square)->type()) {
           case 'K':
             $adj_squares = $this->get_adjacent_squares($square);
 //             foreach ($adj_squares as $pos) {
@@ -607,6 +607,9 @@ class Board {
   
   /**
    * Check whether player's king is in checkmate
+   * 
+   * @param $player
+   *   Player, either 'w' or 'b'
    */
   function is_checkmate($player) {
     if ($player == 'w') {
@@ -626,7 +629,7 @@ class Board {
     foreach ($adj_squares as $adj_square) {
       // If this adjacent square has a piece of the same color, then
       // we cannot move the king there
-      if ($this->get_piece($adj_square)->color() == $player) {
+      if ($this->piece($adj_square)->color() == $player) {
         continue;
       }
       // If this adjacent square is under attack, then we cannot
@@ -640,45 +643,33 @@ class Board {
       // isn't checkmate
       return FALSE;
     }
-    //  $board[$king_pos] = $contents;
   
     // Get all pieces that attack the king
-    $attacker_coords = array();
-    for ($square_index = 0; $square_index < 64; $square_index++) {
-      $square_coord = vchess_i2square($square_index);
-      $piece = $this->get_piece($square_coord);
-      if ($piece->color() <> $player) {
-        if (($piece->type() == 'P' && $this->pawn_attacks($square_coord, $king_coord))
-            || ($piece->type() != 'P' && $this->square_is_reachable($square_coord, $king_coord))) {
-          $attacker_coords[] = $square_coord;
-        }
+    $enemy_piece_squares = $this->pieces_squares($opp);
+    foreach ($enemy_piece_squares as $enemy_piece_square) {
+      $piece = $this->piece($enemy_piece_square);
+      if ($this->piece_attacks($enemy_piece_square, $king_square)) {
+        $attacker_squares[] = $enemy_piece_square;
       }
     }
   
     // If more than one there is no chance to escape
-    if (count($attacker_coords) > 1) {
+    if (count($attacker_squares) > 1) {
       return TRUE;
     }
   
     // There is only 1 attacker.  Check whether this attacker can be killed by own piece.
     for ($square_index = 0; $square_index < 64; $square_index++) {
       $square_coord = vchess_i2square($square_index);
-      if ($this->get_piece($square_coord)->color() == $player) {
-        $piece_type = $this->get_piece($square_coord)->type();
+      if ($this->piece($square_coord)->color() == $player) {
+        $piece_type = $this->piece($square_coord)->type();
         if (($piece_type == 'P' && $this->pawn_attacks($square_coord, $attacker_coords[0]))
             || ($piece_type != 'P' && $piece_type != 'K' && $this->square_is_reachable($square_coord, $attacker_coords[0]))
             || ($piece_type == 'K' && $this->square_is_reachable($square_coord, $attacker_coords[0]) && !$this->square_is_under_attack($opp, $attacker_coords[0]))) {
-          // DEBUG: echo 'candidate: $square ';
           $can_kill_attacker = FALSE;
-          //           $contents_def = $board[$square];
-          //           $contents_atk = $board[$dest_pos];
-          //           $board[$dest_pos] = $board[$square];
-          //           $board[$square] = '';
           if (!$this->square_is_under_attack($opp, $king_coord)) {
             $can_kill_attacker = TRUE;
           }
-          //           $board[$square] = $contents_def;
-          //           $board[$dest_pos] = $contents_atk;
           if ($can_kill_attacker) {
             return FALSE;
           }
@@ -691,7 +682,7 @@ class Board {
     // If attacking unit is a knight there
     // is no way to block the path.
     $to_square = vchess_i2square($dest_pos);
-    if ($this->get_piece($to_square)->type() == 'N') {
+    if ($this->piece($to_square)->type() == 'N') {
       return TRUE;
     }
   
@@ -707,12 +698,12 @@ class Board {
     // unit that can be blocked to stop the attack
     //  $change = vchess_get_path_change($board[$dest_pos][1], $dest_pos, $king_pos);
     $to_square = vchess_i2square($dest_pos);
-    $change = vchess_get_path_change($this->get_piece($to_square)->type(), $dest_pos, $king_pos);
+    $change = vchess_get_path_change($this->piece($to_square)->type(), $dest_pos, $king_pos);
     $path = vchess_get_path($dest_pos + $change, $king_pos, $change);
     foreach ($path as $pos) {
       for ($square_index = 0; $square_index < 64; $square_index++) {
         $square = vchess_i2square($square_index);
-        $piece = $this->get_piece($square);
+        $piece = $this->piece($square);
         $piece_type = $piece->type();
         if ($piece->color() == $player) {
           if (($piece_type == 'P' && $board->piece_may_move_to_square($square, $pos))
@@ -745,10 +736,10 @@ class Board {
    *   Square where piece would like to go to if possible
    * 
    */
-  function square_is_reachable($piece_square, $to_square) {
+  function square_is_reachable(Square $piece_square, Square $to_square) {
     $reachable = FALSE;
   
-    $piece_type = $this->get_piece($piece_square)->type();
+    $piece_type = $this->piece($piece_square)->type();
     if ($piece_square != $to_square) {
       $piece_pos = $piece_square->convert2i();
       $dest_pos = $to_square->convert2i();
@@ -763,7 +754,7 @@ class Board {
         case 'P':
           // For a pawn we need to take into account the colour since a pawn is the one
           // piece which cannot go backwards
-          $piece_color = $this->get_piece($piece_square)->color();
+          $piece_color = $this->piece($piece_square)->color();
           if ($piece_color == "w") {
             if (($dest_y - $piece_y) == 1) { // Normal 1-square move
               $reachable = TRUE;
@@ -896,7 +887,7 @@ class Board {
           $kings = 0;
           $adj_squares = $this->get_adjacent_squares($piece_square);
           foreach ($adj_squares as $adj_square) {
-            if ($this->get_piece($adj_square)->type() == 'K') {
+            if ($this->piece($adj_square)->type() == 'K') {
               $kings++;
             }
           }
@@ -917,7 +908,7 @@ class Board {
    *
    * @param $square e.g. "a1"
    */
-    function get_piece(Square $square) {
+    function piece(Square $square) {
       $piece = new Piece;
       if (array_key_exists($square->coord(), $this->board)) {
         $piece = $this->board[$square->coord()];
@@ -965,7 +956,7 @@ class Board {
   function pawn_attacks(Square $pawn_square, Square $to_square) {
     $attacks = FALSE;
   
-    $piece_color = $this->get_piece($pawn_square)->color();
+    $piece_color = $this->piece($pawn_square)->color();
   
     // Convert coord like "d4" into col=4 rank=4
     $piece_col = vchess_file2col($pawn_square->get_file()); // e.g. d -> 4
@@ -1001,7 +992,7 @@ class Board {
   function piece_may_move_to_square($piece_square, $to_square) {
     $move_ok = FALSE;
     
-    $piece = $this->get_piece($piece_square);
+    $piece = $this->piece($piece_square);
     switch ($piece->type()) {
       case 'P':
         $move_ok = $this->_pawn_may_move_to_square($piece_square, $to_square);
@@ -1032,7 +1023,7 @@ class Board {
     $move_ok = FALSE;
   
     if ($this->square_is_empty($to_square)) {
-      $piece = $this->get_piece($piece_square);
+      $piece = $this->piece($piece_square);
       $piece_file = $piece_square->get_file(); // e.g. e
       $piece_rank = $piece_square->rank(); // e.g. 2
       $dest_file = $to_square->get_file();  // e.g. e
@@ -1086,7 +1077,7 @@ class Board {
   function _piece_may_move_to_square($piece_square, $to_square) {
     $move_ok = FALSE;
   
-    $color = $this->get_piece($piece_square)->color();
+    $color = $this->piece($piece_square)->color();
     if ($this->square_is_empty($to_square) && $this->square_is_reachable($piece_square, $to_square)) {
       // The only thing which would stop it would be if moving the piece
       // would expose the player to a discovered check.  To test this,

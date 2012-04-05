@@ -29,26 +29,26 @@ class Move {
   /**
    * Get the destination square from a given move
    *
-   * In a move like "Bf5xPe4":
-   *   $move[0] = source piece
-   *   $move[1-2] = source coord
-   *   $move[3] = move type, "x"
-   *   $move[4] = dest piece
-   *   $move[5-6] = dest square
-   *
-   * In a move like "Rh4-d4":
-   *   $move[0] = source piece
-   *   $move[1-2] = source coord
-   *   $move[3] = move type, "-"
-   *   $move[4-5] = dest square
+   * e.g. in a move like "Rh4-d4" the destination square is d4
    */
   function to_square() {
     $to_square = new Square();
     
     if ($this->long_move[3] == "x") {
+      // In a move like "Bf5xPe4"
+      //   $move[0] = source piece
+      //   $move[1-2] = source coord
+      //   $move[3] = move type, "x"
+      //   $move[4] = dest piece
+      //   $move[5-6] = dest square
       $to_square->set_coord(substr($this->long_move, 5, 2));
     }
     else { // Move type = "-"
+      // In a move like "Rh4-d4":
+      //   $move[0] = source piece
+      //   $move[1-2] = source coord
+      //   $move[3] = move type, "-"
+      //   $move[4-5] = dest square
       $to_square->set_coord(substr($this->long_move, 4, 2));
     }
   
@@ -200,6 +200,11 @@ class Move {
       if ($this->type() == '-') {
         // e.g. e4
         $short_move_string = $to_square->coord();
+        
+        // Check if pawn promotion, e.g. e8=Q
+        if ($this->to_square()->rank() == 1 || $this->to_square()->rank() == 8) {
+          $short_move_string .= "=" . $this->promotion_piece_type();
+        }
       }
       else {
         // e.g. cxd4
