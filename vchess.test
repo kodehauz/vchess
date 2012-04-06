@@ -1,0 +1,37 @@
+<?php
+
+/**
+ * Tests the functionality of the Vchess.
+ */
+class VChessTestCase extends DrupalUnitTestCase {
+  protected $privileged_user;
+
+  
+  public static function getInfo() {
+    // Note: getInfo() strings are not translated with t().
+    return array(
+        'name' => 'VChess tests',
+        'description' => 'Ensure that VChess functions properly.',
+        'group' => 'VChess',
+    );
+  }
+  
+  /**
+   * A basic promotion test 
+   */
+  public function testVChessPromotion() {
+    $game = new Game();
+    $game->setup_position(BOARD_PROMO_TEST);
+    $game->handle_move(1, "Pb7xc8=Q", "");
+    
+    $this->assertEqual($game->position(), "r1Qqkb1r/p1pppppp/2n2n2/8/8/8/P1PPPPPP/RNBQKBNR", 
+        "Check that the board position after a pawn promotion is the board which is expected.");
+  }
+  
+  /**
+   * A basic castling test
+   */
+  public function testVChessCastling() {
+    $this->assertFalse(FALSE);
+  }
+}
