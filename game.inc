@@ -24,6 +24,9 @@ class Game {
   protected $game = array();
   
   protected $scoresheet;
+  
+  protected $white_uid;
+  protected $black_uid;
 	
   // Static (loaded) entries:
   // archived: resides in archive
@@ -59,18 +62,29 @@ class Game {
    */
   function __construct() {
   	$this->scoresheet = new Scoresheet();
+  	$this->board = new Board;
+  	$this->turn = "w";
   }
   
   /**
-   * Create a new game. If $bcomment is not empty it is black's initial comment.
+   * Create a new game. 
+   * 
+   * @param $white_uid
+   *   Userid of white player
+   *   
+   * @param $black_uid
+   *   Userid of black player
+   *   
+   * @param $bcomment
+   *   Comment typed in by player at start of game.  If $bcomment is not empty 
+   *   it is black's initial comment.
    */
-  function new_game($white, $black, $white_uid, $black_uid, $bcomment) {
+  function new_game($white_uid, $black_uid, $bcomment) {
   	// Build new game context 
   	$this->game['ts_start'] = REQUEST_TIME;
-  	$this->game['white'] = $white;
-  	$this->game['black'] = $black;
-  	$this->game['white_uid'] = $white_uid;
-  	$this->game['black_uid'] = $black_uid;
+  	$this->white_uid = $white_uid;
+  	$this->black_uid = $black_uid;
+  	
   	$this->game['curstate'] = '?';
   	$this->game['white_may_castle_short'] = TRUE;  
   	$this->game['white_may_castle_long'] = TRUE;  
@@ -83,10 +97,9 @@ class Game {
   	$this->game['old_castle_short'] = 'x';
   	$this->game['old_castle_long'] = 'x';
   	
-  	$board = new Board();
-  	$board->setup_as_standard();
-//  	$board->setup_with_FEN(BOARD_PROMOTION);
-  	$this->game['board'] = $board;
+ 	$this->board->setup_as_standard();
+//  	$this->board->setup_position(BOARD_PROMOTION);
+//     $this->board->setup_position(BOARD_PROMO_TEST);
   	
   	if (empty($bcomment)) {
   		$bcomment = '(silence)';
@@ -95,7 +108,9 @@ class Game {
   		$bcomment = str_replace("\\", '', strip_tags($bcomment));
   		$bcomment = str_replace("\n", '<br>', $bcomment);
   	}
-  	$bcomment = '<u>' . $black . '</u>: ' . $bcomment;
+  	
+  	$black_player = new Player($black_uid);
+  	$bcomment = '<u>' . $black_player->name() . '</u>: ' . $bcomment;
   	$this->game['chatter'] = array($bcomment);
   
   	//  $gfname = sprintf('%s-%s-%s-', date('YmdHi', $this->game['ts_start']), $white, $black);
@@ -110,7 +125,7 @@ class Game {
   			'turn' => 'w',
   			'white_uid' => $white_uid,
   			'black_uid' => $black_uid,
-  			'board' => $this->game['board']->to_FEN_string())
+  			'board' => $this->board->position())
   			)
   	->execute();
   	
@@ -130,15 +145,20 @@ class Game {
 			$gid . "'";
 	// Converted to the D7 database API syntax.
 	$result = db_query($sql);
-	$this->game = $result->fetchAssoc();
+	$row = $result->fetchAssoc();
+
+	$this->gid = $row['gid'];
+	$this->turn = $row['turn'];
 	
 	// Fill chess board
-	$board = new Board;
-	$board->setup_with_FEN($this->game['board']);
-	$this->game['board'] = $board; 
+	$this->board->setup_position($row['board']);
+	
+	$this->white_uid = $row['white_uid'];
+	$this->black_uid = $row['black_uid'];
+	$this->status = $row['status'];
 	
 	// Handle castling availability
-	$this->initialise_castling($this->game['castling_availability']);	
+	$this->initialise_castling($row['castling_availability']);	
     
     // w2spm: 2-step pawn move of white (x or a-h)
     // b2spm: dito for black
@@ -226,14 +246,14 @@ class Game {
    * Get the white player
    */
   function get_white_player() {
-    return new Player($this->game['white_uid']);
+    return new Player($this->white_uid);
   }
   
   /**
-   * Get the black player
+   * Get the the black player
    */
   function get_black_player() {
-  	return new Player($this->game['black_uid']);
+  	return new Player($this->black_uid);
   }
   
   /**
@@ -258,8 +278,8 @@ class Game {
    * See if it's the given players move
    */
   function is_players_move($uid) {
-  	if (($this->game['turn'] == 'w' && $this->game['white_uid'] == $uid) 
-  	|| ($this->game['turn'] == 'b' && $this->game['black_uid'] == $uid)) {
+  	if (($this->turn == 'w' && $this->white_uid == $uid) 
+  	|| ($this->turn == 'b' && $this->black_uid == $uid)) {
   	  $players_move = TRUE;	
   	}
   	else {
@@ -273,42 +293,64 @@ class Game {
    * Get the game id
    */
   function get_gid() {
-  	return $this->game['gid'];
+  	return $this->gid;
   }
   
   /**
    * Get the game board
    */
   function get_board() {
-  	return $this->game['board'];
+  	return $this->board;
   }
   
   /**
    * Set the board
    */
-  function set_board($board) {
-  	$this->game['board'] = $board;
+  function set_board(Board $board) {
+  	$this->board = $board;
+  }
+  
+  /**
+   * Setup a postion
+   * 
+   * @param $fen_string
+   *   A FEN string, e.g. after 1.e4 the FEN string will be:
+   *   "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR"
+   */
+  function setup_position($fen_string) {
+    $this->board->setup_position($fen_string);
+  }
+  
+  /**
+   * Get the current position as a FEN string
+   * 
+   * @return the current position as a FEN string
+   *   e.g. after 1.e4 the FEN string will be:
+   *   "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR"
+   */
+  function position() {
+    return $this->board->position();
   }
 
   /**
    * Get the uid of the white player
    */
   function get_white_uid() {
-    return $this->game['white_uid'];
+    return $this->white_uid;
   }
   
   /**
    * Get the uid of the black player
    */
   function get_black_uid() {
-    return $this->game['black_uid'];
+    return $this->black_uid;
   }
   
   /**
    * Get the player whose turn it is, either 'w' or 'b'
    */
   function get_turn() {
-  	return $this->game['turn'];
+  	return $this->turn;
   }
   
   /**
@@ -321,28 +363,28 @@ class Game {
    * - "in progress"
    */
   function get_status() {
-  	return $this->game['status'];
+  	return $this->status;
   }
   
   /**
    * Set the player whose turn it is to move to be 'w'
    */
   function set_turn_white() {
-  	$this->game['turn'] = 'w';
+  	$this->turn = 'w';
   }
   
   /**
    * Set the player whose turn it is to move to be 'b'
    */
   function set_turn_black() {
-  	$this->game['turn'] = 'b';
+  	$this->turn = 'b';
   }
   
   /**
    * Say whether the game is over or not
    */
   function is_game_over() {
-  	$sql = "SELECT status FROM {vchess_games} WHERE gid = '" . $this->game['gid'] . "'";
+  	$sql = "SELECT status FROM {vchess_games} WHERE gid = '" . $this->gid . "'";
   
   	// Converted to the D7 database API syntax.
   	$result = db_query($sql);
@@ -371,7 +413,7 @@ class Game {
    *   The opposing player
    */
   function get_opponent($uid) {
-  	if ($this->game['white_uid'] == $uid) {
+  	if ($this->white_uid == $uid) {
   		$opponent = $this->get_black_player();
   	}
   	else {
@@ -408,7 +450,7 @@ class Game {
   	db_update('vchess_games')->fields(array(
   			'status' => $status,
   	))
-  	->condition('gid', $this->game['gid'])
+  	->condition('gid', $this->gid)
   	->execute();
   }
   
@@ -420,10 +462,10 @@ class Game {
    * is to move.
    */
   function get_player_color($uid) {
-    if ($this->game['white_uid'] == $this->game['black_uid']) {
+    if ($this->white_uid == $this->black_uid) {
       $color = $this->get_turn();
     }
-  	elseif ($this->game['white_uid'] == $uid) {
+  	elseif ($this->white_uid == $uid) {
       $color = 'w';
   	}
   	else {
@@ -687,7 +729,7 @@ class Game {
       if ($move->type() == "x" && $board->square_is_empty($to_square)) {
         // En passant of pawn?
         if ($piece_type == 'P') {
-          if ($game['turn'] == 'w') {
+          if ($this->turn == 'w') {
             if ($game['b2spm'] != 'x' &&
                 $dest_pos % 8 == $game['b2spm'] &&
                 floor($dest_pos / 8) == 5) {
@@ -732,7 +774,7 @@ class Game {
            
       if ($en_passant_ok) {
         // Kill pawn
-        if ($game['turn'] == 'w') {
+        if ($this->turn == 'w') {
           //         $board[$dest_pos - 8] = '';
         }
         else {
@@ -966,7 +1008,7 @@ class Game {
   function save_move($move_no, $turn, $long_move, $algebraic) {
     db_insert('vchess_moves')
     ->fields(array(
-        'gid' => $this->game['gid'],
+        'gid' => $this->gid,
         'move_no' => $move_no,
         'color' => $turn,
         'long_move' => $long_move,
@@ -981,7 +1023,7 @@ class Game {
   function save() {
     $timestamps = REQUEST_TIME;
   
-    $sql = "SELECT gid FROM {vchess_games} WHERE gid = '" . $this->game['gid'] . "'";
+    $sql = "SELECT gid FROM {vchess_games} WHERE gid = '" . $this->gid . "'";
     // Converted to the D7 database API syntax.
     $result = db_query($sql);
     $exists = $result->fetchField();
@@ -993,10 +1035,10 @@ class Game {
           'status' => $this->get_status(),
           'white_uid' => $this->get_white_uid(),
           'black_uid' => $this->get_black_uid(),
-          'board' => $this->get_board()->to_FEN_string(),
+          'board' => $this->get_board()->position(),
           'castling_availability' => $this->castling_availability(),
       ))
-      ->condition('gid', $this->game['gid'])
+      ->condition('gid', $this->gid)
       ->execute();
     }
   }
@@ -1041,129 +1083,129 @@ class Game {
 //       return 'ERROR: Undo is not possible!';
 //     }
   
-    $move = $this->game['lastmove'];
-    $fixhist = 1;
-    if ($move == 'DrawOffered' || $move == 'DrawRefused') {
-      $fixhist = 0;
-    }
-    elseif ($move == 'O-O') {
-      if ($this->game['curplyr'] == 'b') {
-        // white castled short
-        $this->game['board'][5] = '';
-        $this->game['board'][6] = '';
-        $this->game['board'][4] = 'wK';
-        $this->game['board'][7] = 'wR';
-        $this->game['white_may_castle_short'] = 1;
-      }
-      else {
-        // black castled short
-        $this->game['board'][61] = '';
-        $this->game['board'][62] = '';
-        $this->game['board'][60] = 'bK';
-        $this->game['board'][63] = 'bR';
-        $this->game['black_may_castle_short'] = 1;
-      }
-    }
-    elseif ($move == 'O-O-O') {
-      if ($this->game['curplyr'] == 'b') {
-        // white castled long
-        $this->game['board'][2] = '';
-        $this->game['board'][3] = '';
-        $this->game['board'][4] = 'wK';
-        $this->game['board'][0] = 'wR';
-        $this->game['white_may_castle_long'] = 1;
-      }
-      else {
-        // black castled long
-        $this->game['board'][58] = '';
-        $this->game['board'][59] = '';
-        $this->game['board'][60] = 'bK';
-        $this->game['board'][56] = 'bR';
-        $this->game['black_may_castle_long'] = 1;
-      }
-    }
-    else {
-      // Undo normal move (includes en passant)
-//       $src = convert2i($move[1] . $move[2]);
-//       $dest = convert2i($move[4] . $move[5]);
-      if ($src >= 0 && $src < 64 && $dest >= 0 && $dest < 64) {
-        if ($this->game['curplyr'] == 'w') {
-          $oldclr = 'b';
-        }
-        else {
-          $oldclr = 'w';
-        }
-        $this->game['board'][$src] = $oldclr . $move[0];
-        $this->game['board'][$dest] = '';
-        if ($this->game['lastkill'] != 'x') {
-          $kill = $this->game['lastkill'];
-          $dest = $kill[2] . $kill[3];
-          $this->game['board'][$dest] = $kill[0] . $kill[1];
-        }
-        // Adjust castling flags
-        if ($move[0] == 'R' || $move[0] == 'K') {
-          if ($this->game['curplyr'] == 'b') {
-            // white castling info
-            $this->game['white_may_castle_short'] = $this->game['old_castle_short'];
-            $this->game['white_may_castle_long'] = $this->game['old_castle_long'];
-          }
-          else {
-            // black castling info
-            $this->game['black_may_castle_short'] = $this->game['old_castle_short'];
-            $this->game['black_may_castle_long'] = $this->game['old_castle_long'];
-          }
-        }
-      }
-    }
+//     $move = $this->game['lastmove'];
+//     $fixhist = 1;
+//     if ($move == 'DrawOffered' || $move == 'DrawRefused') {
+//       $fixhist = 0;
+//     }
+//     elseif ($move == 'O-O') {
+//       if ($this->game['curplyr'] == 'b') {
+//         // white castled short
+//         $this->game['board'][5] = '';
+//         $this->game['board'][6] = '';
+//         $this->game['board'][4] = 'wK';
+//         $this->game['board'][7] = 'wR';
+//         $this->game['white_may_castle_short'] = 1;
+//       }
+//       else {
+//         // black castled short
+//         $this->game['board'][61] = '';
+//         $this->game['board'][62] = '';
+//         $this->game['board'][60] = 'bK';
+//         $this->game['board'][63] = 'bR';
+//         $this->game['black_may_castle_short'] = 1;
+//       }
+//     }
+//     elseif ($move == 'O-O-O') {
+//       if ($this->game['curplyr'] == 'b') {
+//         // white castled long
+//         $this->game['board'][2] = '';
+//         $this->game['board'][3] = '';
+//         $this->game['board'][4] = 'wK';
+//         $this->game['board'][0] = 'wR';
+//         $this->game['white_may_castle_long'] = 1;
+//       }
+//       else {
+//         // black castled long
+//         $this->game['board'][58] = '';
+//         $this->game['board'][59] = '';
+//         $this->game['board'][60] = 'bK';
+//         $this->game['board'][56] = 'bR';
+//         $this->game['black_may_castle_long'] = 1;
+//       }
+//     }
+//     else {
+//       // Undo normal move (includes en passant)
+// //       $src = convert2i($move[1] . $move[2]);
+// //       $dest = convert2i($move[4] . $move[5]);
+//       if ($src >= 0 && $src < 64 && $dest >= 0 && $dest < 64) {
+//         if ($this->game['curplyr'] == 'w') {
+//           $oldclr = 'b';
+//         }
+//         else {
+//           $oldclr = 'w';
+//         }
+//         $this->game['board'][$src] = $oldclr . $move[0];
+//         $this->game['board'][$dest] = '';
+//         if ($this->game['lastkill'] != 'x') {
+//           $kill = $this->game['lastkill'];
+//           $dest = $kill[2] . $kill[3];
+//           $this->game['board'][$dest] = $kill[0] . $kill[1];
+//         }
+//         // Adjust castling flags
+//         if ($move[0] == 'R' || $move[0] == 'K') {
+//           if ($this->game['curplyr'] == 'b') {
+//             // white castling info
+//             $this->game['white_may_castle_short'] = $this->game['old_castle_short'];
+//             $this->game['white_may_castle_long'] = $this->game['old_castle_long'];
+//           }
+//           else {
+//             // black castling info
+//             $this->game['black_may_castle_short'] = $this->game['old_castle_short'];
+//             $this->game['black_may_castle_long'] = $this->game['old_castle_long'];
+//           }
+//         }
+//       }
+//     }
   
-    // Fix chatter. Fill in ... for lost chatter.
-    $this->game['chatter'][0] = $this->game['chatter'][1];
-    $this->game['chatter'][1] = '<u>' . $uid . '</u>: ...';
-    // Correct game state
-    if ($move == 'DrawRefused') {
-      $this->game['curstate'] = 'D';
-    }
-    else {
-      $this->game['curstate'] = '?';
-    }
+//     // Fix chatter. Fill in ... for lost chatter.
+//     $this->game['chatter'][0] = $this->game['chatter'][1];
+//     $this->game['chatter'][1] = '<u>' . $uid . '</u>: ...';
+//     // Correct game state
+//     if ($move == 'DrawRefused') {
+//       $this->game['curstate'] = 'D';
+//     }
+//     else {
+//       $this->game['curstate'] = '?';
+//     }
   
-    // Clear own en passant flag
-    if ($this->game['curplyr'] == 'b') {
-      $this->game['w2spm'] = 'x';
-    }
-    else {
-      $this->game['b2spm'] = 'x';
-    }
+//     // Clear own en passant flag
+//     if ($this->game['curplyr'] == 'b') {
+//       $this->game['w2spm'] = 'x';
+//     }
+//     else {
+//       $this->game['b2spm'] = 'x';
+//     }
   
-    // Modify history
-    if ($fixhist) {
-      // Adjust turn counter if nescessary
-      if ($this->game['curplyr'] == 'b') {
-        $this->game['curmove'] = $this->game['curmove'] -1;
-      }
-      // Delete last move
-      $square = count($this->game['mhistory']) -1;
-      unset($this->game['mhistory'][$square]);
-    }
-    // Switch players
-    if ($this->game['curplyr'] == 'b') {
-      $this->game['curplyr'] = 'w';
-    }
-    else {
-      $this->game['curplyr'] = 'b';
-    }
+//     // Modify history
+//     if ($fixhist) {
+//       // Adjust turn counter if nescessary
+//       if ($this->game['curplyr'] == 'b') {
+//         $this->game['curmove'] = $this->game['curmove'] -1;
+//       }
+//       // Delete last move
+//       $square = count($this->game['mhistory']) -1;
+//       unset($this->game['mhistory'][$square]);
+//     }
+//     // Switch players
+//     if ($this->game['curplyr'] == 'b') {
+//       $this->game['curplyr'] = 'w';
+//     }
+//     else {
+//       $this->game['curplyr'] = 'b';
+//     }
   
-    // Clear last move
-    $this->game['lastmove'] = 'x';
-    $this->game['lastkill'] = 'x';
-    $this->game['old_castle_short'] = 'x';
-    $this->game['old_castle_long'] = 'x';
+//     // Clear last move
+//     $this->game['lastmove'] = 'x';
+//     $this->game['lastkill'] = 'x';
+//     $this->game['old_castle_short'] = 'x';
+//     $this->game['old_castle_long'] = 'x';
   
-    // Save game
-    $this->save();
+//     // Save game
+//     $this->save();
   
-    return 'Move "' . $move . '" undone!';
-  }
+//     return 'Move "' . $move . '" undone!';
+   }
   
 }
 
@@ -1184,7 +1226,6 @@ function vchess_en_passant_is_ok($player, $pos, $dest, $opp_ep_flag) {
   }
   return 0;
 }
-
 
 
 

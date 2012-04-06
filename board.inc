@@ -13,6 +13,7 @@
 // rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR
 define("BOARD_DEFAULT", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 define("BOARD_PROMOTION", "k7/4P3/8/8/8/8/8/K7");
+define("BOARD_PROMO_TEST", "r1bqkb1r/pPpppppp/2n2n2/8/8/8/P1PPPPPP/RNBQKBNR");
 
 // Define the column letters
 define("COL_a", 1);
@@ -59,7 +60,7 @@ class Board {
    * Setup with the standard position
    */
   function setup_as_standard() {
-    $this->setup_with_FEN(BOARD_DEFAULT);
+    $this->setup_position(BOARD_DEFAULT);
   }
   
   /**
@@ -68,7 +69,7 @@ class Board {
    * 
    * See http://en.wikipedia.org/wiki/Forsyth-Edwards_Notation
    */
-  function setup_with_FEN($fen_string) {
+  function setup_position($fen_string) {
     $chars = str_split($fen_string, 1);
     
     // The FEN string starts from the black side
@@ -217,7 +218,7 @@ class Board {
    * For FEN, white pieces are stored in UPPER CASE, black pieces in lower case and blank squares as space.
    *
    */
-  function to_FEN_string() {
+  function position() {
   	$FEN_string = "";
     
   	$coord = new Square;
@@ -1083,7 +1084,7 @@ class Board {
       // would expose the player to a discovered check.  To test this,
       // make the move and see if they are in check.
       $new_board = new Board();
-      $new_board->setup_with_FEN($this->to_FEN_string());
+      $new_board->setup_position($this->position());
       $new_board->move_piece($piece_square, $to_square);           
       if (!$new_board->king_is_in_check($color)) {
         $move_ok = TRUE;        

@@ -377,28 +377,24 @@
   
     if ($form_values['color']=='w') {
       // user plays white
-      $white = $user->name;
       $white_uid = $user->uid;
   
       // opponent plays black
-      $black = $opponent_name;
       $black_uid = $opponent_uid;
   
       $comment = $form_values['comment'];
     }
     else {
       // user plays black
-      $black = $user->name;
       $black_uid = $user->uid;
   
       // opponent plays white
-      $white = $opponent_name;
       $white_uid = $opponent_uid;
       $comment = $form_values['comment'];
     }
   
     $game = new Game();
-    $gid = $game->new_game($white, $black, $white_uid, $black_uid, $comment);
+    $gid = $game->new_game($white_uid, $black_uid, $comment);
   
     drupal_set_message(t('Game has been created.'));
     $form_state['redirect'] = 'vchess/board/' . $gid;
