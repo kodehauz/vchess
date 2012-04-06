@@ -138,6 +138,10 @@ function assembleCmd(part)
 
 /**
  * Make a move
+ * 
+ * A move may be a move to a square or a capture, e.g.:
+ * - "Pe2-e4"
+ * - "Qd1xBg4"
  */
 function onClickMove()
 {
@@ -145,8 +149,19 @@ function onClickMove()
 	
 	if (cform.move.value != "") {
 		var move = cform.move.value;
+		var move_type = move[3];
+		var to_rank;
+		
+		// Find out the rank of the square we are going to
+		if (move_type == "-") {
+		  to_rank = move[5];
+		}
+		else { // move_type == "x"
+		  to_rank = move[6];
+		}
+		
 		// If pawn enters last line ask for promotion
-		if (move[0]=='P' && (move[5]=='8' || move[5]=='1')) {
+		if (move[0]=='P' && (to_rank=='8' || to_rank=='1')) {
 			if (confirm('Promote to Queen? (Press Cancel for other options)'))
 				move = move + '=Q';
 			else if (confirm('Promote to Rook? (Press Cancel for other options)'))

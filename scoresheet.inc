@@ -20,14 +20,18 @@ class Scoresheet {
 	$result = db_query($sql, array('gid' => $gid));
 		
 	foreach ($result as $row) {
-	  $this->scoresheet[$row->move_no][$row->color] = $row->algebraic;
+	  $move = new Move;
+	  $move->set_long_format($row->long_move);
+	  $move->set_algebraic($row->algebraic);
+	  
+	  $this->scoresheet[$row->move_no][$row->color] = $move;
 	}
   }
 	
   /**
    * Get the move number
    */
-  function get_move_no() {
+  function move_no() {
     $count = count($this->scoresheet);
     // If the scoresheet is empty then we are on move 1
 	if ($count == 0) {
@@ -60,7 +64,7 @@ class Scoresheet {
    * 
    * @param int $move_no
    */
-  function get_white_move($move_no) {
+  function white_move($move_no) {
     return $this->_get_move($move_no, "w");
   }
 	
@@ -69,7 +73,7 @@ class Scoresheet {
    * 
    * @param int $move_no
    */
-  function get_black_move($move_no) {
+  function black_move($move_no) {
 	return $this->_get_move($move_no, "b");
   }
 	
@@ -77,11 +81,11 @@ class Scoresheet {
    * Get the move of a given color
    * 
    * Outside this class, use instead one of:
-   * - get_white_move()
-   * - get_black_move()
+   * - white_move()
+   * - black_move()
    */
   function _get_move($move_no, $color) {
-    $move = "";
+    $move = new Move;
 	
     if (array_key_exists($move_no, $this->scoresheet)) {
       if (array_key_exists('w', $this->scoresheet[$move_no])) {
@@ -90,6 +94,29 @@ class Scoresheet {
     }
 	  
 	return $move;
+  }
+  
+  /**
+   * Get the last move
+   */
+  function last_move() {
+    $move_no = $this->move_no();
+    
+    $move = new Move; // we could be at the start of a game
+    
+    $move = $this->black_move($move_no);
+    if ($move == "") {
+      // Looks like black hasn't moved yet for this move no
+      $move = $this->white_move($move_no);
+      
+      
+      if ($move == "" && $move_no > 1) {
+        // Looks like black has just moved, so we need to look at the previous move number
+        $move = $this->black_move($move_no - 1); 
+      }
+    }
+    
+    return $move;
   }
 	
   /** 

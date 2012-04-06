@@ -63,6 +63,10 @@ class Game {
   function __construct() {
   	$this->scoresheet = new Scoresheet();
   	$this->board = new Board;
+
+  	// Ensure the game has players defined by default
+  	$this->white_uid = 1;
+  	$this->black_uid = 1;
   	$this->turn = "w";
   }
   
@@ -97,9 +101,8 @@ class Game {
   	$this->game['old_castle_short'] = 'x';
   	$this->game['old_castle_long'] = 'x';
   	
- 	$this->board->setup_as_standard();
+    $this->board->setup_as_standard();
 //  	$this->board->setup_position(BOARD_PROMOTION);
-//     $this->board->setup_position(BOARD_PROMO_TEST);
   	
   	if (empty($bcomment)) {
   		$bcomment = '(silence)';
@@ -167,6 +170,13 @@ class Game {
     
     $this->scoresheet->load($gid); 
   }	
+  
+  /**
+   * Get the last move
+   */
+  function last_move() {
+    return $this->scoresheet->last_move();
+  }
   
   /**
    * This sets up the castling state
@@ -270,8 +280,8 @@ class Game {
    * After 1. e4 Nf6 
    * move_no = 2 (i.e. waiting for move 2) 
    */
-  function get_move_no() {
-  	return $this->scoresheet->get_move_no();
+  function move_no() {
+  	return $this->scoresheet->move_no();
   }
   
   /**
@@ -490,17 +500,10 @@ class Game {
   }
   
   /**
-   * Get last move
-   */
-  function get_last_move() {
-  	return $this->game['last_move'];
-  }
-  
-  /**
    * Set last move
    */
   function set_last_move($last_move) {
-  	$this->game['last_move'] = $last_move;
+//   	$this->game['last_move'] = $last_move;
   }
   
   /**
@@ -602,18 +605,18 @@ class Game {
   }
   
   /**
-   * Verify move (full notation), execute it and modify game.
+   * Verify move, execute it and modify game.
    *
    * @param $uid 
    *   User id of current player
    *   
    * @param $move_string 
-   *   String of current move in long format (e.g. "Pe2-e4")
+   *   String of current move in long format, e.g. "Pe2-e4"
    *   
    * @param $comment
    *   @todo Please document this parameter
    */
-  function handle_move($uid, $move_string, $comment) {
+  function make_move($uid, $move_string, $comment) {
     $mate_type = "";
   
     $move = new Move();
@@ -707,16 +710,17 @@ class Game {
     
         // Get target square
         $to_square = $move->to_square();
+        $move->calculate_algebraic($turn, $board);
         if (!$board->square_is_reachable($piece_square, $to_square)) {
-          $result .= 'ERROR: ' . $move->get_algebraic($turn, $board) . ' is not a legal move!  ';
+          $result .= 'ERROR: ' . $move->algebraic() . ' is not a legal move!  ';
           $move_ok = FALSE;
         }
         if ($move->type() == "-" && !$board->piece_may_move_to_square($piece_square, $to_square)) {
-          $result .= 'ERROR: ' . $move->get_algebraic($turn, $board) . ' is not a legal move!  ';
+          $result .= 'ERROR: ' . $move->algebraic() . ' is not a legal move!  ';
           $move_ok = FALSE;
         }
         elseif ($move->type() == "x" && !$board->piece_attacks($piece_square, $to_square)) {
-          $result .= 'ERROR: ' . $move->get_algebraic($turn, $board) . ' is not a legal move!  ';
+          $result .= 'ERROR: ' . $move->algebraic() . ' is not a legal move!  ';
           $move_ok = FALSE;
         }
       }
@@ -756,14 +760,6 @@ class Game {
         $result .= 'ERROR: You cannot attack own chessman at ' . $to_square->coord() . '!';
       }
   
-      // Get short notation of move for history before
-      // actually moving since this function relies on
-      // autocomplete which in turn requires the initial board
-      // to work properly (after move, first chessman is on
-      // destination square already and second can't reach it
-      // which would result in 'no one can reach' error)
-      $algebraic_move = $move->get_algebraic($this->get_player_color($uid), $board);
-      
       // If pawn reached last rank, promote it
       $pawn_promoted = $this->handle_pawn_promotion($move, $board);
       
@@ -809,6 +805,14 @@ class Game {
 
       // If move was executed update game state.
       if ($move_ok) {
+        // Get short notation of move for history before
+        // actually moving since this function relies on
+        // autocomplete which in turn requires the initial board
+        // to work properly (after move, first chessman is on
+        // destination square already and second can't reach it
+        // which would result in 'no one can reach' error)
+        $algebraic_move = $move->algebraic($this->get_player_color($uid), $board);
+        
         $result .= 'Your last move: ' . $algebraic_move;
   
         // Check checkmate/stalemate
@@ -843,9 +847,6 @@ class Game {
           $result .= $result . '... STALEMATE!';
         }
         
-        // Save move
-        $this->save_move($this->get_move_no(), $this->get_turn(), $move->long_format(), $algebraic_move);
-        
         // Set next player
         if ($this->get_turn() == 'b') {
           $this->set_turn_white();
@@ -871,26 +872,6 @@ class Game {
       
         // Store changed board
         $this->set_board($board);
-      
-        // Save game
-        $this->save();
-      
-        // Send a notification if email address was supplied.
-        //    if ($opponent == 'b') {
-        //       $oid = $game['black'];
-        //     }
-        //     else {
-        //       $oid = $game['white'];
-        //     }
-        //	$email=ioLoadUserEmailAddress($oid);
-        $email = FALSE; // Hugh - force following condition to be FALSE
-        if ($email) {
-          $prot = ($GLOBALS['_SERVER']['HTTPS'] == 'on') ? 'https' : 'http';
-          $url = $prot . '://' . $GLOBALS['_SERVER']['HTTP_HOST'] . $GLOBALS['_SERVER']['SCRIPT_NAME'] . '?gid=' . $gid;
-          $message = "Dear $oid\n\n$uid has just moved.\n\nMove:\n$move\n\nComment:\n$comment\n\nIt is your turn now!\n\nEnter the game:\n$url";
-          mail($email, "[OCC] " . $game['white'] . "vs" . $game['black'] . ": $move->long_format()",
-              $message, 'From: ' . $mail_from);
-        }
       }
     }
     return $result;
@@ -1005,14 +986,15 @@ class Game {
    * @param $turn Whose turn it is, either "w" or "b"
    * @param $move e.g. "Nb1-c3" or "Bc1xNf4"
    */
-  function save_move($move_no, $turn, $long_move, $algebraic) {
+  function save_move($move_no, $turn, Move $move) {
     db_insert('vchess_moves')
     ->fields(array(
         'gid' => $this->gid,
         'move_no' => $move_no,
         'color' => $turn,
-        'long_move' => $long_move,
-        'algebraic' => $algebraic))
+        'long_move' => $move->long_format(),
+        'algebraic' => $move->algebraic())
+        )
         ->execute();
   }
   

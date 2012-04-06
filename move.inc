@@ -6,7 +6,8 @@
  */
 
 class Move {
-  var $long_move; // e.g. "Pd2-d4", "Nb1xBc3", "Ke1-g1"
+  protected $long_format; // e.g. "Pd2-d4", "Nb1xBc3", "Ke1-g1"
+  protected $algebraic; // e.g. "e4"
   
   /**
    * Initialise a move with a given string
@@ -15,15 +16,15 @@ class Move {
    * - "Bf5xPe4" i.e. a capture which includes the type of the piece being captured 
    * - "Rh4-d4" i.e. a move to a square
    */
-  function initialise($long_move) {
-    $this->long_move = $long_move;
+  function initialise($long_format) {
+    $this->long_format = $long_format;
   }
   
   /**
    * Get the long move notation
    */
   function long_format() {
-    return $this->long_move;
+    return $this->long_format;
   }
   
   /**
@@ -34,14 +35,14 @@ class Move {
   function to_square() {
     $to_square = new Square();
     
-    if ($this->long_move[3] == "x") {
+    if ($this->long_format[3] == "x") {
       // In a move like "Bf5xPe4"
       //   $move[0] = source piece
       //   $move[1-2] = source coord
       //   $move[3] = move type, "x"
       //   $move[4] = dest piece
       //   $move[5-6] = dest square
-      $to_square->set_coord(substr($this->long_move, 5, 2));
+      $to_square->set_coord(substr($this->long_format, 5, 2));
     }
     else { // Move type = "-"
       // In a move like "Rh4-d4":
@@ -49,7 +50,7 @@ class Move {
       //   $move[1-2] = source coord
       //   $move[3] = move type, "-"
       //   $move[4-5] = dest square
-      $to_square->set_coord(substr($this->long_move, 4, 2));
+      $to_square->set_coord(substr($this->long_format, 4, 2));
     }
   
     return $to_square;
@@ -64,7 +65,7 @@ class Move {
    */
   function from_square() {
     $from_square = new Square();
-    $from_square->set_coord(substr($this->long_move, 1, 2));
+    $from_square->set_coord(substr($this->long_format, 1, 2));
   
     return $from_square;
   }
@@ -75,7 +76,21 @@ class Move {
    *   or "x" for a move like "Ra1xNa6"
    */
   function type() {
-    return $this->long_move[3];
+    return $this->long_format[3];
+  }
+  
+  /**
+   * Set the $long_format
+   */
+  function set_long_format($long_format) {
+    $this->long_format = $long_format;
+  }
+  
+  /**
+   * Set the algebraic format
+   */
+  function set_algebraic($algebraic) {
+    $this->algebraic = $algebraic;
   }
   
   /**
@@ -83,7 +98,7 @@ class Move {
    * e.g. "Ra1-a4" gives "R"
    */
   function source_piece_type() {
-    return $this->long_move[0];
+    return $this->long_format[0];
   }
   
   /**
@@ -96,8 +111,8 @@ class Move {
    * "Ra1-a4" returns ""
    */
   function dest_piece_type() {
-    if ($this->long_move[3] == "x") {
-      $dest_piece_type = $this->long_move[4];
+    if ($this->long_format[3] == "x") {
+      $dest_piece_type = $this->long_format[4];
     }
     else {
       $dest_piece_type = "";
@@ -136,9 +151,15 @@ class Move {
     }
     
     if (($this->source_piece_type() == "P")
-    && ($this->type() == "-") 
     && ($white_promotion || $black_promotion)) {
-      $piece_type = substr($this->long_move, 7, 1); 
+      if ($this->type() == "-") {
+        // e.g. In "Pb7-b8=Q" the "Q" is the 7th element
+        $piece_type = substr($this->long_format, 7, 1);
+      }
+      else {
+        // e.g. In "Pb7xRa8=Q" the "Q" is the 8th element
+        $piece_type = substr($this->long_format, 8, 1);
+      } 
     }
     
     return $piece_type;
@@ -170,15 +191,15 @@ class Move {
    *
    * See http://en.wikipedia.org/wiki/Algebraic_notation_(chess)
    * 
-   * @param $player
+   * @param $player 
    *   The color of the player making the move, either "b" or "w"
    * 
    * @param $board
    *   The board on which the move is being made
    */
-  function get_algebraic($player, Board $board) {
+  function calculate_algebraic($player, Board $board) {
     // If all else fails, just return the long move
-    $short_move_string = $this->long_move;
+    $short_move_string = $this->long_format;
   
     $source_piece_type = $this->source_piece_type();
     $dest_piece_type = $this->dest_piece_type();
@@ -187,11 +208,11 @@ class Move {
     $to_square = $this->to_square();
   
     // Castling short
-    if ($this->long_move == "Ke1-g1" || $this->long_move == "Ke8-g8") {
+    if ($this->long_format == "Ke1-g1" || $this->long_format == "Ke8-g8") {
       $short_move_string = "O-O";
     }
     // Castling long
-    elseif ($this->long_move == "Ke1-c1" || $this->long_move == "Ke8-c8") {
+    elseif ($this->long_format == "Ke1-c1" || $this->long_format == "Ke8-c8") {
       $short_move_string = "O-O-O";
     }
     elseif ($source_piece_type == 'P') {
@@ -208,7 +229,7 @@ class Move {
       }
       else {
         // e.g. cxd4
-        $short_move_string = $this->long_move[1] . "x" . $to_square->coord();
+        $short_move_string = $this->long_format[1] . "x" . $to_square->coord();
       }
     }
     else {
@@ -309,5 +330,12 @@ class Move {
     }
   
     return $short_move_string;
+  }
+  
+  /**
+   * Get the algebraic version of the move
+   */
+  function algebraic() {
+    return $this->algebraic;
   }
 }

@@ -13,7 +13,6 @@
 // rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR
 define("BOARD_DEFAULT", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 define("BOARD_PROMOTION", "k7/4P3/8/8/8/8/8/K7");
-define("BOARD_PROMO_TEST", "r1bqkb1r/pPpppppp/2n2n2/8/8/8/P1PPPPPP/RNBQKBNR");
 
 // Define the column letters
 define("COL_a", 1);
