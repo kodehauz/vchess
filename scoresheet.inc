@@ -58,6 +58,14 @@ class Scoresheet {
   
     return $count;
   }
+  
+  /**
+   * Write the latest move down.  The move is added to the end
+   * of the scoresheet.
+   */
+  function write_move_down($move) {
+    exit("Need to finish writing write_move_down() function!");
+  }
 
   /**
    * Get the white move of a particular number
@@ -102,13 +110,10 @@ class Scoresheet {
   function last_move() {
     $move_no = $this->move_no();
     
-    $move = new Move; // we could be at the start of a game
-    
     $move = $this->black_move($move_no);
     if ($move == "") {
       // Looks like black hasn't moved yet for this move no
       $move = $this->white_move($move_no);
-      
       
       if ($move == "" && $move_no > 1) {
         // Looks like black has just moved, so we need to look at the previous move number

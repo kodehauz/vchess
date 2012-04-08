@@ -199,39 +199,48 @@ class Move {
    */
   function calculate_algebraic($player, Board $board) {
     // If all else fails, just return the long move
-    $short_move_string = $this->long_format;
+    $this->algebraic = $this->long_format;
   
     $source_piece_type = $this->source_piece_type();
     $dest_piece_type = $this->dest_piece_type();
   
     $from_square = $this->from_square();
     $to_square = $this->to_square();
+    
+    if ($player == 'w') {
+      $opponent = 'b';
+    }
+    else {
+      $opponent = 'w';
+    }
   
     // Castling short
     if ($this->long_format == "Ke1-g1" || $this->long_format == "Ke8-g8") {
-      $short_move_string = "O-O";
+      $this->algebraic = "O-O";
     }
     // Castling long
     elseif ($this->long_format == "Ke1-c1" || $this->long_format == "Ke8-c8") {
-      $short_move_string = "O-O-O";
+      $this->algebraic = "O-O-O";
     }
+    // Pawn moves
     elseif ($source_piece_type == 'P') {
       // P moves are always unambiguous. For attacks skip source digit
       // and for moves skip source pos and "-"
       if ($this->type() == '-') {
         // e.g. e4
-        $short_move_string = $to_square->coord();
+        $this->algebraic = $to_square->coord();
         
         // Check if pawn promotion, e.g. e8=Q
         if ($this->to_square()->rank() == 1 || $this->to_square()->rank() == 8) {
-          $short_move_string .= "=" . $this->promotion_piece_type();
+          $this->algebraic .= "=" . $this->promotion_piece_type();
         }
       }
       else {
         // e.g. cxd4
-        $short_move_string = $this->long_format[1] . "x" . $to_square->coord();
+        $this->algebraic = $this->long_format[1] . "x" . $to_square->coord();
       }
     }
+    // All other moves
     else {
       // First find out how where all possible pieces of this type are
       $pieces_squares = $board->piece_type_squares($player, $source_piece_type);
@@ -240,11 +249,11 @@ class Move {
       if (count($pieces_squares) == 1) {
         if ($this->type() == '-') {
           // e.g. Ne4
-          $short_move_string = $source_piece_type . $to_square->coord();
+          $this->algebraic = $source_piece_type . $to_square->coord();
         }
         else {
           // e.g. Nxd4
-          $short_move_string = $source_piece_type . "x" . $to_square->coord();
+          $this->algebraic = $source_piece_type . "x" . $to_square->coord();
         }
       }
       else {
@@ -263,11 +272,11 @@ class Move {
           // No other piece of this type can reach the square, so unambiguous
           if ($this->type() == '-') {
             // e.g. Ne4
-            $short_move_string = $source_piece_type . $to_square->coord();
+            $this->algebraic = $source_piece_type . $to_square->coord();
           }
           else {
             // e.g. Nxd4
-            $short_move_string = $source_piece_type . "x" . $to_square->coord();
+            $this->algebraic = $source_piece_type . "x" . $to_square->coord();
           }
         }
         else {
@@ -283,11 +292,11 @@ class Move {
           // In this case the file is enough to make the move unique, e.g. Ngf3
           if ($file_unique) {
             if ($this->type() == '-') {
-              $short_move_string = $source_piece_type . $source_file . $to_square->coord();
+              $this->algebraic = $source_piece_type . $source_file . $to_square->coord();
             }
             else {
               // e.g. Nxd4
-              $short_move_string = $source_piece_type . $source_file . "x" . $to_square->coord();
+              $this->algebraic = $source_piece_type . $source_file . "x" . $to_square->coord();
             }
           }
           else {
@@ -304,11 +313,11 @@ class Move {
             if ($rank_unique) {
               if ($this->type() == '-') {
                 // e.g. N1f3
-                $short_move_string = $source_piece_type . $source_rank . $to_square->coord();
+                $this->algebraic = $source_piece_type . $source_rank . $to_square->coord();
               }
               else {
                 // e.g. N1xf3
-                $short_move_string = $source_piece_type . $source_rank . "x" . $to_square->coord();
+                $this->algebraic = $source_piece_type . $source_rank . "x" . $to_square->coord();
               } 
             }
             else {
@@ -317,19 +326,33 @@ class Move {
               $prefix = $source_piece_type . $source_rank . $source_file;
               if ($this->type() == '-') {
                 // e.g. Ng1f3
-                $short_move_string = $prefix . $to_square->coord();
+                $this->algebraic = $prefix . $to_square->coord();
               }
               else {
                 // e.g. Ng1xf3
-                $short_move_string = $prefix . "x" . $to_square->coord();
+                $this->algebraic = $prefix . "x" . $to_square->coord();
               }
             }
           }
         }
       }
     }
-  
-    return $short_move_string;
+    
+    // Finally we need to see if the move results in check or checkmate.  We make the move on 
+    // a copy of the board to not muck up the existing board 
+    $clone_board = clone $board;
+    
+    $clone_board->move_piece($from_square, $to_square);
+    if ($clone_board->king_is_in_check($opponent)) {
+      if ($clone_board->king_is_in_checkmate($opponent)) {
+        $this->algebraic .= "#";
+      }
+      else {
+        $this->algebraic .= "+";
+      }
+    }
+ 
+    return $this->algebraic;
   }
   
   /**

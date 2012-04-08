@@ -197,12 +197,12 @@ class Board {
    * @return 'w', 'b' or ''
    */
   function player_on_square(Square $square) {
-	$player_color = "";
+	$player = "";
 	if (!$this->square_is_empty($square)) {
-	  $player_color = $this->piece($square)->color();
+	  $player = $this->piece($square)->color();
 	}
 
-	return $player_color;
+	return $player;
   }
 
   /**
@@ -329,13 +329,13 @@ class Board {
   /**
    * Check whether player's king is in check.
    */
-  function king_is_in_check($player_color) {
+  function king_is_in_check($player) {
     // First find out on which square is the given player's king
 //     $found = FALSE;
 //     $index = 0;
 //     while (!$found && $index <= 63) {
 //       $coord = vchess_i2square($index);
-//       if ($this->piece($coord)->color() == $player_color
+//       if ($this->piece($coord)->color() == $player
 //           && $this->piece($coord)->type() == "K") {
 //         $king_pos = $coord;
 //         $found = TRUE;
@@ -344,9 +344,9 @@ class Board {
 //         $index++;
 //       }
 //     }
-    $king_square = $this->king_square($player_color);
+    $king_square = $this->king_square($player);
   
-    if ($player_color == 'w') {
+    if ($player == 'w') {
       $in_check = $this->square_is_under_attack('b', $king_square);
     }
     else {
@@ -611,12 +611,12 @@ class Board {
    * @param $player
    *   Player, either 'w' or 'b'
    */
-  function is_checkmate($player) {
+  function king_is_in_checkmate($player) {
     if ($player == 'w') {
-      $opp = 'b';
+      $opponent = 'b';
     }
     else {
-      $opp = 'w';
+      $opponent = 'w';
     }
   
     // Find the position of the player's king
@@ -634,7 +634,7 @@ class Board {
       }
       // If this adjacent square is under attack, then we cannot
       // move the king there
-      if ($this->square_is_under_attack($opp, $adj_square)) {
+      if ($this->square_is_under_attack($opponent, $adj_square)) {
         continue;
       }
       //    $board[$king_pos] = $contents;
@@ -645,11 +645,12 @@ class Board {
     }
   
     // Get all pieces that attack the king
-    $enemy_piece_squares = $this->pieces_squares($opp);
-    foreach ($enemy_piece_squares as $enemy_piece_square) {
-      $piece = $this->piece($enemy_piece_square);
-      if ($this->piece_attacks($enemy_piece_square, $king_square)) {
-        $attacker_squares[] = $enemy_piece_square;
+    $attacker_squares = array();
+    $opponent_pieces_squares = $this->pieces_squares($opponent);
+    foreach ($opponent_pieces_squares as $opponent_piece_square) {
+      $piece = $this->piece($opponent_piece_square);
+      if ($this->piece_attacks($opponent_piece_square, $king_square)) {
+        $attacker_squares[] = $opponent_piece_square;
       }
     }
   
@@ -659,24 +660,23 @@ class Board {
     }
   
     // There is only 1 attacker.  Check whether this attacker can be killed by own piece.
-    for ($square_index = 0; $square_index < 64; $square_index++) {
-      $square_coord = vchess_i2square($square_index);
-      if ($this->piece($square_coord)->color() == $player) {
-        $piece_type = $this->piece($square_coord)->type();
-        if (($piece_type == 'P' && $this->pawn_attacks($square_coord, $attacker_coords[0]))
-            || ($piece_type != 'P' && $piece_type != 'K' && $this->square_is_reachable($square_coord, $attacker_coords[0]))
-            || ($piece_type == 'K' && $this->square_is_reachable($square_coord, $attacker_coords[0]) && !$this->square_is_under_attack($opp, $attacker_coords[0]))) {
-          $can_kill_attacker = FALSE;
-          if (!$this->square_is_under_attack($opp, $king_coord)) {
-            $can_kill_attacker = TRUE;
-          }
-          if ($can_kill_attacker) {
-            return FALSE;
-          }
-        }
-      }
+    $player_pieces_squares = $this->pieces_squares($player);
+    foreach ($player_pieces_squares as $player_piece_square) {
+      $piece = $this->piece($player_piece_square);
+      $piece_type = $piece->type();
+      if (($piece_type == 'P' && $this->pawn_attacks($player_piece_square, $attacker_squares[0]))
+       || ($piece_type != 'P' && $piece_type != 'K' && $this->square_is_reachable($player_piece_square, $attacker_squares[0]))
+       || ($piece_type == 'K' && $this->square_is_reachable($player_piece_square, $attacker_coords[0]) && !$this->square_is_under_attack($opponent, $attacker_coords[0]))) {
+         $can_kill_attacker = FALSE;
+         if (!$this->square_is_under_attack($opponent, $king_square)) {
+           $can_kill_attacker = TRUE;
+         }
+         if ($can_kill_attacker) {
+           return FALSE;
+         }
+       }
     }
-  
+   
     // Check whether own unit can block the way
   
     // If attacking unit is a knight there
@@ -686,7 +686,7 @@ class Board {
       return TRUE;
     }
   
-    // If enemy is adjacent to king there is no
+    // If opponent is adjacent to king there is no
     // way to escape either
     $dest_x = $dest_pos % 8;
     $dest_y = floor($dest_pos / 8);

@@ -623,9 +623,11 @@ class Game {
     $move->initialise($move_string);
     
     $board = $this->get_board();
+    
+    // We will use this board at the end to get the algebraic move
+    $board_clone = clone $board;
   
     $result = "";
-    $move_handled = FALSE;
     $move_ok = TRUE;
     
 //    $result .= "move_string = $move_string. ";
@@ -634,8 +636,7 @@ class Game {
       $result .= 'It is not your turn!';
     }
     else {
-      $turn = $this->get_turn();
-      if ($turn == 'w') {
+      if ($this->get_turn() == 'w') {
         $opponent = 'b';
       }
       else {
@@ -672,28 +673,21 @@ class Game {
            || $move->long_format() == 'Ke1-c1' || $move->long_format() == 'Ke8-c8') {
         switch ($move->long_format()) {
           case 'Ke1-g1':
-            $error = $this->handle_castling('w', 'e1', 'g1', 'h1', 'f1', array('f1', 'g1'), $board);
-            $algebraic_move = 'O-O';
+            $error = $this->castle('w', 'e1', 'g1', 'h1', 'f1', array('f1', 'g1'), $board);
             break;
           case 'Ke1-c1':  
-            $error = $this->handle_castling('w', 'e1', 'c1', 'a1', 'd1', array('b1', 'c1', 'd1'), $board);
-            $algebraic_move = 'O-O-O';
+            $error = $this->castle('w', 'e1', 'c1', 'a1', 'd1', array('b1', 'c1', 'd1'), $board);
             break;
           case 'Ke8-g8':
-            $error = $this->handle_castling('b', 'e8', 'g8', 'h8', 'f8', array('f8', 'g8'), $board);
-            $algebraic_move = 'O-O';
+            $error = $this->castle('b', 'e8', 'g8', 'h8', 'f8', array('f8', 'g8'), $board);
             break;
           case 'Ke8-c8':
-            $error = $this->handle_castling('b', 'e8', 'c8', 'a8', 'd8', array('b8', 'c8', 'd8'), $board);
-            $algebraic_move = 'O-O-O';
+            $error = $this->castle('b', 'e8', 'c8', 'a8', 'd8', array('b8', 'c8', 'd8'), $board);
             break;
           default:
             break;  
         }
-        if ($error == "") {
-          $move_handled = TRUE;
-        }
-        else {
+        if ($error <> "") {
           return $error;
         }
       }
@@ -710,17 +704,13 @@ class Game {
     
         // Get target square
         $to_square = $move->to_square();
-        $move->calculate_algebraic($turn, $board);
         if (!$board->square_is_reachable($piece_square, $to_square)) {
-          $result .= 'ERROR: ' . $move->algebraic() . ' is not a legal move!  ';
           $move_ok = FALSE;
         }
         if ($move->type() == "-" && !$board->piece_may_move_to_square($piece_square, $to_square)) {
-          $result .= 'ERROR: ' . $move->algebraic() . ' is not a legal move!  ';
           $move_ok = FALSE;
         }
         elseif ($move->type() == "x" && !$board->piece_attacks($piece_square, $to_square)) {
-          $result .= 'ERROR: ' . $move->algebraic() . ' is not a legal move!  ';
           $move_ok = FALSE;
         }
       }
@@ -778,7 +768,7 @@ class Game {
         }
       }
   
-      // If king is still in check undo
+      // If own king is still in check, then invalid move
       if ($board->king_is_in_check($this->get_turn())) {
         $result .= 'ERROR: King is in check. ';
         $move_ok = FALSE;        
@@ -803,23 +793,17 @@ class Game {
 //           }
 //         }
 
+      $move->calculate_algebraic($this->get_turn(), $board_clone);
+      
       // If move was executed update game state.
       if ($move_ok) {
-        // Get short notation of move for history before
-        // actually moving since this function relies on
-        // autocomplete which in turn requires the initial board
-        // to work properly (after move, first chessman is on
-        // destination square already and second can't reach it
-        // which would result in 'no one can reach' error)
-        $algebraic_move = $move->algebraic($this->get_player_color($uid), $board);
-        
-        $result .= 'Your last move: ' . $algebraic_move;
+        $result .= 'Your last move: ' . $move->algebraic();
   
         // Check checkmate/stalemate
         if ($board->king_is_in_check($opponent)) {
           // If this is check mate finish the game otherwise
           // add '+' to the move.
-          if ($board->is_checkmate($opponent)) {
+          if ($board->king_is_in_checkmate($opponent)) {
             if ($this->get_turn() == 'w') {
               $this->set_curstate(STATUS_WHITE_WIN);
             }
@@ -872,6 +856,11 @@ class Game {
       
         // Store changed board
         $this->set_board($board);
+        
+        $this->scoresheet->write_move_down($move);
+      }
+      else {
+        $result .= 'ERROR: ' . $move->algebraic() . ' is not a legal move!  ';
       }
     }
     return $result;
@@ -908,7 +897,7 @@ class Game {
    * left to right, e.g. array("e1", "f1", "g1", "h1"
    *       
    */
-  function handle_castling($turn, $king_from, $king_to, $rook_from, $rook_to, $gap_coords, $board) {
+  function castle($turn, $king_from, $king_to, $rook_from, $rook_to, $gap_coords, $board) {
     $error = "";  
     
     if ($turn == 'w') {
