@@ -50,6 +50,8 @@ function vchess_render_board($board, $player, $active, $gid) {
     $game = new Game();
     $game->load($gid);
     
+    $player = $game->get_turn();
+    
     if ($cmd == 'abort') {
       $cmdres = $game->abort($uid);
     }
@@ -64,7 +66,7 @@ function vchess_render_board($board, $player, $active, $gid) {
     }
     
     // Save move
-    $game->save_move($game->move_no(), $game->get_turn(), $game->last_move());
+    $game->save_move($game->move_no(), $player, $game->last_move());
     
     // Save game
     $game->save();

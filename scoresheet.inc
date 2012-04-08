@@ -32,10 +32,10 @@ class Scoresheet {
    * Get the move number
    */
   function move_no() {
-    $count = count($this->scoresheet);
+    $move_no = count($this->scoresheet);
     // If the scoresheet is empty then we are on move 1
-	if ($count == 0) {
-	  $count = 1;
+	if ($move_no == 0) {
+	  $move_no = 1;
     }
 	else {
 // 	  if black has not yet moved, then the move number is the length of the array, 
@@ -52,20 +52,31 @@ class Scoresheet {
 // 	  	$scoresheet[3]['b'] = "Nc6"
 // 	  	and so => move number = 4
   	  if (array_key_exists("b", $this->scoresheet[count($this->scoresheet)])) {
-        $count = $count + 1;
+        $move_no = $move_no + 1;
   	  }
     }
   
-    return $count;
+    return $move_no;
   }
   
   /**
    * Write the latest move down.  The move is added to the end
    * of the scoresheet.
    */
-  function write_move_down($move) {
-    exit("Need to finish writing write_move_down() function!");
+  function write_move_down(Move $move) {
+    $move_no = $this->move_no();
+    if (!array_key_exists($move_no, $this->scoresheet)) {
+      $this->scoresheet[$move_no] = array();  
+    }
+        
+    if (array_key_exists('w', $this->scoresheet[$move_no])) {
+      $this->scoresheet[$move_no]['b'] = $move;
+    }
+    else {
+      $this->scoresheet[$move_no]['w'] = $move;
+    }
   }
+  
 
   /**
    * Get the white move of a particular number
@@ -96,7 +107,7 @@ class Scoresheet {
     $move = new Move;
 	
     if (array_key_exists($move_no, $this->scoresheet)) {
-      if (array_key_exists('w', $this->scoresheet[$move_no])) {
+      if (array_key_exists($color, $this->scoresheet[$move_no])) {
 		$move = $this->scoresheet[$move_no][$color];
       }
     }
@@ -111,11 +122,11 @@ class Scoresheet {
     $move_no = $this->move_no();
     
     $move = $this->black_move($move_no);
-    if ($move == "") {
+    if ($move->algebraic() == "") {
       // Looks like black hasn't moved yet for this move no
       $move = $this->white_move($move_no);
       
-      if ($move == "" && $move_no > 1) {
+      if ($move->algebraic() == "" && $move_no > 1) {
         // Looks like black has just moved, so we need to look at the previous move number
         $move = $this->black_move($move_no - 1); 
       }
@@ -132,12 +143,12 @@ class Scoresheet {
    */
   function get_table() {
     $rows = array();
-    foreach ($this->scoresheet as $move_no => $move) {
-      if (array_key_exists('b', $move)) {
-        $rows[] = array($move_no, $move['w'], $move['b']);        
+    foreach ($this->scoresheet as $move_no => $moves) {
+      if (array_key_exists('b', $moves)) {
+        $rows[] = array($move_no, $moves['w']->algebraic(), $moves['b']->algebraic());        
       }
       else {
-        $rows[] = array($move_no, $move['w'], "");
+        $rows[] = array($move_no, $moves['w']->algebraic(), "");
       }
     }
     $table['header'] = array('Move #', 'White', 'Black');
