@@ -115,9 +115,6 @@ class Board {
   /**
    * Get an array of squares for a given color and piece type.
    * e.g. array("a1", "h1") for white rooks
-   * 
-   * This function is used for things like checking that the short move 
-   * is unique (e.g. Nbc3 rather than just Nc3).  
    */
   function piece_type_squares($search_type, $color) {
     $squares = array();
