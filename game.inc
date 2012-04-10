@@ -628,7 +628,11 @@ class Game {
     $board_clone = clone $board;
   
     $result = "";
+    $pawn_promoted = FALSE;
     $move_ok = TRUE;
+    
+    $piece_square = $move->from_square();
+    $to_square = $move->to_square();
     
 //    $result .= "move_string = $move_string. ";
   
@@ -691,19 +695,13 @@ class Game {
           return $error;
         }
       }
-      else {
+      elseif ($move->type() == "-") {
         // Validate piece and position.
         // Move is e.g. "Nb1-c3"
         $piece = new Piece();
         $piece->set_type($move->source_piece_type());
         $piece->set_color($this->get_turn());
 
-        // Get piece square
-        $piece_square = new Square();
-        $piece_square = $move->from_square();
-    
-        // Get target square
-        $to_square = $move->to_square();
         if (!$board->square_is_reachable($piece_square, $to_square)) {
           $move_ok = FALSE;
         }
@@ -713,51 +711,60 @@ class Game {
         elseif ($move->type() == "x" && !$board->piece_attacks($piece_square, $to_square)) {
           $move_ok = FALSE;
         }
+        
+        // Check destination square is empty
+        if ($move->type() == "-" && !$board->square_is_empty($to_square)) {
+          $move_ok = FALSE;
+          $result .= 'ERROR: ' . $to_square->coord() . ' is occupied!';
+        }
+        
+        // If pawn reached last rank, promote it
+        $pawn_promoted = $this->handle_pawn_promotion($move, $board);
+        
+        if ($move_ok && !$pawn_promoted) {
+          // Perform normal move
+          $board->move_piece($piece_square, $to_square);
+        }
       }
-    
-      $en_passant_ok = FALSE;
-      // Check action
-      if ($move->type() == "-" && !$board->square_is_empty($to_square)) {
-        $result .= 'ERROR: ' . $to_square->coord() . ' is occupied!';
-      }
-      if ($move->type() == "x" && $board->square_is_empty($to_square)) {
-        // En passant of pawn?
-        if ($piece_type == 'P') {
-          if ($this->turn == 'w') {
-            if ($game['b2spm'] != 'x' &&
-                $dest_pos % 8 == $game['b2spm'] &&
-                floor($dest_pos / 8) == 5) {
-              $en_passant_ok = 1;
+      elseif ($move->type() == "x") {
+        if ($board->square_is_empty($to_square)) {
+        
+          // En passant of pawn?
+          if ($piece_type == 'P') {
+            if ($this->turn == 'w') {
+              if ($game['b2spm'] != 'x' &&
+                  $dest_pos % 8 == $game['b2spm'] &&
+                  floor($dest_pos / 8) == 5) {
+                $en_passant_ok = 1;
+              }
+            }
+            else {
+              if ($game['w2spm'] != 'x' &&
+                  $dest_pos % 8 == $game['w2spm'] &&
+                  floor($dest_pos / 8) == 2) {
+                $en_passant_ok = 1;
+              }
+            }
+            if ($en_passant_ok == 0) {
+              $result .= 'ERROR: En-passant is not possible!';
             }
           }
           else {
-            if ($game['w2spm'] != 'x' &&
-                $dest_pos % 8 == $game['w2spm'] &&
-                floor($dest_pos / 8) == 2) {
-              $en_passant_ok = 1;
-            }
-          }
-          if ($en_passant_ok == 0) {
-            $result .= 'ERROR: En-passant is not possible!';
+            $result .= 'ERROR: ' . $to_square->coord() . ' is empty!';
           }
         }
-        else {
-          $result .= 'ERROR: ' . $to_square->coord() . ' is empty!';
+        
+        if ($board->piece($to_square)->color() == $this->get_turn()) {
+          $result .= 'ERROR: You cannot attack own chessman at ' . $to_square->coord() . '!';
+        }
+        
+        if ($move_ok) {
+          // Perform normal move
+          $board->move_piece($piece_square, $to_square);
         }
       }
-      
-      if ($move->type() == "x" && $board->piece($to_square)->color() == $this->get_turn()) {
-        $result .= 'ERROR: You cannot attack own chessman at ' . $to_square->coord() . '!';
-      }
-  
-      // If pawn reached last rank, promote it
-      $pawn_promoted = $this->handle_pawn_promotion($move, $board);
-      
-      if ($move_ok && !$pawn_promoted) {
-        // Perform normal move
-        $board->move_piece($piece_square, $to_square);
-      }
-           
+    
+      $en_passant_ok = FALSE;
       if ($en_passant_ok) {
         // Kill pawn
         if ($this->turn == 'w') {
@@ -776,12 +783,12 @@ class Game {
    
       // If a pawn moved two squares this will allow 'en passant'
       // for next turn.
-      if ($this->get_turn() == 'w') {
-//           $this->set_w2spm($piece_pos % 8);
-      }
-      else {
-//           $this->set_b2spm($piece_pos % 8);
-      }
+//       if ($this->get_turn() == 'w') {
+// //           $this->set_w2spm($piece_pos % 8);
+//       }
+//       else {
+// //           $this->set_b2spm($piece_pos % 8);
+//       }
       
 //         else {
 //           // Clear 'en passant' of OUR last move
@@ -931,7 +938,7 @@ class Game {
         $error = ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
       }
     }
-    
+    // Check the squares between the king's current position and where he will move to are not attacked  
     if ($error == "") {
       foreach ($gap_coords as $gap_coord) {
         $square = new Square;
