@@ -5,12 +5,11 @@
  * Functions concerning a game
  */
 
+// Define game statuses
 define('STATUS_WHITE_WIN', '1-0');
 define('STATUS_BLACK_WIN', '0-1');
+define('STATUS_DRAW', '1/2-1/2');
 define('STATUS_IN_PROGRESS', 'in progress');
-define('END_TYPE_STALEMATE', 'stalemate');
-define('END_TYPE_CHECKMATE', 'checkmate');
-
 
 // Define errors
 define('ERROR_CASTLING_SQUARES_BLOCKED', 'ERROR: Castling squares are blocked!');
@@ -28,34 +27,13 @@ class Game {
   protected $white_uid;
   protected $black_uid;
 	
-  // Static (loaded) entries:
-  // archived: resides in archive
-  // ts_start: timestamp of starting date (secs)
-  // ts_last: timestamp of last move (secs)
-  // white: name of white player
-  // black: name of black player
-  // curmove: number of current move (start at 0)
-  // turn: color of whose turn it is to move (w or b)
-  // curstate: state of game (w/b=white/black won,-=draw,D=draw offered,?=open)
-  // white_may_castle_short: white may castle short
-  // white_may_castle_long: white may castle long
-  // black_may_castle_short, black_may_castle_long: dito for black
-  // w2spm: white 2-step pawn move (x or a-h)
-  // b2spm: black 2-step pawn move
-  // lastmove: last move in full notation (e.g. Pd2-d4 or x)
-  // lastkill: chessman captured in last move with board index (e.g. wP08 or x)
-  // old_castle_short: old short castling flag (only set by king/rook move)
-  // old_castle_long: dito for long castling
-  // board: chess board array (0=a1,63=h8) with e.g. 'bP', 'wQ' or ''
-  // mhistory: move history list (w1,b1,w2,b2,...)
   // chatter: list of chatter lines (first is newest)
+  
   // Dynamic (based on user id) entries:
   // p_maymove: whether it's player's turn (always 0 if user is not playing)
   // p_mayundo: player may undo last move
   // p_mayabort: player may abort game (first move or opponent took too long)
   // p_mayarchive: player may move game to archive
-  // p_color: player color (w=white,b=black or empty if not playing)
-  // p_opponent: name of opponent (based on player color, empty if not playing)
   
   /**
    * Game constructor
@@ -67,13 +45,25 @@ class Game {
   	// Ensure the game has players defined by default
   	$this->white_uid = 1;
   	$this->black_uid = 1;
+  	
+  	// turn: color of whose turn it is to move (w or b)
   	$this->turn = "w";
+  	
+  	// status: status of game ('in progress, '1-0', '0-1', '1/2-1/2', D=draw offered, ?=open)
+  	$this->status = STATUS_IN_PROGRESS;
 
   	// I think the following is for en-passant
-  	// w2spm: 2-step pawn move of white (x or a-h)
-  	// b2spm: dito for black
+  	// w2spm: white 2-step pawn move (x or a-h)
+  	// b2spm: black 2-step pawn move
   	$this->w2spm = 'x';
   	$this->b2spm = 'x';
+  	
+  	// Castling record.  For example, when white king has moved, white may no
+  	// longer castle.  When rook has moved, player may only castle on other side.
+  	$this->white_may_castle_short = TRUE;
+  	$this->white_may_castle_long = TRUE;
+  	$this->black_may_castle_short = TRUE;
+  	$this->black_may_castle_long = TRUE;
   }
   
   /**
@@ -91,15 +81,9 @@ class Game {
    */
   function new_game($white_uid, $black_uid, $bcomment) {
   	// Build new game context 
-  	$this->game['ts_start'] = REQUEST_TIME;
   	$this->white_uid = $white_uid;
   	$this->black_uid = $black_uid;
   	
-  	$this->game['curstate'] = '?';
-  	$this->game['white_may_castle_short'] = TRUE;  
-  	$this->game['white_may_castle_long'] = TRUE;  
-  	$this->game['black_may_castle_short'] = TRUE;
-  	$this->game['black_may_castle_long'] = TRUE;
   	$this->game['lastmove'] = 'x';
   	$this->game['lastkill'] = 'x';
   	$this->game['old_castle_short'] = 'x';
@@ -452,25 +436,13 @@ class Game {
   	vchess_update_stats_win($winner, $resigning_player);
   
   	if ($this->get_player_color($uid) == 'w') {
-  		$game_status = STATUS_BLACK_WIN;
+  		$this->set_status(STATUS_BLACK_WIN);
   	}
   	else {
-  		$game_status = STATUS_WHITE_WIN;
+  		$this->set_status(STATUS_WHITE_WIN);
   	}
-  	$this->save_status($game_status);
   
   	drupal_set_message(t('Thank you for resigning.'));
-  }
-  
-  /**
-   * Update the status of a game
-   */
-  function save_status($status) {
-  	db_update('vchess_games')->fields(array(
-  			'status' => $status,
-  	))
-  	->condition('gid', $this->gid)
-  	->execute();
   }
   
   /**
@@ -495,17 +467,10 @@ class Game {
   }
   
   /**
-   * Get curstate
+   * Set status
    */
-  function get_curstate() {
-  	return $this->game['curstate'];
-  }
-  
-  /**
-   * Set curstate
-   */
-  function set_curstate($curstate) {
-  	$this->game['curstate'] = $curstate;
+  function set_status($status) {
+  	$this->status = $status;
   }
   
   /**
@@ -578,19 +543,19 @@ class Game {
   }
   
   function black_may_castle_long() {
-    return $this->game['black_may_castle_long'];
+    return $this->black_may_castle_long;
   }
   
   function black_may_castle_short() {
-    return $this->game['black_may_castle_short'];
+    return $this->black_may_castle_short;
   }
 
   function white_may_castle_long() {
-    return $this->game['white_may_castle_long'];
+    return $this->white_may_castle_long;
   }
   
   function white_may_castle_short() {
-    return $this->game['white_may_castle_short'];
+    return $this->white_may_castle_short;
   }
   
   /**
@@ -665,23 +630,23 @@ class Game {
       }
    
       // HANDLE MOVES:
-     if ($move->type() == 'draw?' && $this->get_curstate() == '?') {
+     if ($move->type() == 'draw?' && $this->get_status() == '?') {
         // Offer draw
-        $this->set_curstate('D');
+        $this->set_status('D');
         $result .= 'You have offered a draw.';
         $draw_handled = 1;
         $game['lastmove'] = 'DrawOffered';
       }
-      elseif ($move->type() == 'refuse_draw' && $this->get_curstate() == 'D') {
+      elseif ($move->type() == 'refuse_draw' && $this->get_status() == 'D') {
         // Refuse draw
-        $this->set_curstate('?');
+        $this->set_status('?');
         $draw_handled = 1;
         $result .= 'You refused the draw.';
         $game['lastmove'] = 'DrawRefused';
       }
-      elseif ($move->type() == 'accept_draw' && $this->get_curstate() == 'D') {
+      elseif ($move->type() == 'accept_draw' && $this->get_status() == 'D') {
         // Accept draw
-        $this->set_curstate('-');
+        $this->set_status('-');
         $draw_handled = 1;
         $result .= 'You accepted the draw.';
         $this->set_last_move('DrawAccepted');
@@ -796,7 +761,7 @@ class Game {
         }
       }
   
-      // If own king is still in check, then invalid move
+      // If OWN king is still in check, then invalid move
       if ($board->king_is_in_check($this->get_turn())) {
         $result .= 'ERROR: King is in check. ';
         $move_ok = FALSE;        
@@ -833,36 +798,28 @@ class Game {
           // add '+' to the move.
           if ($board->king_is_in_checkmate($opponent)) {
             if ($this->get_turn() == 'w') {
-              $this->set_curstate(STATUS_WHITE_WIN);
+              $this->set_status(STATUS_WHITE_WIN);
             }
             else {
-              $this->set_curstate(STATUS_BLACK_WIN);
+              $this->set_status(STATUS_BLACK_WIN);
             }
-            $mate_type = END_TYPE_CHECKMATE;
+            $result .= '... CHECKMATE!';
           }
         }
         elseif ($board->is_stalemate($opponent, $this->get_w2spm(), $this->get_b2spm())) {
-          $this->set_curstate('-');
-          $mate_type = END_TYPE_STALEMATE;
-        }
-    
-        // If other player can't move anymore end the game.
-        if ($mate_type == END_TYPE_CHECKMATE) {
-          $mate_name = 'mate';
-          $result .= $result . '... CHECKMATE!';
-        }
-        elseif ($mate_type == END_TYPE_STALEMATE) {
-          $mate_name = 'stalemate';
-          $result .= $result . '... STALEMATE!';
-        }
-        
-        // Set next player
-        if ($this->get_turn() == 'b') {
-          $this->set_turn_white();
+          $this->set_status(STATUS_DRAW);
+          $result .= '... STALEMATE!';
         }
         else {
-          $this->set_turn_black();
-        }
+          // Game is not over yet
+          // Set next player
+          if ($this->get_turn() == 'b') {
+            $this->set_turn_white();
+          }
+          else {
+            $this->set_turn_black();
+          }
+        }    
       
         // Add comment to head of chatter. Right now we have only two
         // chatter items. Strip backslashes and replace newlines to get
@@ -1160,10 +1117,10 @@ class Game {
 //     $this->game['chatter'][1] = '<u>' . $uid . '</u>: ...';
 //     // Correct game state
 //     if ($move == 'DrawRefused') {
-//       $this->game['curstate'] = 'D';
+//       $this->game['status'] = 'D';
 //     }
 //     else {
-//       $this->game['curstate'] = '?';
+//       $this->game['status'] = '?';
 //     }
   
 //     // Clear own en passant flag

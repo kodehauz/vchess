@@ -42,11 +42,6 @@ function vchess_render_board($board, $player, $active, $gid) {
     $comment = "This is Hugh's hardwired comment";
     $cmdres = '';
 
-    // Lock access to games/user stats. Any other access (like login
-    // history or private notes) is not locked since it is only
-    // accessible by one user which won't do it twice the same time.
-    //ioLock();
-
     $game = new Game();
     $game->load($gid);
     
@@ -292,14 +287,13 @@ function vchess_command_form($form, $context, Game $game, $cmdres, $move) {
 function vchess_resign_clicked($form, &$form_state) {
   global $user;
   
-//  exit("resign clicked!!");
-  
   $turn = $form_state['values']['turn'];
   $gid = $form_state['values']['gid'];
   
   $game = new Game();
   $game->load($gid);
   $game->resign($user->uid);
+  $game->save();
 }
 
 /**
