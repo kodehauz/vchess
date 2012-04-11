@@ -115,6 +115,11 @@ class Board {
   /**
    * Get an array of squares for a given color and piece type.
    * e.g. array("a1", "h1") for white rooks
+   * 
+   * @param $search_type 
+   *   The type of being searched for, one of 'K', 'Q', 'R', 'B', 'N' or 'P'
+   * @param $color 
+   *   The color of the pieces being searched for, either 'w' or 'b'
    */
   function piece_type_squares($search_type, $color) {
     $squares = array();
@@ -608,6 +613,8 @@ class Board {
    *   Player, either 'w' or 'b'
    */
   function king_is_in_checkmate($player) {
+    $in_checkmate = TRUE;  // we will look to find a counter-example
+    
     if ($player == 'w') {
       $opponent = 'b';
     }
@@ -637,7 +644,7 @@ class Board {
       // Since this square is neither occupied by one of our own pieces
       // or is under attack then we can move the king there and so it
       // isn't checkmate
-      return FALSE;
+      $in_checkmate = FALSE;
     }
   
     // Get all pieces that attack the king
@@ -652,69 +659,38 @@ class Board {
   
     // If more than one attacker there is no chance to escape
     // @todo isn't it possible that there is a discovered attack and the king can move to safety??
-    if (count($attacker_squares) > 1) {
-      return TRUE;
-    }
-    else {
-      // There is only 1 attacker.  Check whether this attacker can be captured by own piece.
+    if (count($attacker_squares) == 1) {
+      // There is only 1 attacker.  Check whether this attacker can be captured by own defending piece.
       $player_pieces_squares = $this->pieces_squares($player);
       foreach ($player_pieces_squares as $player_piece_square) {
         $piece = $this->piece($player_piece_square);
         $piece_type = $piece->type();
         if (($piece_type == 'P' && $this->pawn_attacks($player_piece_square, $attacker_squares[0]))
-            || ($piece_type != 'P' && $piece_type != 'K' && $this->square_is_reachable($player_piece_square, $attacker_squares[0]))
-            || ($piece_type == 'K' && $this->square_is_reachable($player_piece_square, $attacker_squares[0]) && !$this->square_is_under_attack($opponent, $attacker_squares[0]))) {
-          $can_kill_attacker = FALSE;
+        || ($piece_type != 'P' && $piece_type != 'K' && $this->square_is_reachable($player_piece_square, $attacker_squares[0]))
+        || ($piece_type == 'K' && $this->square_is_reachable($player_piece_square, $attacker_squares[0]) && !$this->square_is_under_attack($opponent, $attacker_squares[0]))) {
           if (!$this->square_is_under_attack($opponent, $king_square)) {
-            $can_kill_attacker = TRUE;
-          }
-          if ($can_kill_attacker) {
-            return FALSE;
+            $in_checkmate = FALSE;
           }
         }
       }
       
-      // Check whether own unit can block the way
-      
-      // If attacking unit is a knight there
-      // is no way to block the path.
-       if ($this->piece($attacker_squares[0])->type() == 'N') {
-        return TRUE;
-      }
-      
-      // If opponent is adjacent to king there is no
-      // way to block either
-      //     $dest_x = $dest_pos % 8;
-      //     $dest_y = floor($dest_pos / 8);
-      //     if (abs($dest_x - $king_x) <= 1 && abs($dest_y - $king_y) <= 1) {
-      //       return TRUE;
-      //     }
-      
-      // Get the list of squares between king and attacking
-      // unit that can be blocked to stop the attack
-      $change = vchess_get_path_change($this->piece($attacker_squares[0])->type(), $attacker_squares[0], $king_square);
-      $path = vchess_get_path($attacker_squares[0], $king_square, $change);
-      foreach ($path as $path_square) {
-        // Check to see if any of the defending pieces can block
-        $defending_squares = $this->pieces_squares($player);
-        foreach ($defending_squares as $defending_square) {
-          $piece = $this->piece($defending_square);
-          $piece_type = $piece->type();
-          if (($piece_type == 'P' && $board->piece_may_move_to_square($square, $path_square))
-          || ($piece_type != 'P' && $piece_type != 'K' && $this->square_is_reachable($square_index, $path_square))) {
-            $is_in_check = $this->king_is_in_check($player);
-            if (!$is_in_check) {
-              return FALSE;
+      if ($in_checkmate) {
+        // Check whether a defending piece can move in the way to block
+        $inbetween_squares = vchess_get_inbetween_squares($this->piece($attacker_squares[0])->type(), $attacker_squares[0], $king_square);
+        foreach ($inbetween_squares as $inbetween_square) {
+          $defending_squares = $this->pieces_squares($player);
+          foreach ($defending_squares as $defending_square) {
+            $piece = $this->piece($defending_square);
+            $piece_type = $piece->type();
+            if ($this->piece_may_move_to_square($defending_square, $inbetween_square)) {
+              $in_checkmate = FALSE;
             }
           }
         }
       }
     }
-  
-   
-   
-  
-    return TRUE;
+    
+    return $in_checkmate;
   }
    
   /**
@@ -1195,16 +1171,18 @@ function vchess_col2file($col) {
  *   not including the $start_square and $end_square themselves.
  * 
  */
-function vchess_get_path(Square $start_square, Square $end_square, $change) {
+function vchess_get_inbetween_squares($piece_type, Square $start_square, Square $end_square) {
+  $change = vchess_get_inbetween_squares_change($piece_type, $start_square, $end_square);
+  
   $start = $start_square->convert2i();
   $end = $end_square->convert2i();
   
-  $path = array();
+  $inbetween_squares = array();
   $i = 0;
   for ($pos = $start + $change; $pos != $end; $pos += $change) {
-    $path[$i++] = vchess_i2square($pos);
+    $inbetween_squares[$i++] = vchess_i2square($pos);
   }
-  return $path;
+  return $inbetween_squares;
 }
 
 
@@ -1220,7 +1198,7 @@ function vchess_get_path(Square $start_square, Square $end_square, $change) {
  * @param $piece_square Piece square 
  * @param $dest_index Destination square
  */
-function vchess_get_path_change($piece_type, Square $piece_square, Square $dest_square) {
+function vchess_get_inbetween_squares_change($piece_type, Square $piece_square, Square $dest_square) {
   
   $piece_index = $piece_square->convert2i();
   $dest_index = $dest_square->convert2i();

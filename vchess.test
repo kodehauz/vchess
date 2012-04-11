@@ -23,7 +23,7 @@ class VChessTestCase extends DrupalUnitTestCase {
     
 //     $game->new_game(1, 1, "");
     
-// //    $this->assert($game->position(), BOARD_DEFAULT);
+//     $this->assert($game->position(), BOARD_DEFAULT);
 //   }
   
   /**
@@ -48,5 +48,18 @@ class VChessTestCase extends DrupalUnitTestCase {
     $game->make_move(1, "Qf3-f7", "");
     
     $this->assertTrue($game->king_is_in_checkmate('b'));
+  }
+  
+  /**
+   * Test a move with check
+   */
+  public function testVChessCheck() {
+    $game = new Game();
+    
+  	$game->setup_position("rnbqkbnr/ppppp1pp/8/5p2/4P3/8/PPPP1PPP/RNBQKBNR");
+  	
+  	$game->make_move(1, "Qd1-h5", "");
+  	
+  	$this->assertTrue($game->king_is_in_check('b'));
   }
 }

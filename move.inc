@@ -200,13 +200,12 @@ class Move {
   function calculate_algebraic($player, Board $board) {
     // If all else fails, just return the long move
     $this->algebraic = $this->long_format;
-  
-    $source_piece_type = $this->source_piece_type();
-    $dest_piece_type = $this->dest_piece_type();
-  
+
     $from_square = $this->from_square();
     $to_square = $this->to_square();
     
+    $source_piece_type = $this->source_piece_type();
+  
     if ($player == 'w') {
       $opponent = 'b';
     }
@@ -243,7 +242,7 @@ class Move {
     // All other moves
     else {
       // First find out where all possible pieces of this type are
-      $pieces_squares = $board->piece_type_squares($player, $source_piece_type);
+      $pieces_squares = $board->piece_type_squares($source_piece_type, $player);
   
       // If there is only 1 piece of this type, then move is unambiguous
       if (count($pieces_squares) == 1) {

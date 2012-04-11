@@ -90,7 +90,7 @@ class Game {
   	$this->game['old_castle_long'] = 'x';
   	
     $this->board->setup_as_standard();
-//  	$this->board->setup_position("r3k3/1P6/8/8/8/8/8/4K3");
+//   $this->board->setup_position("rnbqkbnr/ppppp1pp/8/5p2/4P3/8/PPPP1PPP/RNBQKBNR");
   	
   	if (empty($bcomment)) {
   		$bcomment = '(silence)';
@@ -404,6 +404,16 @@ class Game {
   }
   
   /**
+   * Say whether the king is in check
+   * 
+   * @param $player
+   *   Player, either 'w' or 'b'
+   */
+  function king_is_in_check($player) {
+    return $this->board->king_is_in_check($player);
+  }
+  
+  /**
    * Find for a particular player who the opponent is.
    *
    * @param $gid
@@ -684,13 +694,7 @@ class Game {
         $piece->set_type($move->source_piece_type());
         $piece->set_color($this->get_turn());
 
-        if (!$board->square_is_reachable($piece_square, $to_square)) {
-          $move_ok = FALSE;
-        }
-        if ($move->type() == "-" && !$board->piece_may_move_to_square($piece_square, $to_square)) {
-          $move_ok = FALSE;
-        }
-        elseif ($move->type() == "x" && !$board->piece_attacks($piece_square, $to_square)) {
+        if (!$board->piece_may_move_to_square($piece_square, $to_square)) {
           $move_ok = FALSE;
         }
         
