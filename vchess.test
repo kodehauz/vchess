@@ -6,7 +6,6 @@
 class VChessTestCase extends DrupalUnitTestCase {
   protected $privileged_user;
 
-  
   public static function getInfo() {
     // Note: getInfo() strings are not translated with t().
     return array(
@@ -15,6 +14,17 @@ class VChessTestCase extends DrupalUnitTestCase {
         'group' => 'VChess',
     );
   }
+
+  /**
+   * Test initial board setup
+   */
+//   public function testVChessInitialBoardSetup() {
+//     $game = new Game();
+    
+//     $game->new_game(1, 1, "");
+    
+// //    $this->assert($game->position(), BOARD_DEFAULT);
+//   }
   
   /**
    * A basic promotion test 
@@ -26,7 +36,6 @@ class VChessTestCase extends DrupalUnitTestCase {
     $game->make_move(1, "Pb7xRa8=Q", "");
     
     $this->assertEqual($game->position(), "Q3k3/8/8/8/8/8/8/4K3", "");
-    
   }
   
   /**
@@ -36,15 +45,8 @@ class VChessTestCase extends DrupalUnitTestCase {
     $game = new Game();
     
     $game->setup_position("3qk3/8/8/8/2B5/5Q2/8/4K3");
-    $game->make_move(1, "Qf3-f7");
+    $game->make_move(1, "Qf3-f7", "");
     
     $this->assertTrue($game->king_is_in_checkmate('b'));
-  }
-  
-  /**
-   * A basic castling test
-   */
-  public function testVChessCastling() {
-    $this->assertFalse(FALSE);
   }
 }

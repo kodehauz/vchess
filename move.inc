@@ -229,16 +229,16 @@ class Move {
       if ($this->type() == '-') {
         // e.g. e4
         $this->algebraic = $to_square->coord();
-        
-        // Check if pawn promotion, e.g. e8=Q
-        if ($this->to_square()->rank() == 1 || $this->to_square()->rank() == 8) {
-          $this->algebraic .= "=" . $this->promotion_piece_type();
-        }
       }
       else {
         // e.g. cxd4
         $this->algebraic = $this->long_format[1] . "x" . $to_square->coord();
       }
+      
+      // Check if pawn promotion, e.g. e8=Q
+      if ($this->to_square()->rank() == 1 || $this->to_square()->rank() == 8) {
+        $this->algebraic .= "=" . $this->promotion_piece_type();
+      }      
     }
     // All other moves
     else {

@@ -68,6 +68,12 @@ class Game {
   	$this->white_uid = 1;
   	$this->black_uid = 1;
   	$this->turn = "w";
+
+  	// I think the following is for en-passant
+  	// w2spm: 2-step pawn move of white (x or a-h)
+  	// b2spm: dito for black
+  	$this->w2spm = 'x';
+  	$this->b2spm = 'x';
   }
   
   /**
@@ -94,15 +100,13 @@ class Game {
   	$this->game['white_may_castle_long'] = TRUE;  
   	$this->game['black_may_castle_short'] = TRUE;
   	$this->game['black_may_castle_long'] = TRUE;
-  	$this->game['w2spm'] = 'x';
-  	$this->game['b2spm'] = 'x';
   	$this->game['lastmove'] = 'x';
   	$this->game['lastkill'] = 'x';
   	$this->game['old_castle_short'] = 'x';
   	$this->game['old_castle_long'] = 'x';
   	
 //    $this->board->setup_as_standard();
-  	$this->board->setup_position("3qk3/8/8/8/2B5/5Q2/8/4K3");
+  	$this->board->setup_position("r3k3/1P6/8/8/8/8/8/4K3");
   	
   	if (empty($bcomment)) {
   		$bcomment = '(silence)';
@@ -162,11 +166,6 @@ class Game {
 	
 	// Handle castling availability
 	$this->initialise_castling($row['castling_availability']);	
-    
-    // w2spm: 2-step pawn move of white (x or a-h)
-    // b2spm: dito for black
-    $this->game['w2spm'] = 'x';
-    $this->game['b2spm'] = 'x';
     
     $this->scoresheet->load($gid); 
   }	
@@ -517,31 +516,39 @@ class Game {
   }
   
   /**
-   * Set w2spm
+   * Set w2spm (white 2-space move)
+   * 
+   * I think this is for en-passant handling
    */
   function set_w2spm($value) {
-  	$this->game['w2spm'] = $value;
+  	$this->w2spm = $value;
   }
   
   /**
-   * Get w2spm
+   * Get w2spm (white 2-space move)
+   * 
+   * I think this is for en-passant handling
    */
  function get_w2spm() {
-  	return $this->game['w2spm'];
+  	return $this->w2spm;
   }
   
   /**
-   * Set b2spm
+   * Set b2spm (black 2-space move)
+   * 
+   * I think this is for en-passant handling
    */
   function set_b2spm($value) {
-  	$this->game['b2spm'] = $value;
+  	$this->b2spm = $value;
   }
   
   /**
-   * Get b2spm
+   * Get b2spm (black 2-space move)
+   * 
+   * I think this is for en-passant handling
    */
   function get_b2spm() {
-  	return $this->game['b2spm'];
+  	return $this->b2spm;
   }
   
   function white_may_not_castle() {
@@ -738,38 +745,42 @@ class Game {
       }
       elseif ($move->type() == "x") {
         if ($board->square_is_empty($to_square)) {
-        
           // En passant of pawn?
           if ($piece_type == 'P') {
             if ($this->turn == 'w') {
-              if ($game['b2spm'] != 'x' &&
-                  $dest_pos % 8 == $game['b2spm'] &&
+              if ($this->b2spm != 'x' &&
+                  $dest_pos % 8 == $this->b2spm &&
                   floor($dest_pos / 8) == 5) {
                 $en_passant_ok = 1;
               }
             }
             else {
-              if ($game['w2spm'] != 'x' &&
-                  $dest_pos % 8 == $game['w2spm'] &&
+              if ($this->w2spm != 'x' &&
+                  $dest_pos % 8 == $this->w2spm &&
                   floor($dest_pos / 8) == 2) {
                 $en_passant_ok = 1;
               }
             }
             if ($en_passant_ok == 0) {
               $result .= 'ERROR: En-passant is not possible!';
+              $move_ok = FALSE;
             }
           }
           else {
             $result .= 'ERROR: ' . $to_square->coord() . ' is empty!';
+            $move_ok = FALSE;
           }
         }
-        
-        if ($board->piece($to_square)->color() == $this->get_turn()) {
+        elseif ($board->piece($to_square)->color() == $this->get_turn()) {
           $result .= 'ERROR: You cannot attack own chessman at ' . $to_square->coord() . '!';
+          $move_ok = FALSE;
         }
         
-        if ($move_ok) {
-          // Perform normal move
+        // If pawn reached last rank, promote it
+        $pawn_promoted = $this->handle_pawn_promotion($move, $board);
+        
+        if ($move_ok && !$pawn_promoted) {
+          // Perform normal capture
           $board->move_piece($piece_square, $to_square);
         }
       }
@@ -828,9 +839,6 @@ class Game {
               $this->set_curstate(STATUS_BLACK_WIN);
             }
             $mate_type = END_TYPE_CHECKMATE;
-          }
-          else {
-            $result .= '... CHECK!';
           }
         }
         elseif ($board->is_stalemate($opponent, $this->get_w2spm(), $this->get_b2spm())) {
@@ -895,6 +903,7 @@ class Game {
           ($this->get_turn() == 'b' && $move->to_square()->rank() == 1)) {
         $promote_to = new Piece();
         $promote_to->set_type($move->promotion_piece_type());
+        $promote_to->set_color($this->get_turn());
     
         $board->promotion($move->from_square(), $move->to_square(), $promote_to);
         
