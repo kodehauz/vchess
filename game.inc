@@ -101,8 +101,8 @@ class Game {
   	$this->game['old_castle_short'] = 'x';
   	$this->game['old_castle_long'] = 'x';
   	
-    $this->board->setup_as_standard();
-//  	$this->board->setup_position(BOARD_PROMOTION);
+//    $this->board->setup_as_standard();
+  	$this->board->setup_position("3qk3/8/8/8/2B5/5Q2/8/4K3");
   	
   	if (empty($bcomment)) {
   		$bcomment = '(silence)';
@@ -411,6 +411,16 @@ class Game {
   }
   
   /**
+   * Say whether the king is in checkmate
+   * 
+   * @param $player
+   *   Player, either 'w' or 'b'
+   */
+  function king_is_in_checkmate($player) {
+    return $this->board->king_is_in_checkmate($player);
+  }
+  
+  /**
    * Find for a particular player who the opponent is.
    *
    * @param $gid
@@ -713,7 +723,7 @@ class Game {
         }
         
         // Check destination square is empty
-        if ($move->type() == "-" && !$board->square_is_empty($to_square)) {
+        if (!$board->square_is_empty($to_square)) {
           $move_ok = FALSE;
           $result .= 'ERROR: ' . $to_square->coord() . ' is occupied!';
         }

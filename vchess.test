@@ -30,6 +30,18 @@ class VChessTestCase extends DrupalUnitTestCase {
   }
   
   /**
+   * Test checkmate
+   */
+  public function testVChessCheckmate() {
+    $game = new Game();
+    
+    $game->setup_position("3qk3/8/8/8/2B5/5Q2/8/4K3");
+    $game->make_move(1, "Qf3-f7");
+    
+    $this->assertTrue($game->king_is_in_checkmate('b'));
+  }
+  
+  /**
    * A basic castling test
    */
   public function testVChessCastling() {

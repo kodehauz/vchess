@@ -242,7 +242,7 @@ class Move {
     }
     // All other moves
     else {
-      // First find out how where all possible pieces of this type are
+      // First find out where all possible pieces of this type are
       $pieces_squares = $board->piece_type_squares($player, $source_piece_type);
   
       // If there is only 1 piece of this type, then move is unambiguous
