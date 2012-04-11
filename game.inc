@@ -105,8 +105,8 @@ class Game {
   	$this->game['old_castle_short'] = 'x';
   	$this->game['old_castle_long'] = 'x';
   	
-//    $this->board->setup_as_standard();
-  	$this->board->setup_position("r3k3/1P6/8/8/8/8/8/4K3");
+    $this->board->setup_as_standard();
+//  	$this->board->setup_position("r3k3/1P6/8/8/8/8/8/4K3");
   	
   	if (empty($bcomment)) {
   		$bcomment = '(silence)';
