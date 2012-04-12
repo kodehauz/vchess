@@ -342,7 +342,7 @@ class Game {
   /**
    * Get the player whose turn it is, either 'w' or 'b'
    */
-  function get_turn() {
+  function turn() {
   	return $this->turn;
   }
   
@@ -355,7 +355,7 @@ class Game {
    * - "draw"
    * - "in progress"
    */
-  function get_status() {
+  function status() {
   	return $this->status;
   }
   
@@ -464,7 +464,7 @@ class Game {
    */
   function get_player_color($uid) {
     if ($this->white_uid == $this->black_uid) {
-      $color = $this->get_turn();
+      $color = $this->turn();
     }
   	elseif ($this->white_uid == $uid) {
       $color = 'w';
@@ -632,7 +632,7 @@ class Game {
       $result .= 'It is not your turn!';
     }
     else {
-      if ($this->get_turn() == 'w') {
+      if ($this->turn() == 'w') {
         $opponent = 'b';
       }
       else {
@@ -640,21 +640,21 @@ class Game {
       }
    
       // HANDLE MOVES:
-     if ($move->type() == 'draw?' && $this->get_status() == '?') {
+     if ($move->type() == 'draw?' && $this->status() == '?') {
         // Offer draw
         $this->set_status('D');
         $result .= 'You have offered a draw.';
         $draw_handled = 1;
         $game['lastmove'] = 'DrawOffered';
       }
-      elseif ($move->type() == 'refuse_draw' && $this->get_status() == 'D') {
+      elseif ($move->type() == 'refuse_draw' && $this->status() == 'D') {
         // Refuse draw
         $this->set_status('?');
         $draw_handled = 1;
         $result .= 'You refused the draw.';
         $game['lastmove'] = 'DrawRefused';
       }
-      elseif ($move->type() == 'accept_draw' && $this->get_status() == 'D') {
+      elseif ($move->type() == 'accept_draw' && $this->status() == 'D') {
         // Accept draw
         $this->set_status('-');
         $draw_handled = 1;
@@ -692,7 +692,7 @@ class Game {
         // Move is e.g. "Nb1-c3"
         $piece = new Piece();
         $piece->set_type($move->source_piece_type());
-        $piece->set_color($this->get_turn());
+        $piece->set_color($this->turn());
 
         if (!$board->piece_may_move_to_square($piece_square, $to_square)) {
           $move_ok = FALSE;
@@ -740,7 +740,7 @@ class Game {
             $move_ok = FALSE;
           }
         }
-        elseif ($board->piece($to_square)->color() == $this->get_turn()) {
+        elseif ($board->piece($to_square)->color() == $this->turn()) {
           $result .= 'ERROR: You cannot attack own chessman at ' . $to_square->coord() . '!';
           $move_ok = FALSE;
         }
@@ -766,14 +766,14 @@ class Game {
       }
   
       // If OWN king is still in check, then invalid move
-      if ($board->king_is_in_check($this->get_turn())) {
+      if ($board->king_is_in_check($this->turn())) {
         $result .= 'ERROR: King is in check. ';
         $move_ok = FALSE;        
       }
    
       // If a pawn moved two squares this will allow 'en passant'
       // for next turn.
-//       if ($this->get_turn() == 'w') {
+//       if ($this->turn() == 'w') {
 // //           $this->set_w2spm($piece_pos % 8);
 //       }
 //       else {
@@ -782,7 +782,7 @@ class Game {
       
 //         else {
 //           // Clear 'en passant' of OUR last move
-//           if ($this->get_turn() == 'w') {
+//           if ($this->turn() == 'w') {
 //             $this->set_w2spm('x');
 //           }
 //           else {
@@ -790,7 +790,7 @@ class Game {
 //           }
 //         }
 
-      $move->calculate_algebraic($this->get_turn(), $board_clone);
+      $move->calculate_algebraic($this->turn(), $board_clone);
       
       // If move was executed update game state.
       if ($move_ok) {
@@ -801,7 +801,7 @@ class Game {
           // If this is check mate finish the game otherwise
           // add '+' to the move.
           if ($board->king_is_in_checkmate($opponent)) {
-            if ($this->get_turn() == 'w') {
+            if ($this->turn() == 'w') {
               $this->set_status(STATUS_WHITE_WIN);
             }
             else {
@@ -814,10 +814,12 @@ class Game {
           $this->set_status(STATUS_DRAW);
           $result .= '... STALEMATE!';
         }
-        else {
+        
+        
+        if ($this->status() == STATUS_IN_PROGRESS) {
           // Game is not over yet
           // Set next player
-          if ($this->get_turn() == 'b') {
+          if ($this->turn() == 'b') {
             $this->set_turn_white();
           }
           else {
@@ -860,11 +862,11 @@ class Game {
     
     $piece = $board->piece($move->from_square());
     if ($piece->type() == 'P') {
-      if (($this->get_turn() == 'w' && $move->to_square()->rank() == 8) ||
-          ($this->get_turn() == 'b' && $move->to_square()->rank() == 1)) {
+      if (($this->turn() == 'w' && $move->to_square()->rank() == 8) ||
+          ($this->turn() == 'b' && $move->to_square()->rank() == 1)) {
         $promote_to = new Piece();
         $promote_to->set_type($move->promotion_piece_type());
-        $promote_to->set_color($this->get_turn());
+        $promote_to->set_color($this->turn());
     
         $board->promotion($move->from_square(), $move->to_square(), $promote_to);
         
@@ -989,8 +991,8 @@ class Game {
     if ($exists) {
       // Converted to the D7 database API syntax.
       db_update('vchess_games')->fields(array(
-          'turn' => $this->get_turn(),
-          'status' => $this->get_status(),
+          'turn' => $this->turn(),
+          'status' => $this->status(),
           'white_uid' => $this->get_white_uid(),
           'black_uid' => $this->get_black_uid(),
           'board' => $this->get_board()->position(),

@@ -61,5 +61,8 @@ class VChessTestCase extends DrupalUnitTestCase {
   	$game->make_move(1, "Qd1-h5", "");
   	
   	$this->assertTrue($game->king_is_in_check('b'));
+  	$this->assertEqual($game->turn(), 'b');
   }
+  
+  
 }

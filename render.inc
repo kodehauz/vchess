@@ -46,7 +46,7 @@ function vchess_render_board($board, $player, $active, $gid) {
     $game->load($gid);
     
     // Save the values for when we need to save to database
-    $player = $game->get_turn();
+    $player = $game->turn();
     $move_no = $game->move_no();
     
     if ($cmd == 'abort') {
@@ -269,7 +269,7 @@ function vchess_command_form($form, $context, Game $game, $cmdres, $move) {
   
   $form['turn'] = array(
     '#type' => 'hidden',
-    '#value' => $game->get_turn()
+    '#value' => $game->turn()
   );
 
   $form['move'] = array(
