@@ -69,6 +69,9 @@ class Board {
    * See http://en.wikipedia.org/wiki/Forsyth-Edwards_Notation
    */
   function setup_position($fen_string) {
+    // Ensure any previous position is cleared
+    unset($this->board);
+    
     $chars = str_split($fen_string, 1);
     
     // The FEN string starts from the black side
@@ -283,14 +286,14 @@ class Board {
   /**
    * Check all pieces of player whether they attack the given position.
    *
-   * @param string $attacker
-   *   Color of player for whom attack is being tested
-   *
    * @param $to_square
    *   The square which is being checked to see if it is under attack e.g. "d4"
+   *   
+   * @param string $attacker
+   *   Color of player who is doing the attacking, either 'w' or 'b'
    *
    */
-  function square_is_under_attack($attacker, Square $to_square) {
+  function square_is_under_attack(Square $to_square, $attacker) {
     $under_attack = FALSE;
   
     $pieces_squares = $this->pieces_squares($attacker);
@@ -348,10 +351,10 @@ class Board {
     $king_square = $this->king_square($player);
   
     if ($player == 'w') {
-      $in_check = $this->square_is_under_attack('b', $king_square);
+      $in_check = $this->square_is_under_attack($king_square, 'b');
     }
     else {
-      $in_check = $this->square_is_under_attack('w', $king_square);
+      $in_check = $this->square_is_under_attack($king_square, 'w');
     }
   
     return $in_check;
@@ -418,7 +421,7 @@ class Board {
               if ($this->player_on_square($square) == $player) {
                 continue;
               }
-              if ($this->square_is_under_attack($opp, $pos)) {
+              if ($this->square_is_under_attack($pos, $opp)) {
                 continue;
               }
               // Special case: if square is not actively under
@@ -609,13 +612,13 @@ class Board {
   /**
    * Check whether player's king is in checkmate
    * 
-   * @param $player
+   * @param $defender
    *   Player, either 'w' or 'b'
    */
-  function king_is_in_checkmate($player) {
+  function king_is_in_checkmate($defender) {
     $in_checkmate = TRUE;  // we will look to find a counter-example
     
-    if ($player == 'w') {
+    if ($defender == 'w') {
       $opponent = 'b';
     }
     else {
@@ -623,7 +626,7 @@ class Board {
     }
   
     // Find the position of the player's king
-    $king_square = $this->king_square($player);
+    $king_square = $this->king_square($defender);
   
     // Test adjacent squares
     $adj_squares = $this->get_adjacent_squares($king_square);
@@ -632,12 +635,12 @@ class Board {
     foreach ($adj_squares as $adj_square) {
       // If this adjacent square has a piece of the same color, then
       // we cannot move the king there
-      if ($this->piece($adj_square)->color() == $player) {
+      if ($this->piece($adj_square)->color() == $defender) {
         continue;
       }
       // If this adjacent square is under attack, then we cannot
       // move the king there
-      if ($this->square_is_under_attack($opponent, $adj_square)) {
+      if ($this->square_is_under_attack($adj_square, $opponent)) {
         continue;
       }
       //    $board[$king_pos] = $contents;
@@ -648,28 +651,27 @@ class Board {
     }
   
     // Get all pieces that attack the king
-    $attacker_squares = array();
-    $opponent_pieces_squares = $this->pieces_squares($opponent);
-    foreach ($opponent_pieces_squares as $opponent_piece_square) {
-      $piece = $this->piece($opponent_piece_square);
-      if ($this->piece_attacks($opponent_piece_square, $king_square)) {
-        $attacker_squares[] = $opponent_piece_square;
-      }
-    }
+    $attacker_squares = $this->pieces_attacking_square($king_square, $opponent);
   
-    // If more than one attacker there is no chance to escape
-    // @todo isn't it possible that there is a discovered attack and the king can move to safety??
+    // If there is only one attacker, then it might be possible to capture the piece to escape checkmate
     if (count($attacker_squares) == 1) {
       // There is only 1 attacker.  Check whether this attacker can be captured by own defending piece.
-      $player_pieces_squares = $this->pieces_squares($player);
-      foreach ($player_pieces_squares as $player_piece_square) {
-        $piece = $this->piece($player_piece_square);
-        $piece_type = $piece->type();
-        if (($piece_type == 'P' && $this->pawn_attacks($player_piece_square, $attacker_squares[0]))
-        || ($piece_type != 'P' && $piece_type != 'K' && $this->square_is_reachable($player_piece_square, $attacker_squares[0]))
-        || ($piece_type == 'K' && $this->square_is_reachable($player_piece_square, $attacker_squares[0]) && !$this->square_is_under_attack($opponent, $attacker_squares[0]))) {
-          if (!$this->square_is_under_attack($opponent, $king_square)) {
-            $in_checkmate = FALSE;
+      $defender_pieces_squares = $this->pieces_squares($defender);
+      foreach ($defender_pieces_squares as $defender_piece_square) {
+        if ($this->piece_attacks($defender_piece_square, $attacker_squares[0])) {
+          $piece = $this->piece($defender_piece_square);
+          if ($piece->type() == 'K') {
+            // If the piece which could capture is the king, then we need to check if 
+            // the piece it wants to take is defended.  If so, this is not valid
+            $defender_squares = $this->pieces_attacking_square($attacker_squares[0], $opponent);
+            if (count($defender_squares) == 0) {
+              // There is nothing defending the attacking piece, so the king can take it
+              $in_checkmate = FALSE;
+            }
+          }
+          else {
+            // Attacker is not the king, so OK to use it
+            $in_checkmate = FALSE;            
           }
         }
       }
@@ -678,7 +680,7 @@ class Board {
         // Check whether a defending piece can move in the way to block
         $inbetween_squares = vchess_get_inbetween_squares($this->piece($attacker_squares[0])->type(), $attacker_squares[0], $king_square);
         foreach ($inbetween_squares as $inbetween_square) {
-          $defending_squares = $this->pieces_squares($player);
+          $defending_squares = $this->pieces_squares($defender);
           foreach ($defending_squares as $defending_square) {
             $piece = $this->piece($defending_square);
             $piece_type = $piece->type();
@@ -692,7 +694,26 @@ class Board {
     
     return $in_checkmate;
   }
-   
+
+  /**
+   * Get an array of all the pieces attacking a particular square
+   * 
+   * @param Square $square The square which may be attacked
+   * @param $attacker The color of the attacker, 'w' or 'b'
+   */
+  function pieces_attacking_square(Square $square, $attacker) {
+    $attacker_squares = array();
+    $opponent_pieces_squares = $this->pieces_squares($attacker);
+    foreach ($opponent_pieces_squares as $opponent_piece_square) {
+      $piece = $this->piece($opponent_piece_square);
+      if ($this->piece_attacks($opponent_piece_square, $square)) {
+        $attacker_squares[] = $opponent_piece_square;
+      }
+    }
+    
+    return $attacker_squares;
+  }
+  
   /**
    * Check whether $to_square is in reach for piece on the
    * $piece_square. It is not checked whether the square

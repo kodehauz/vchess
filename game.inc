@@ -40,7 +40,11 @@ class Game {
    */
   function __construct() {
   	$this->scoresheet = new Scoresheet();
+  	
+  	// Setup the board
   	$this->board = new Board;
+  	$this->board->setup_as_standard();
+  	//    $this->board->setup_position("3qk3/8/8/8/2B5/5Q2/8/4K3");
 
   	// Ensure the game has players defined by default
   	$this->white_uid = 1;
@@ -88,9 +92,6 @@ class Game {
   	$this->game['lastkill'] = 'x';
   	$this->game['old_castle_short'] = 'x';
   	$this->game['old_castle_long'] = 'x';
-  	
-    $this->board->setup_as_standard();
-//   $this->board->setup_position("rnbqkbnr/ppppp1pp/8/5p2/4P3/8/PPPP1PPP/RNBQKBNR");
   	
   	if (empty($bcomment)) {
   		$bcomment = '(silence)';
@@ -698,12 +699,6 @@ class Game {
           $move_ok = FALSE;
         }
         
-        // Check destination square is empty
-        if (!$board->square_is_empty($to_square)) {
-          $move_ok = FALSE;
-          $result .= 'ERROR: ' . $to_square->coord() . ' is occupied!';
-        }
-        
         // If pawn reached last rank, promote it
         $pawn_promoted = $this->handle_pawn_promotion($move, $board);
         
@@ -817,8 +812,7 @@ class Game {
         
         
         if ($this->status() == STATUS_IN_PROGRESS) {
-          // Game is not over yet
-          // Set next player
+          // Game is not over yet, update whose turn it is
           if ($this->turn() == 'b') {
             $this->set_turn_white();
           }

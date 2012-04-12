@@ -18,13 +18,11 @@ class VChessTestCase extends DrupalUnitTestCase {
   /**
    * Test initial board setup
    */
-//   public function testVChessInitialBoardSetup() {
-//     $game = new Game();
+  public function testVChessInitialBoardSetup() {
+    $game = new Game();
     
-//     $game->new_game(1, 1, "");
-    
-//     $this->assert($game->position(), BOARD_DEFAULT);
-//   }
+    $this->assertEqual($game->position(), BOARD_DEFAULT);
+  }
   
   /**
    * A basic promotion test 
@@ -35,7 +33,8 @@ class VChessTestCase extends DrupalUnitTestCase {
     $game->setup_position("r3k3/1P6/8/8/8/8/8/4K3");
     $game->make_move(1, "Pb7xRa8=Q", "");
     
-    $this->assertEqual($game->position(), "Q3k3/8/8/8/8/8/8/4K3", "");
+    $this->assertEqual($game->position(), "Q3k3/8/8/8/8/8/8/4K3", 
+      "After pawn promotion through capturing the rook, the pawn should have become a queen");
   }
   
   /**
@@ -47,7 +46,21 @@ class VChessTestCase extends DrupalUnitTestCase {
     $game->setup_position("3qk3/8/8/8/2B5/5Q2/8/4K3");
     $game->make_move(1, "Qf3-f7", "");
     
-    $this->assertTrue($game->king_is_in_checkmate('b'));
+    $this->assertTrue($game->king_is_in_checkmate('b'), 
+      "This should be checkmate from the queen protected by a bishop");
+  }
+  
+  /**
+   * Test check with piece that can capture checking piece
+   */
+  public function testVChessCheckedPieceCapture() {
+    $game = new Game();
+    
+    $game->setup_position("2bk4/5Q2/8/4N3/8/8/8/4K3");
+    $game->make_move(1, "Qf7-d7", "");
+    
+    $this->assertFalse($game->king_is_in_checkmate('b'), 
+       "Bishop should be able to capture queen so it should not be checkmate");
   }
   
   /**
@@ -60,8 +73,8 @@ class VChessTestCase extends DrupalUnitTestCase {
   	
   	$game->make_move(1, "Qd1-h5", "");
   	
-  	$this->assertTrue($game->king_is_in_check('b'));
-  	$this->assertEqual($game->turn(), 'b');
+  	$this->assertTrue($game->king_is_in_check('b'), "King should be in check");
+  	$this->assertEqual($game->turn(), 'b', "It should now be black's turn");
   }
   
   
