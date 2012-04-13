@@ -21,7 +21,8 @@ class VChessTestCase extends DrupalUnitTestCase {
   public function testVChessInitialBoardSetup() {
     $game = new Game();
     
-    $this->assertEqual($game->position(), BOARD_DEFAULT);
+    $this->assertEqual($game->position(), BOARD_DEFAULT, 
+        "Check that the initial board setup is the standard initial position");
   }
   
   /**
@@ -75,6 +76,19 @@ class VChessTestCase extends DrupalUnitTestCase {
   	
   	$this->assertTrue($game->king_is_in_check('b'), "King should be in check");
   	$this->assertEqual($game->turn(), 'b', "It should now be black's turn");
+  }
+  
+  /** 
+   * Test short castling
+   */
+  public function testVChessShortCastling() {
+    $game = new Game();
+    
+    $game->setup_position("4k3/8/8/8/8/8/5PPP/4K2R");
+    
+    $game->make_move(1, "Ke1-g1", "");
+    $this->assertEqual($game->position(), "4k3/8/8/8/8/8/5PPP/5RK1",
+        "White king has castled kingside");
   }
   
   

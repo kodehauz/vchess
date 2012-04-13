@@ -44,7 +44,7 @@ class Game {
   	// Setup the board
   	$this->board = new Board;
   	$this->board->setup_as_standard();
-  	//    $this->board->setup_position("3qk3/8/8/8/2B5/5Q2/8/4K3");
+//  	$this->board->setup_position("4k3/8/8/8/8/8/5PPP/4K2R");
 
   	// Ensure the game has players defined by default
   	$this->white_uid = 1;
@@ -919,7 +919,7 @@ class Game {
       foreach ($gap_coords as $gap_coord) {
         $square = new Square;
         $square->set_coord($gap_coord);
-        if ($board->square_is_under_attack($opponent, $square)) {
+        if ($board->square_is_under_attack($square, $opponent)) {
           $error = ERROR_CANNOT_CASTLE_ACROSS_CHECK;
         }
       }
