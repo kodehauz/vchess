@@ -39,14 +39,14 @@ function vchess_render_board($board, $player, $active, $gid) {
 
   if (isset($_POST['cmd']) && !empty($_POST['cmd'])) {
     $cmd = $_POST['cmd'];  // e.g. Pe2-e4
-    $comment = "This is Hugh's hardwired comment";
+    $comment = "";
     $cmdres = '';
 
     $game = new Game();
     $game->load($gid);
     
     // Save the values for when we need to save to database
-    $player = $game->turn();
+    $player_with_turn = $game->turn();
     $move_no = $game->move_no();
     
     if ($cmd == 'abort') {
@@ -62,27 +62,30 @@ function vchess_render_board($board, $player, $active, $gid) {
       $cmdres = $game->make_move($uid, $cmd, $comment);
     }
     
-    // Save move
-    $game->save_move($move_no, $player, $game->last_move());
+    // Only save move and game if a move has actually been completed
+    if ($player_with_turn <> $game->turn()) {
+      // Save move
+     $game->save_move($move_no, $player_with_turn, $game->last_move());
     
-    // Save game
-    $game->save();
+      // Save game
+      $game->save();
     
-    // Send a notification if email address was supplied.
-    //    if ($opponent == 'b') {
-    //       $oid = $game['black'];
-    //     }
-    //     else {
-    //       $oid = $game['white'];
-    //     }
-    //	$email=ioLoadUserEmailAddress($oid);
-    $email = FALSE; // Hugh - force following condition to be FALSE
-    if ($email) {
-      $prot = ($GLOBALS['_SERVER']['HTTPS'] == 'on') ? 'https' : 'http';
-      $url = $prot . '://' . $GLOBALS['_SERVER']['HTTP_HOST'] . $GLOBALS['_SERVER']['SCRIPT_NAME'] . '?gid=' . $gid;
-      $message = "Dear $oid\n\n$uid has just moved.\n\nMove:\n$move\n\nComment:\n$comment\n\nIt is your turn now!\n\nEnter the game:\n$url";
-      mail($email, "[OCC] " . $game['white'] . "vs" . $game['black'] . ": $move->long_format()",
-          $message, 'From: ' . $mail_from);
+      // Send a notification if email address was supplied.
+      //    if ($opponent == 'b') {
+      //       $oid = $game['black'];
+      //     }
+      //     else {
+      //       $oid = $game['white'];
+      //     }
+      //	$email=ioLoadUserEmailAddress($oid);
+      $email = FALSE; // Hugh - force following condition to be FALSE
+      if ($email) {
+        $prot = ($GLOBALS['_SERVER']['HTTPS'] == 'on') ? 'https' : 'http';
+        $url = $prot . '://' . $GLOBALS['_SERVER']['HTTP_HOST'] . $GLOBALS['_SERVER']['SCRIPT_NAME'] . '?gid=' . $gid;
+        $message = "Dear $oid\n\n$uid has just moved.\n\nMove:\n$move\n\nComment:\n$comment\n\nIt is your turn now!\n\nEnter the game:\n$url";
+        mail($email, "[OCC] " . $game['white'] . "vs" . $game['black'] . ": $move->long_format()",
+            $message, 'From: ' . $mail_from);
+      }
     }
     
     drupal_set_message(check_plain(t($cmdres)));

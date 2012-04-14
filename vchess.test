@@ -91,5 +91,23 @@ class VChessTestCase extends DrupalUnitTestCase {
         "White king has castled kingside");
   }
   
+  /**
+   * Test en passant
+   */
+  public function testVChessEnPassant() {
+//     $game = new Game();
+    
+//     $comment = "";
+//     $game->make_move(1, "Pe2-e4", $comment);  // 1. e4
+//     $game->make_move(1, "Nb8-c6", $comment);  // 1. ... Nc6
+//     $game->make_move(1, "Pe4-e5", $comment);  // 2. e5
+//     $game->make_move(1, "Pd7-d5", $comment);  // 2. ... d5
+//     $game->make_move(1, "Pe5xPd6", $comment); // 3. exd6
+    
+//     $this->assertEqual($game->position(), "r1bqkbnr/pp1ppppp/2nP5/8/8/8/PPPP1PPP/RNBQKBNR",
+//         "En Passant complete");
+    $this->assertTrue(FALSE, "en passant has not yet been implemented");
+  }
+  
   
 }
