@@ -268,14 +268,14 @@
         $startdate = date('M jS Y H:i');
         $lastdate = date('M jS Y H:i');
         $gc .= '<tr><td><img alt="" src="' . $full_path . '/images/' . $theme . '/' . $mark . '"></td>';
-        $gc .= "<td><a href=" . url("vchess/player/" . $game->get_white_player()->name()) . ">" . $game->get_white_player()->name() . "</a></td>";
-        $gc .= "<td><a href=" . url("vchess/player/" . $game->get_black_player()->name()) . ">" . $game->get_black_player()->name() . "</a></td>";
+        $gc .= "<td><a href=" . url("vchess/player/" . $game->white_player()->name()) . ">" . $game->white_player()->name() . "</a></td>";
+        $gc .= "<td><a href=" . url("vchess/player/" . $game->black_player()->name()) . ">" . $game->black_player()->name() . "</a></td>";
   
         //      $game['moves'] = 42; // Hugh - hard-coding for now
         //      $gc .= '<td>' . 42 . '</td>'; // Hugh - hard-coding for now
         //      $gc .= '<td>' . $startdate . '&nbsp;&nbsp;</td>';
         //      $gc .= '<td>' . $lastdate . '&nbsp;&nbsp;</td>';
-        $gc .= "<td><a href='" . $view_path . "/board/" . $game->get_gid() . "'>";
+        $gc .= "<td><a href='" . $view_path . "/board/" . $game->gid() . "'>";
         $gc .= t('View') . '</a></td></tr>';
       }
       $gc .= '</table>';
@@ -438,11 +438,11 @@
     $game->load($gid);
   
     // Find the player color
-    $player_color = $game->get_player_color($user->uid);
+    $player_color = $game->player_color($user->uid);
   
     // Display game heading, e.g. "white: admin - black: hugh"
     $out = '<div style="text-align:center;">white: <b>' .
-        $game->get_white_player()->name() . '</b> -   black: <b>' . $game->get_black_player()->name() . '</b></div><br />';
+        $game->white_player()->name() . '</b> -   black: <b>' . $game->black_player()->name() . '</b></div><br />';
   
     $out .= '<table width=100% border=0 cellspacing=0 cellpadding=0><tr><td valign="top" rowspan=2>';
   
@@ -454,7 +454,7 @@
       $player_may_move = FALSE;
     }
   
-    $out .= vchess_render_board($game->get_board(), $player_color, $player_may_move, $gid);
+    $out .= vchess_render_board($game->board(), $player_color, $player_may_move, $gid);
   
     //  $out .= '<IMG src="/' . $module_path . '/images/spacer.gif" width=10><BR></td>';
     $out .= '<img src="/' . SUB_PATH . '/images/spacer.gif" width=10><br /></td>';

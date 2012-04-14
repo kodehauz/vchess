@@ -82,11 +82,11 @@ function vchess_schema() {
               'default' => 'KQkq',
           ),
           'en_passant_target' => array(
-              'description' => 'ep (en passant) target square. If there is no ep target square, this is "-". If a pawn has just made a 2-square move, this is the position "behind" the pawn. This is recorded regardless of whether there is a pawn in position to make an ep capture.',
+              'description' => 'ep (en passant) target square. If there is no ep target square, this is blank. If a pawn has just made a 2-square move, this is the position "behind" the pawn. This is recorded regardless of whether there is a pawn in position to make an ep capture.',
               'type' => 'char',
               'length' => '2',
               'not null' => TRUE,
-              'default' => '-',
+              'default' => '',
           ),
           ),
               'primary key' => array('gid'),

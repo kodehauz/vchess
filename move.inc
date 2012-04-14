@@ -226,8 +226,15 @@ class Move {
       // P moves are always unambiguous. For attacks skip source digit
       // and for moves skip source pos and "-"
       if ($this->type() == '-') {
-        // e.g. e4
-        $this->algebraic = $to_square->coord();
+        if ($from_square->file() == $to_square->file()) {
+          // e.g. e4
+          $this->algebraic = $to_square->coord();
+        }
+        else {
+          // A pawn move to another file which is not a capture (e.g. Pa5-b6)
+          // must be an en passant capture, e.g. "axb5"
+          $this->algebraic = $from_square->file() . "x" . $to_square->coord();
+        }
       }
       else {
         // e.g. cxd4
@@ -280,10 +287,10 @@ class Move {
         }
         else {
           // First try to disambiguate by looking at the file, e.g. Ngf3
-          $source_file = $from_square->get_file();
+          $source_file = $from_square->file();
           $file_unique = TRUE;
           foreach ($trouble_squares as $trouble_coord) {
-            if ($trouble_coord->get_file() == $source_file) {
+            if ($trouble_coord->file() == $source_file) {
               $file_unique = FALSE;
             }
           }

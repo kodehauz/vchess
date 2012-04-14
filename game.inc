@@ -26,6 +26,8 @@ class Game {
   
   protected $white_uid;
   protected $black_uid;
+  
+  protected $en_passant_target;
 	
   // chatter: list of chatter lines (first is newest)
   
@@ -44,7 +46,7 @@ class Game {
   	// Setup the board
   	$this->board = new Board;
   	$this->board->setup_as_standard();
-//  	$this->board->setup_position("4k3/8/8/8/8/8/5PPP/4K2R");
+//    $this->board->setup_position("4k3/3p4/8/8/4P3/8/8/4K3");
 
   	// Ensure the game has players defined by default
   	$this->white_uid = 1;
@@ -56,12 +58,6 @@ class Game {
   	// status: status of game ('in progress, '1-0', '0-1', '1/2-1/2', D=draw offered, ?=open)
   	$this->status = STATUS_IN_PROGRESS;
 
-  	// I think the following is for en-passant
-  	// w2spm: white 2-step pawn move (x or a-h)
-  	// b2spm: black 2-step pawn move
-  	$this->w2spm = 'x';
-  	$this->b2spm = 'x';
-  	
   	// Castling record.  For example, when white king has moved, white may no
   	// longer castle.  When rook has moved, player may only castle on other side.
   	$this->white_may_castle_short = TRUE;
@@ -148,6 +144,8 @@ class Game {
 	$this->white_uid = $row['white_uid'];
 	$this->black_uid = $row['black_uid'];
 	$this->status = $row['status'];
+	
+	$this->en_passant_target = $row['en_passant_target'];
 	
 	// Handle castling availability
 	$this->initialise_castling($row['castling_availability']);	
@@ -239,14 +237,14 @@ class Game {
   /**
    * Get the white player
    */
-  function get_white_player() {
+  function white_player() {
     return new Player($this->white_uid);
   }
   
   /**
    * Get the the black player
    */
-  function get_black_player() {
+  function black_player() {
   	return new Player($this->black_uid);
   }
   
@@ -286,14 +284,14 @@ class Game {
   /** 
    * Get the game id
    */
-  function get_gid() {
+  function gid() {
   	return $this->gid;
   }
   
   /**
    * Get the game board
    */
-  function get_board() {
+  function board() {
   	return $this->board;
   }
   
@@ -329,15 +327,26 @@ class Game {
   /**
    * Get the uid of the white player
    */
-  function get_white_uid() {
+  function white_uid() {
     return $this->white_uid;
   }
   
   /**
    * Get the uid of the black player
    */
-  function get_black_uid() {
+  function black_uid() {
     return $this->black_uid;
+  }
+  
+  /**
+   * Get the en_passant_target 
+   * 
+   * The en_passant_target is the coordinates of the square
+   * behind the pawn in the last move to have moved 2 squares.
+   * 
+   */
+  function en_passant_target() {
+    return $this->en_passant_target;
   }
   
   /**
@@ -417,21 +426,18 @@ class Game {
   /**
    * Find for a particular player who the opponent is.
    *
-   * @param $gid
-   *   Game id
-   *
    * @param $uid
    *   User id of one of the players
    *
    * @return Player $player
    *   The opposing player
    */
-  function get_opponent($uid) {
+  function opponent($uid) {
   	if ($this->white_uid == $uid) {
-  		$opponent = $this->get_black_player();
+  		$opponent = $this->black_player();
   	}
   	else {
-  		$opponent = $this->get_white_player();
+  		$opponent = $this->white_player();
   	}
   
   	return $opponent;
@@ -443,10 +449,10 @@ class Game {
   function resign($uid) {
   	$resigning_player = new Player($uid);
   
-  	$winner = $this->get_opponent($uid);
+  	$winner = $this->opponent($uid);
   	vchess_update_stats_win($winner, $resigning_player);
   
-  	if ($this->get_player_color($uid) == 'w') {
+  	if ($this->player_color($uid) == 'w') {
   		$this->set_status(STATUS_BLACK_WIN);
   	}
   	else {
@@ -463,7 +469,7 @@ class Game {
    * at least for testing purposes, the color is the color of whoever's turn it 
    * is to move.
    */
-  function get_player_color($uid) {
+  function player_color($uid) {
     if ($this->white_uid == $this->black_uid) {
       $color = $this->turn();
     }
@@ -491,43 +497,8 @@ class Game {
 //   	$this->game['last_move'] = $last_move;
   }
   
-  /**
-   * Set w2spm (white 2-space move)
-   * 
-   * I think this is for en-passant handling
-   */
-  function set_w2spm($value) {
-  	$this->w2spm = $value;
-  }
-  
-  /**
-   * Get w2spm (white 2-space move)
-   * 
-   * I think this is for en-passant handling
-   */
- function get_w2spm() {
-  	return $this->w2spm;
-  }
-  
-  /**
-   * Set b2spm (black 2-space move)
-   * 
-   * I think this is for en-passant handling
-   */
-  function set_b2spm($value) {
-  	$this->b2spm = $value;
-  }
-  
-  /**
-   * Get b2spm (black 2-space move)
-   * 
-   * I think this is for en-passant handling
-   */
-  function get_b2spm() {
-  	return $this->b2spm;
-  }
-  
-  function white_may_not_castle() {
+ 
+ function white_may_not_castle() {
     $this->game['white_may_castle_short'] = FALSE;
     $this->game['white_may_castle_long'] = FALSE;
   }
@@ -615,13 +586,14 @@ class Game {
     $move = new Move();
     $move->initialise($move_string);
     
-    $board = $this->get_board();
+    $board = $this->board();
     
     // We will use this board at the end to get the algebraic move
     $board_clone = clone $board;
   
     $result = "";
     $pawn_promoted = FALSE;
+    $en_passant_target_set = FALSE;
     $move_ok = TRUE;
     
     $piece_square = $move->from_square();
@@ -695,40 +667,36 @@ class Game {
         $piece->set_type($move->source_piece_type());
         $piece->set_color($this->turn());
 
-        if (!$board->piece_may_move_to_square($piece_square, $to_square)) {
+        if ($piece->type() == 'P' && $to_square->coord() == $this->en_passant_target()) {
+          // Perform en passant pawn capture
+          $board->en_passant($piece_square, $to_square);
+        }
+        elseif (!$board->piece_may_move_to_square($piece_square, $to_square)) {
           $move_ok = FALSE;
         }
+        else {
+          // If pawn moved 2 squares, then record the en_passant_target square
+          // (the square behind the pawn which has just moved)
+          if ($board->pawn_moved_2_squares($piece_square, $to_square)) {
+            $this->set_en_passant_target($to_square);
+
+            $en_passant_target_set = TRUE;
+          } 
+          
+          // If pawn reached last rank, promote it
+          $pawn_promoted = $this->handle_pawn_promotion($move, $board);
         
-        // If pawn reached last rank, promote it
-        $pawn_promoted = $this->handle_pawn_promotion($move, $board);
-        
-        if ($move_ok && !$pawn_promoted) {
-          // Perform normal move
-          $board->move_piece($piece_square, $to_square);
+          if (!$pawn_promoted) {
+            // Perform normal move
+            $board->move_piece($piece_square, $to_square);
+          }
         }
       }
       elseif ($move->type() == "x") {
         if ($board->square_is_empty($to_square)) {
           // En passant of pawn?
           if ($piece_type == 'P') {
-            if ($this->turn == 'w') {
-              if ($this->b2spm != 'x' &&
-                  $dest_pos % 8 == $this->b2spm &&
-                  floor($dest_pos / 8) == 5) {
-                $en_passant_ok = 1;
-              }
-            }
-            else {
-              if ($this->w2spm != 'x' &&
-                  $dest_pos % 8 == $this->w2spm &&
-                  floor($dest_pos / 8) == 2) {
-                $en_passant_ok = 1;
-              }
-            }
-            if ($en_passant_ok == 0) {
-              $result .= 'ERROR: En-passant is not possible!';
-              $move_ok = FALSE;
-            }
+
           }
           else {
             $result .= 'ERROR: ' . $to_square->coord() . ' is empty!';
@@ -749,48 +717,24 @@ class Game {
         }
       }
     
-      $en_passant_ok = FALSE;
-      if ($en_passant_ok) {
-        // Kill pawn
-        if ($this->turn == 'w') {
-          //         $board[$dest_pos - 8] = '';
-        }
-        else {
-          //         $board[$dest_pos + 8] = '';
-        }
-      }
-  
       // If OWN king is still in check, then invalid move
       if ($board->king_is_in_check($this->turn())) {
         $result .= 'ERROR: King is in check. ';
         $move_ok = FALSE;        
       }
    
-      // If a pawn moved two squares this will allow 'en passant'
-      // for next turn.
-//       if ($this->turn() == 'w') {
-// //           $this->set_w2spm($piece_pos % 8);
-//       }
-//       else {
-// //           $this->set_b2spm($piece_pos % 8);
-//       }
-      
-//         else {
-//           // Clear 'en passant' of OUR last move
-//           if ($this->turn() == 'w') {
-//             $this->set_w2spm('x');
-//           }
-//           else {
-//             $this->set_b2spm('x');
-//           }
-//         }
-
       $move->calculate_algebraic($this->turn(), $board_clone);
       
       // If move was executed update game state.
       if ($move_ok) {
         $result .= 'Your last move: ' . $move->algebraic();
-  
+        
+        // If this wasn't a 2-square pawn move, we need to reset 
+        // the en_passant_target square
+        if (!$en_passant_target_set) {
+          $this->reset_en_passant_target();
+        }
+        
         // Check checkmate/stalemate
         if ($board->king_is_in_check($opponent)) {
           // If this is check mate finish the game otherwise
@@ -805,7 +749,7 @@ class Game {
             $result .= '... CHECKMATE!';
           }
         }
-        elseif ($board->is_stalemate($opponent, $this->get_w2spm(), $this->get_b2spm())) {
+        elseif ($board->is_stalemate($opponent)) {
           $this->set_status(STATUS_DRAW);
           $result .= '... STALEMATE!';
         }
@@ -846,6 +790,30 @@ class Game {
       }
     }
     return $result;
+  }
+  
+  /**
+   * Set the en_passant_target square
+   */
+  function set_en_passant_target(Square $square_in_front) {
+    $file = $square_in_front->file();
+    if ($square_in_front->rank() == 4) {
+      // White has moved something like "Ph2-h4"
+      // so target will be "h3"
+      $this->en_passant_target = $file . "3";
+    }
+    else {
+      // Black has moved something like "Ph7-h5"
+      // so target will be "h6"
+      $this->en_passant_target = $file . "6";
+    }
+  }
+  
+  /**
+   * Reset the en_passant_target square
+   */
+  function reset_en_passant_target() {
+    $this->en_passant_target = "";
   }
   
   /**
@@ -987,10 +955,11 @@ class Game {
       db_update('vchess_games')->fields(array(
           'turn' => $this->turn(),
           'status' => $this->status(),
-          'white_uid' => $this->get_white_uid(),
-          'black_uid' => $this->get_black_uid(),
-          'board' => $this->get_board()->position(),
+          'white_uid' => $this->white_uid(),
+          'black_uid' => $this->black_uid(),
+          'board' => $this->board()->position(),
           'castling_availability' => $this->castling_availability(),
+          'en_passant_target' => $this->en_passant_target(),
       ))
       ->condition('gid', $this->gid)
       ->execute();
@@ -1029,137 +998,8 @@ class Game {
    * Undo last move (only possible if game is not over yet).
    */
   function handle_undo($uid) {
-//     $game = new Game($gid);
-//     if ($game == NULL) {
-//       return 'ERROR: Game "' . $gid . '" does not exist!';
-//     }
-//     if (!$game['p_mayundo']) {
-//       return 'ERROR: Undo is not possible!';
-//     }
-  
-//     $move = $this->game['lastmove'];
-//     $fixhist = 1;
-//     if ($move == 'DrawOffered' || $move == 'DrawRefused') {
-//       $fixhist = 0;
-//     }
-//     elseif ($move == 'O-O') {
-//       if ($this->game['curplyr'] == 'b') {
-//         // white castled short
-//         $this->game['board'][5] = '';
-//         $this->game['board'][6] = '';
-//         $this->game['board'][4] = 'wK';
-//         $this->game['board'][7] = 'wR';
-//         $this->game['white_may_castle_short'] = 1;
-//       }
-//       else {
-//         // black castled short
-//         $this->game['board'][61] = '';
-//         $this->game['board'][62] = '';
-//         $this->game['board'][60] = 'bK';
-//         $this->game['board'][63] = 'bR';
-//         $this->game['black_may_castle_short'] = 1;
-//       }
-//     }
-//     elseif ($move == 'O-O-O') {
-//       if ($this->game['curplyr'] == 'b') {
-//         // white castled long
-//         $this->game['board'][2] = '';
-//         $this->game['board'][3] = '';
-//         $this->game['board'][4] = 'wK';
-//         $this->game['board'][0] = 'wR';
-//         $this->game['white_may_castle_long'] = 1;
-//       }
-//       else {
-//         // black castled long
-//         $this->game['board'][58] = '';
-//         $this->game['board'][59] = '';
-//         $this->game['board'][60] = 'bK';
-//         $this->game['board'][56] = 'bR';
-//         $this->game['black_may_castle_long'] = 1;
-//       }
-//     }
-//     else {
-//       // Undo normal move (includes en passant)
-// //       $src = convert2i($move[1] . $move[2]);
-// //       $dest = convert2i($move[4] . $move[5]);
-//       if ($src >= 0 && $src < 64 && $dest >= 0 && $dest < 64) {
-//         if ($this->game['curplyr'] == 'w') {
-//           $oldclr = 'b';
-//         }
-//         else {
-//           $oldclr = 'w';
-//         }
-//         $this->game['board'][$src] = $oldclr . $move[0];
-//         $this->game['board'][$dest] = '';
-//         if ($this->game['lastkill'] != 'x') {
-//           $kill = $this->game['lastkill'];
-//           $dest = $kill[2] . $kill[3];
-//           $this->game['board'][$dest] = $kill[0] . $kill[1];
-//         }
-//         // Adjust castling flags
-//         if ($move[0] == 'R' || $move[0] == 'K') {
-//           if ($this->game['curplyr'] == 'b') {
-//             // white castling info
-//             $this->game['white_may_castle_short'] = $this->game['old_castle_short'];
-//             $this->game['white_may_castle_long'] = $this->game['old_castle_long'];
-//           }
-//           else {
-//             // black castling info
-//             $this->game['black_may_castle_short'] = $this->game['old_castle_short'];
-//             $this->game['black_may_castle_long'] = $this->game['old_castle_long'];
-//           }
-//         }
-//       }
-//     }
-  
-//     // Fix chatter. Fill in ... for lost chatter.
-//     $this->game['chatter'][0] = $this->game['chatter'][1];
-//     $this->game['chatter'][1] = '<u>' . $uid . '</u>: ...';
-//     // Correct game state
-//     if ($move == 'DrawRefused') {
-//       $this->game['status'] = 'D';
-//     }
-//     else {
-//       $this->game['status'] = '?';
-//     }
-  
-//     // Clear own en passant flag
-//     if ($this->game['curplyr'] == 'b') {
-//       $this->game['w2spm'] = 'x';
-//     }
-//     else {
-//       $this->game['b2spm'] = 'x';
-//     }
-  
-//     // Modify history
-//     if ($fixhist) {
-//       // Adjust turn counter if nescessary
-//       if ($this->game['curplyr'] == 'b') {
-//         $this->game['curmove'] = $this->game['curmove'] -1;
-//       }
-//       // Delete last move
-//       $square = count($this->game['mhistory']) -1;
-//       unset($this->game['mhistory'][$square]);
-//     }
-//     // Switch players
-//     if ($this->game['curplyr'] == 'b') {
-//       $this->game['curplyr'] = 'w';
-//     }
-//     else {
-//       $this->game['curplyr'] = 'b';
-//     }
-  
-//     // Clear last move
-//     $this->game['lastmove'] = 'x';
-//     $this->game['lastkill'] = 'x';
-//     $this->game['old_castle_short'] = 'x';
-//     $this->game['old_castle_long'] = 'x';
-  
-//     // Save game
-//     $this->save();
-  
-//     return 'Move "' . $move . '" undone!';
-   }
+
+  }
   
 }
 

@@ -257,17 +257,17 @@ function vchess_command_form($form, $context, Game $game, $cmdres, $move) {
   
   $form['gid'] = array(
     '#type' => 'hidden',
-    '#value' => $game->get_gid()
+    '#value' => $game->gid()
   );
   
   $form['white'] = array(
     '#type' => 'hidden',
-    '#value' => $game->get_white_player()->name()
+    '#value' => $game->white_player()->name()
   );
   
   $form['black'] = array(
     '#type' => 'hidden',
-    '#value' => $game->get_black_player()->name()
+    '#value' => $game->black_player()->name()
   );
   
   $form['turn'] = array(

@@ -29,7 +29,7 @@ class Square {
   /** 
    * Get the file (=column letter) e.g. "d" for "d4"
    */
-  function get_file() {
+  function file() {
     return $this->coord[0];
   }
   

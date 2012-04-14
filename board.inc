@@ -123,6 +123,9 @@ class Board {
    *   The type of being searched for, one of 'K', 'Q', 'R', 'B', 'N' or 'P'
    * @param $color 
    *   The color of the pieces being searched for, either 'w' or 'b'
+   *   
+   * @return
+   *   Returns an array of squares for pieces of a given color and piece type
    */
   function piece_type_squares($search_type, $color) {
     $squares = array();
@@ -392,7 +395,7 @@ class Board {
    * Check whether there is no further move possible.  To do this, we look at each of
    * the opponent pieces and see if any of them have a move which they can make.
    */
-  function is_stalemate($player, $w_ep, $b_ep) {
+  function is_stalemate($player) {
     return FALSE; // @todo Check this function works OK 
     
     if ($player == 'w') {
@@ -912,9 +915,38 @@ class Board {
    * 
    * No checking is done here as to the validity of the move
    */
-  function move_piece(Square $source_square, Square $to_square) {
-    $this->board[$to_square->coord()] = $this->board[$source_square->coord()];
-    unset($this->board[$source_square->coord()]);
+  function move_piece(Square $from_square, Square $to_square) {
+    $this->board[$to_square->coord()] = $this->board[$from_square->coord()];
+    unset($this->board[$from_square->coord()]);
+  }
+  
+  /**
+   * Perform en passant pawn capture
+   */
+  function en_passant(Square $from_square, Square $to_square) {
+    // Calculate the square of the pawn which has just moved 2 squares
+    if ($from_square->rank() == 4) {
+      // Example: 
+      // black pawn on e4 ($from_square->coord())
+      // white pawn moves d2-d4,
+      // black pawn captures with long move Pe4-d3 ($to_square->coord() is d3)
+      // algebraic move is exd3
+      $enemy_pawn_coord = $to_square->file() . "4";
+    }
+    elseif ($from_square->rank() == 5) {
+      // Example:
+      // white pawn on b5 ($from_square->coord())
+      // black pawn moves c7-c5,
+      // white pawn captures with long move Pb5-c6 ($to_square->coord() is c6)
+      // algebraic move is bxc6
+      $enemy_pawn_coord = $to_square->file() . "5";
+    }
+    
+    // Move the pawn to the empty square
+    $this->move_piece($from_square, $to_square);
+    
+    // Remove the pawn which has just moved 2 squares
+    unset($this->board[$enemy_pawn_coord]);
   }
   
   /**
@@ -949,10 +981,10 @@ class Board {
     $piece_color = $this->piece($pawn_square)->color();
   
     // Convert coord like "d4" into col=4 rank=4
-    $piece_col = vchess_file2col($pawn_square->get_file()); // e.g. d -> 4
+    $piece_col = vchess_file2col($pawn_square->file()); // e.g. d -> 4
     $piece_rank = $pawn_square->rank();
   
-    $dest_col = vchess_file2col($to_square->get_file());  // e.g. e -> 5
+    $dest_col = vchess_file2col($to_square->file());  // e.g. e -> 5
     $dest_rank = $to_square->rank();
   
     if ($piece_color == 'w') {
@@ -1001,6 +1033,32 @@ class Board {
   }
   
   /**
+   * Check whether the move is a pawn moving 2 squares
+   * 
+   * @param Square $piece_square
+   * @param Square $to_square
+   * 
+   * @return boolean TRUE if this was a pawn that moved 2 squares
+   */
+  function pawn_moved_2_squares(Square $piece_square, Square $to_square) {
+    $pawn_moved_2_squares = FALSE;
+    
+    $piece = $this->piece($piece_square);
+    if ($piece->type() == 'P') {
+      if ($piece->color() == 'w' 
+      && ($piece_square->rank() == 1 && $to_square->rank() == 3)) {
+        $pawn_moved_2_squares = TRUE;
+      }
+      elseif ($piece->color() == 'b' 
+      && ($piece_square->rank() == 7 && $to_square->rank() == 5)) {
+        $pawn_moved_2_squares = TRUE;
+      }
+    }
+    
+    return $pawn_moved_2_squares;
+  }
+  
+  /**
    * Check whether pawn at $piece_square may move to $to_square.
    * First move may be two squares instead of just one.
    *
@@ -1014,9 +1072,9 @@ class Board {
   
     if ($this->square_is_empty($to_square)) {
       $piece = $this->piece($piece_square);
-      $piece_file = $piece_square->get_file(); // e.g. e
+      $piece_file = $piece_square->file(); // e.g. e
       $piece_rank = $piece_square->rank(); // e.g. 2
-      $dest_file = $to_square->get_file();  // e.g. e
+      $dest_file = $to_square->file();  // e.g. e
       $dest_rank = $to_square->rank();  // e.g. 4
   
       // Check pawn stays on same file.
