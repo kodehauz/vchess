@@ -72,11 +72,19 @@ If all does not go well, make sure you have followed the above steps for "Creati
 database tables"
 
 
+FIX PATH
+In the file render.inc, there is a hardcoded path which you may well need to change to
+make the module work in your environment:
+  function vchess_render_board($board, $player, $active, $gid) {
+    $path = "http://localhost" . base_path() . drupal_get_path('module', 'vchess');
+This is not ideal and will hopefully be fixed at some stage.
+
+
 SET PERMISSIONS
 Go to the permissions page to set the VChess permissions
 e.g. http://localhost/chess_drupal_7/?q=admin/people/permissions
 Make sure you only give the "reset games" permission to the Administrator!
- 
+
 
 USAGE
 The following are the main pages of VChess:
