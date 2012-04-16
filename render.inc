@@ -62,10 +62,10 @@ function vchess_render_board($board, $player, $active, $gid) {
       $cmdres = $game->make_move($uid, $cmd, $comment);
     }
     
-    // Only save move and game if a move has actually been completed
+    // Only save move and game if a move has actually been made
     if ($player_with_turn <> $game->turn()) {
       // Save move
-     $game->save_move($move_no, $player_with_turn, $game->last_move());
+      $game->save_move($move_no, $player_with_turn, $game->last_move());
     
       // Save game
       $game->save();
@@ -247,7 +247,7 @@ function vchess_command_form($form, $context, Game $game, $cmdres, $move) {
     '#value' => 'Flip Board',
     );
   
-  if (!$game->is_game_over()) {
+  if (!$game->is_over()) {
     $form['resignButton'] = array(
       '#type' => 'submit',
       '#value' => 'Resign',

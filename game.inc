@@ -46,7 +46,7 @@ class Game {
     // Setup the board
     $this->board = new Board;
     $this->board->setup_as_standard();
-//    $this->board->setup_position("4k3/3p4/8/8/4P3/8/8/4K3");
+//    $this->board->setup_position("4k3/R7/3Q5/8/8/p7/P7/4K3");
 
     // Ensure the game has players defined by default
     $this->white_uid = 1;
@@ -86,8 +86,6 @@ class Game {
     
     $this->game['lastmove'] = 'x';
     $this->game['lastkill'] = 'x';
-    $this->game['old_castle_short'] = 'x';
-    $this->game['old_castle_long'] = 'x';
     
     if (empty($bcomment)) {
       $bcomment = '(silence)';
@@ -381,22 +379,30 @@ class Game {
   
   /**
    * Say whether the game is over or not
+   * 
+   * @return TRUE if the game is over
    */
-  function is_game_over() {
-    $sql = "SELECT status FROM {vchess_games} WHERE gid = '" . $this->gid . "'";
+  function is_over() {
+//     $sql = "SELECT status FROM {vchess_games} WHERE gid = '" . $this->gid . "'";
   
-    // Converted to the D7 database API syntax.
-    $result = db_query($sql);
-    $row = $result->fetchAssoc();
+//     // Converted to the D7 database API syntax.
+//     $result = db_query($sql);
+//     $row = $result->fetchAssoc();
   
-    if ($row['status'] == STATUS_IN_PROGRESS) {
-      $game_over = FALSE;
+//     if ($row['status'] == STATUS_IN_PROGRESS) {
+//       $game_over = FALSE;
+//     }
+//     else {
+//       $game_over = TRUE;
+//     }
+    if ($this->status() == STATUS_IN_PROGRESS) {
+      $is_over = FALSE;
     }
     else {
-      $game_over = TRUE;
+      $is_over = TRUE;
     }
     
-    return $game_over;
+    return $is_over;
   }
   
   /**
@@ -750,16 +756,15 @@ class Game {
           $result .= '... STALEMATE!';
         }
         
-        
-        if ($this->status() == STATUS_IN_PROGRESS) {
-          // Game is not over yet, update whose turn it is
-          if ($this->turn() == 'b') {
-            $this->set_turn_white();
-          }
-          else {
-            $this->set_turn_black();
-          }
-        }    
+        // Update whose turn it is.  Even if mate has occured, it
+        // is still logically the opponents move, even if they have
+        // no valid move that they can make  
+        if ($this->turn() == 'b') {
+          $this->set_turn_white();
+        }
+        else {
+          $this->set_turn_black();
+        }
       
         // Add comment to head of chatter. Right now we have only two
         // chatter items. Strip backslashes and replace newlines to get
@@ -961,7 +966,6 @@ class Game {
       ->execute();
     }
   }
-  
   
   /**
    * Abort an open game. This is only possible if your opponent did not move

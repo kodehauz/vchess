@@ -394,9 +394,11 @@ class Board {
   /**
    * Check whether there is no further move possible.  To do this, we look at each of
    * the opponent pieces and see if any of them have a move which they can make.
+   * 
+   * @param $player The player whose turn it is
    */
   function is_stalemate($player) {
-    return FALSE; // @todo Check this function works OK 
+    return FALSE; // @todo finish this function
     
     if ($player == 'w') {
       $opp = 'b';
@@ -406,44 +408,22 @@ class Board {
     }
   
     // Look at each square to find each of the opponent pieces
-    for ($square_index = 0; $square_index < 64; $square_index++) {
-      $square = vchess_i2square($square_index);
-      if (!$this->square_is_empty($square)) {
-        if ($this->player_on_square($square) != $player) {
-          // If the square doesn't have an opponent piece, then skip to the next square
-          continue;
-        }
-        // Can the piece move theoretically thus is there
-        // at least one tile free for one piece?
-        //      switch ($board[$square_index][1]) {
-        switch ($this->piece($square)->type()) {
+    $pieces_squares = $this->pieces_squares($player);
+    foreach ($pieces_squares as $piece_square) {
+      // Can the piece move theoretically thus is there
+      // at least one square free for one piece?
+      switch ($this->piece($piece_square)->type()) {
           case 'K':
-            $adj_squares = $this->get_adjacent_squares($square);
-//             foreach ($adj_squares as $pos) {
-            foreach ($adj_squares as $square) {
-              if ($this->player_on_square($square) == $player) {
+            $adj_squares = $this->get_adjacent_squares($piece_square);
+            foreach ($adj_squares as $adj_square) {
+              if ($this->player_on_square($adj_square) == $player) {
                 continue;
               }
-              if ($this->square_is_under_attack($pos, $opp)) {
-                continue;
-              }
-              // Special case: if square is not actively under
-              // attack it may still be blocked due to close
-              // opponent king
-              $king_too_close = FALSE;
-              $adj_squares2 = $this->get_adjacent_squares($square);
-              foreach ($adj_squares2 as $coord2) {
-                if ($board[$coord2] == $opp . 'K') {
-                  $king_too_close = TRUE;
-                  break;
-                }
-              }
-              if ($king_too_close) {
+              if ($this->square_is_under_attack($adj_square, $opp)) {
                 continue;
               }
               return FALSE;
             }
-            // DEBUG: echo 'King cannot escape alone!';
             break;
           case 'P':
             if ($player == 'w') {
@@ -564,8 +544,7 @@ class Board {
             break;
         }
       }
-    }
-  
+   
     return TRUE;
   }
   
