@@ -268,7 +268,7 @@ class Move {
         foreach ($pieces_squares as $piece_square) {
           // Only look at the other pieces
           if ($piece_square != $from_square) {
-            if ($board->piece_may_move_to_square($piece_square, $to_square)) {
+            if ($board->move_is_ok($piece_square, $to_square)) {
               $trouble_squares[] = $piece_square;
             }
           }

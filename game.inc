@@ -46,7 +46,7 @@ class Game {
     // Setup the board
     $this->board = new Board;
     $this->board->setup_as_standard();
-//    $this->board->setup_position("4k3/R7/3Q5/8/8/p7/P7/4K3");
+//    $this->board->setup_position("4k3/R7/3Q5/8/p7/8/P7/4K3");
 
     // Ensure the game has players defined by default
     $this->white_uid = 1;
@@ -338,6 +338,9 @@ class Game {
    * The en_passant_target is the coordinates of the square
    * behind the pawn in the last move to have moved 2 squares.
    * 
+   * @return 
+   *   Returns the en_passant_target coord (e.g. "d3"), if there is one,
+   *   otherwise it returns "-" 
    */
   function en_passant_target() {
     return $this->en_passant_target;
@@ -673,7 +676,7 @@ class Game {
           // Perform en passant pawn capture
           $board->en_passant($piece_square, $to_square);
         }
-        elseif (!$board->piece_may_move_to_square($piece_square, $to_square)) {
+        elseif (!$board->move_is_ok($piece_square, $to_square)) {
           $move_ok = FALSE;
         }
         else {
@@ -751,7 +754,7 @@ class Game {
             $result .= '... CHECKMATE!';
           }
         }
-        elseif ($board->is_stalemate($opponent)) {
+        elseif ($this->is_stalemate($opponent)) {
           $this->set_status(STATUS_DRAW);
           $result .= '... STALEMATE!';
         }
@@ -814,7 +817,19 @@ class Game {
    * Reset the en_passant_target square
    */
   function reset_en_passant_target() {
-    $this->en_passant_target = "";
+    $this->en_passant_target = "-";
+  }
+  
+  /**
+   * Test if there is an en_passant_target square
+   */
+  function is_en_passant_target() {
+    $is_en_passant_target = FALSE;
+    if ($this->en_passant_target() <> "-") {
+      $is_en_passant_target = TRUE;
+    }
+    
+    return $is_en_passant_target;
   }
   
   /**
@@ -908,7 +923,8 @@ class Game {
   /**
    * Set the fact that player may not castle
    * 
-   * @param $turn 'w' or 'b'
+   * @param $turn 
+   *   $turn is 'w' or 'b'
    */
   function may_not_castle($turn) {
     if ($turn == 'w') {
@@ -965,6 +981,177 @@ class Game {
       ->condition('gid', $this->gid)
       ->execute();
     }
+  }
+  
+  /**
+   * Check whether there is no further move possible.  To do this, we look at each of
+   * the opponent pieces and see if any of them have a move which they can make.
+   *
+   * @param $player The player whose turn it is
+   */
+  function is_stalemate($player) {
+    if ($player == 'w') {
+      $opponent = 'b';
+    }
+    else {
+      $opponent = 'w';
+    }
+  
+    $board = $this->board;
+    
+    // Look at each square to find each of the opponent pieces
+    $pieces_squares = $board->pieces_squares($player);
+    foreach ($pieces_squares as $piece_square) {
+      // Can the piece move theoretically thus is there
+      // at least one square free for one piece?
+      switch ($board->piece($piece_square)->type()) {
+        case 'K':
+          $adj_squares = $board->get_adjacent_squares($piece_square);
+          foreach ($adj_squares as $adj_square) {
+            if ($board->player_on_square($adj_square) == $player) {
+              continue;
+            }
+            if ($board->square_is_under_attack($adj_square, $opponent)) {
+              continue;
+            }
+            return FALSE;
+          }
+          break;
+        case 'P':
+        case 'R':
+          $valid_moves = $this->valid_moves($piece_square);
+          if (count($valid_moves) > 0) {
+            return FALSE;
+          }
+          break;
+        case 'B':
+          return FALSE; // @todo finish this function
+          
+          if ($square_index -9 >= 0   && $this->player_on_square($square_index -9) != $player &&
+          $this->move_is_ok($player, $square_index, $square_index -9)) {
+            return FALSE;
+          }
+          if ($square_index -7 >= 0   && $this->player_on_square($square_index -7) != $player &&
+              $this->move_is_ok($player, $square_index, $square_index -7)) {
+            return FALSE;
+          }
+          if ($square_index + 9 <= 63 && $this->player_on_square($square_index + 9) != $player &&
+              $this->move_is_ok($player, $square_index, $square_index + 9)) {
+            return FALSE;
+          }
+          if ($square_index + 7 <= 63 && $this->player_on_square($square_index + 7) != $player &&
+              $this->move_is_ok($player, $square_index, $square_index + 7)) {
+            return FALSE;
+          }
+          break;
+        case 'Q':
+          return FALSE; // @todo finish this function
+          
+          $adj_squares = $this->get_adjacent_squares($square);
+          foreach ($adj_squares as $pos) {
+            $square = vchess_i2square($pos);
+            //            if ($board[$pos][0] != $player) {
+            if ($this->player_on_square($pos) != $player) {
+              if ($this->move_is_ok($player, $square_index, $pos)) {
+                return FALSE;
+              }
+            }
+          }
+          break;
+        case 'N':
+          return FALSE; // @todo finish this function
+          
+          if ($square_index -17 >= 0   && $this->player_on_square($square_index -17) != $player &&
+          $this->move_is_ok($player, $square_index, $square_index -17)) {
+            return FALSE;
+          }
+          if ($square_index -15 >= 0   && $this->player_on_square($square_index -15) != $player &&
+              $this->move_is_ok($player, $square_index, $square_index -15)) {
+            return FALSE;
+          }
+          if ($square_index -6 >= 0   && $this->player_on_square($square_index -6) != $player &&
+              $this->move_is_ok($player, $square_index, $square_index -6)) {
+            return FALSE;
+          }
+          if ($square_index + 10 <= 63 && $this->player_on_square($square_index + 10) != $player &&
+              $this->move_is_ok($player, $square_index, $square_index + 10)) {
+            return FALSE;
+          }
+          if ($square_index + 17 <= 63 && $this->player_on_square($square_index + 17) != $player &&
+              $this->move_is_ok($player, $square_index, $square_index + 17)) {
+            return FALSE;
+          }
+          if ($square_index + 15 <= 63 && $this->player_on_square($square_index + 15) != $player &&
+              $this->move_is_ok($player, $square_index, $square_index + 15)) {
+            return FALSE;
+          }
+          if ($square_index + 6 <= 63 && $this->player_on_square($square_index + 6) != $player &&
+              $this->move_is_ok($player, $square_index, $square_index + 6)) {
+            return FALSE;
+          }
+          if ($square_index -10 >= 0   && $this->player_on_square($square_index -10) != $player &&
+              $this->move_is_ok($player, $square_index, $square_index -10)) {
+            return FALSE;
+          }
+          break;
+      }
+    }
+  
+    return TRUE;
+  }
+  
+  /**
+   * Get the possible valid moves for a particular piece
+   * 
+   * @param $piece_square
+   *   The square where the piece is
+   */
+  function valid_moves(Square $piece_square) {
+    $valid_moves = array();
+    
+    switch ($this->board->piece($piece_square)->type()) {
+      case 'P':
+        // See if the move 1 square in front is possible
+        if ($this->board->move_is_ok($piece_square, $square_in_front = $this->board->square_in_front($piece_square))) {
+          $valid_moves[] = $this->long_move($piece_square, $square_in_front);
+        }
+        // See if the move 2 squares in front is possible
+        if ($this->board->move_is_ok($piece_square, $square_2_in_front = $this->board->square_2_in_front($piece_square))) {
+          $valid_moves[] = $this->long_move($piece_square, $square_2_in_front);
+        }
+        // See if an en passant capture is possible
+        if ($this->is_en_passant_target()) {
+          if ($this->board->move_is_ok($piece_square, $en_passant_square = vchess_coord2square($this->en_passant_target()))) {
+            $valid_moves[] = $this->long_move($piece_square, $en_passant_square);
+          }
+        }
+      case 'R':
+        $rank_squares = $this->board->rank_squares($piece_square->rank());
+        foreach ($rank_squares as $to_square) {
+          if ($this->board->move_is_ok($piece_square, $to_square)) {
+            $valid_moves[] = $this->long_move($piece_square, $to_square);
+          }
+        }
+        
+        $file_squares = $this->board()->file_squares($piece_square->file());
+        foreach ($file_squares as $file_square) {
+          if ($this->board->move_is_ok($piece_square, $to_square)) {
+            $valid_moves[] = $this->long_move($piece_square, $to_square);
+          }
+        }
+        break;
+      break;
+    }
+
+    return $valid_moves;
+  }
+  
+  /**
+   * Calculate the long move
+   */
+  function long_move(Square $from_square, Square $to_square) {
+    $long_move = $piece_type = $this->board->piece($from_square)->type . 
+      $from_square->coord() . "-" . $to_square->coord();
   }
   
   /**

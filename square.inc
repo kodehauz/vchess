@@ -57,7 +57,7 @@ class Square {
    * a1=0,  b1=1,  c1=2,  d1=3,  e1=4,  f1=5,  g1=6,  h1=7
    * 
    */
-  function convert2i() {
+  function index() {
     $row = $this->coord[0];
     $col = $this->coord[1];
     switch ($row) {
