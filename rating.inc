@@ -14,13 +14,13 @@ define('RATING_CHANGE_MULTIPLIER', 25);
  */
 // function vchess_get_initial_rating($uid) {
 //   $player = new Player($uid);
-  
+
 //   if ($player->played() == 0) {
 //     $rating = INITIAL_RATING;
 //   }
-  
+
 // //  $rating = $avg_opp_rating + 700 * (($wins + 0.5 * $draws) / $played -0.5) * $played / ($played + 2);
-  
+
 //   return $rating;
 // }
 
@@ -42,10 +42,9 @@ function vchess_get_win_probability($diff) {
       - 2.5140 * 0.000000001 * $diff * $absdiff * $absdiff
       + 1.9910 * 0.000000000001 * $diff * $absdiff * $absdiff * $absdiff;
   }
-  
+
   return $probability;
 }
-
 
 /**
  * Get rating change multiplier (coefficient K) which is used to scale expected propability before
@@ -66,13 +65,12 @@ function vchess_get_rating_change_multiplier() {
   return RATING_CHANGE_MULTIPLIER;
 }
 
-
 /**
  * Update user stats and return modified stats. Score is:
  * - 1 (user won),
  * - 0.5 (user drew)
- * - 0 (user lost). 
- * 
+ * - 0 (user lost)
+ *
  * The rating is updated every five games.
  * Modification in between is stored in rating change. If less than five games
  * are finished, sum up opponent strength in rating change. If five games are
@@ -82,17 +80,17 @@ function vchess_get_rating_change_multiplier() {
  * rating change is multiplied by coefficient K which depends on the current
  * rating (<2000?30:>2400?10:130-R/20). Initial rating and expected result based
  * on player strength is computed by Elo, too.
- * 
+ *
  * The final rating change is truncated to four digits after the comma.
- * 
- * 
+ *
+ *
  */
 function vchess_get_updated_stats($uid, $ustats, $ostats, $score) {
   $played = $ustats['won'] + $ustats['drawn'] + $ustats['lost'];
 
   // To update user rating of opponent is required. If none is given yet
   // (<5 games) use initial elo formula to get a temporary value or assume
-  // 1200 if none finished yet. 
+  // 1200 if none finished yet.
   $rating = $ostats['rating'];
   if ($rating == 0) {
     if ($ostats['played'] > 0) {
@@ -104,7 +102,7 @@ function vchess_get_updated_stats($uid, $ustats, $ostats, $score) {
     }
   }
 
-  // Update wins/draws/losses 
+  // Update wins/draws/losses
   if ($score == 1) {
     $ustats['won']++;
   }
@@ -123,11 +121,11 @@ function vchess_get_updated_stats($uid, $ustats, $ostats, $score) {
 //  }
 //  else {
 
-  // Update rating change according to the winning probability. 
+  // Update rating change according to the winning probability
   $win_probability = vchess_get_win_probability($ustats['rating'] - $rating);
   $ustats['played']++;
   $ustats['rchange'] = round(vchess_get_rating_change_multiplier() * ($score - $win_probability));
-    
+
   // Update rating/get initial rating if five games are finished.
   // Use actual number of w+d+l for this.
 //   if ($ustats['played'] < MIN_RATED_GAMES) {
@@ -138,7 +136,7 @@ function vchess_get_updated_stats($uid, $ustats, $ostats, $score) {
 //     // Update rating
 //     $ustats['rating'] += round($ustats['rchange']);
 //   }
-  
+
   // Update rating
   $ustats['rating'] += $ustats['rchange'];
 
@@ -152,9 +150,6 @@ function vchess_get_updated_stats($uid, $ustats, $ostats, $score) {
  * Update stats based on a win
  */
 function vchess_update_stats_win(Player $winner, Player $loser) {
-//  kpr($winner);
-//  kpr($loser);
-  
   // Load stats. Is always successful (returns zero array if not found).
   // Old format is also updated, see compatiblity info in io.php.
   $winner_stats = vchess_io_load_user_stats($winner->uid);
@@ -165,8 +160,6 @@ function vchess_update_stats_win(Player $winner, Player $loser) {
   $loser_stats_new = vchess_get_updated_stats($loser->uid, $loser_stats, $winner_stats, 0);
 
   // Save changes
-//  kpr($winner_stats_new);
-//  kpr($loser_stats_new);
   vchess_io_save_user_stats($winner->uid, $winner_stats_new);
   vchess_io_save_user_stats($loser->uid, $loser_stats_new);
 }
@@ -174,23 +167,23 @@ function vchess_update_stats_win(Player $winner, Player $loser) {
 
 /**
  * Update stats of both users according to result (w,b,-)
- * 
+ *
  * @param $white
  *   Name of white player
- *   
+ *
  * @param $black
  *   Name of black player
- *   
+ *
  * @param
  *   Result is either "-" (draw), "w" (white win), "b" (black win)
  */
 function vchess_update_stats($white, $black, $result) {
   // Load stats. Is always successful (returns zero array if not found).
-  // Old format is also updated,see compatiblity info in io.php. */
+  // Old format is also updated,see compatiblity info in io.php.
   $wstats = vchess_io_load_user_stats($white);
   $bstats = vchess_io_load_user_stats($black);
 
-  // Translate result to score of White and update both players. 
+  // Translate result to score of White and update both players
   if ($result == '-') {
     $score = 1;
   }

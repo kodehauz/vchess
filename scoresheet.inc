@@ -2,7 +2,7 @@
 
 /**
  * @file 
- * Handles the scoresheet (list of moves).
+ * Definition of Scoresheet (list of moves).
  * 
  * The scoresheet is the table of moves in the game.
  */

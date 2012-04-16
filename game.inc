@@ -499,11 +499,10 @@ class Game {
    * Set last move
    */
   function set_last_move($last_move) {
-//     $this->game['last_move'] = $last_move;
+//  $this->game['last_move'] = $last_move;
   }
   
- 
- function white_may_not_castle() {
+  function white_may_not_castle() {
     $this->game['white_may_castle_short'] = FALSE;
     $this->game['white_may_castle_long'] = FALSE;
   }
@@ -616,9 +615,9 @@ class Game {
       else {
         $opponent = 'w';
       }
-   
+
       // HANDLE MOVES:
-     if ($move->type() == 'draw?' && $this->status() == '?') {
+      if ($move->type() == 'draw?' && $this->status() == '?') {
         // Offer draw
         $this->set_status('D');
         $result .= 'You have offered a draw.';
@@ -643,8 +642,10 @@ class Game {
         }
         $game['mhistory'][count($game['mhistory'])] = 'draw';
       }
-      elseif ($move->long_format() == 'Ke1-g1' || $move->long_format() == 'Ke8-g8' 
-           || $move->long_format() == 'Ke1-c1' || $move->long_format() == 'Ke8-c8') {
+      elseif ($move->long_format() == 'Ke1-g1' 
+      || $move->long_format() == 'Ke8-g8' 
+      || $move->long_format() == 'Ke1-c1' 
+      || $move->long_format() == 'Ke8-c8') {
         switch ($move->long_format()) {
           case 'Ke1-g1':
             $error = $this->castle('w', 'e1', 'g1', 'h1', 'f1', array('f1', 'g1'), $board);
@@ -727,7 +728,7 @@ class Game {
         $result .= 'ERROR: King is in check. ';
         $move_ok = FALSE;        
       }
-   
+
       $move->calculate_algebraic($this->turn(), $board_clone);
       
       // If move was executed update game state.
@@ -777,7 +778,7 @@ class Game {
         }
         else {
           $comment = str_replace("\\", '', strip_tags($comment));
-          $comment = str_replace("\n", '<br>', $comment);
+          $comment = str_replace("\n", '<br />', $comment);
         }
         $comment = '<u>' . $uid . '</u>: ' . $comment;
         //    $game['chatter'][1] = $game['chatter'][0];

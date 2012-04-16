@@ -132,7 +132,7 @@ function vchess_render_board($board, $player, $active, $gid) {
           else {
             $c = chr(105 - $col);
           }
-          $content .= '<td align="center"><IMG height=4 src="' . $path . '/images/spacer.gif"><BR><B class="boardSquare">' . $c . '</B></td>';
+          $content .= '<td align="center"><img height=4 src="' . $path . '/images/spacer.gif"><br /><b class="boardSquare">' . $c . '</B></td>';
         }
         else {
           $content .= '<td></td><td></td>';
@@ -146,8 +146,8 @@ function vchess_render_board($board, $player, $active, $gid) {
         else {
           $i = 9 - $row;
         }
-//        $content .= '<td><B class="boardCoord">' . $i . '</B></td><td><IMG width=4 src="/' . $path . '/images/spacer.gif"></td>';
-        $content .= '<td><B class="boardCoord">' . $i . '</B></td><td><IMG width=4 src="' . $path . '/images/spacer.gif"></td>';
+//        $content .= '<td><b class="boardCoord">' . $i . '</B></td><td><img width=4 src="/' . $path . '/images/spacer.gif"></td>';
+        $content .= '<td><b class="boardCoord">' . $i . '</B></td><td><img width=4 src="' . $path . '/images/spacer.gif"></td>';
       }
       else {
         // normal square 
@@ -170,7 +170,7 @@ function vchess_render_board($board, $player, $active, $gid) {
         }
         
 //         if ($board == NULL) {
-//             $content .= '<td class="' . $class . '"><IMG name="b' . $index . '" src="' . $path . '/images/' . $theme . '/empty.gif"></td>';
+//             $content .= '<td class="' . $class . '"><img name="b' . $index . '" src="' . $path . '/images/' . $theme . '/empty.gif"></td>';
 //         }
         if ($piece_name != BLANK) {
           // square with a piece and player has the ability to move
@@ -181,21 +181,21 @@ function vchess_render_board($board, $player, $active, $gid) {
             if ($piece_color <> $player) {
               $cmdpart = "x" . $cmdpart;
             }
-//          $content .= '<td id="btd' . $index . '" class="' . $class . '"><A href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><IMG border=0 src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></A></td>';
-            $content .= '<td id="' . $coord->coord() . '" class="' . $class . '"><A href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><IMG border=0 src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></A></td>';
+//          $content .= '<td id="btd' . $index . '" class="' . $class . '"><a href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><img border=0 src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></a></td>';
+            $content .= '<td id="' . $coord->coord() . '" class="' . $class . '"><a href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><img border=0 src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></a></td>';
           }
           else {
-              $content .= '<td class="' . $class . '"><IMG src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></td>';
+              $content .= '<td class="' . $class . '"><img src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></td>';
           }
         }
         else {
           if ($active) {
             // Build the target part of the move e.g. "-c3", so the move will end up as "Nb1-c3"
             $cmdpart = sprintf('-%s', vchess_i2square($index)->coord());
-            $content .= '<td id="' . $coord->coord() . '" class="' . $class . '"><A href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><IMG border=0 src="' . $path . '/images/' . $theme . '/empty.gif"></A></td>';            
+            $content .= '<td id="' . $coord->coord() . '" class="' . $class . '"><a href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><img border=0 src="' . $path . '/images/' . $theme . '/empty.gif"></a></td>';            
           }
           else {
-            $content .= '<td class="' . $class . '"><IMG src="' . $path . '/images/' . $theme . '/empty.gif"></td>';
+            $content .= '<td class="' . $class . '"><img src="' . $path . '/images/' . $theme . '/empty.gif"></td>';
           }
         }
         $index += $pos_change;

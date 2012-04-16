@@ -42,7 +42,7 @@ class Move {
       //   $move[3] = move type, "x"
       //   $move[4] = dest piece
       //   $move[5-6] = dest square
-      $to_square->set_coord(substr($this->long_format, 5, 2));
+      $to_square->set_coord(drupal_substr($this->long_format, 5, 2));
     }
     else { // Move type = "-"
       // In a move like "Rh4-d4":
@@ -50,7 +50,7 @@ class Move {
       //   $move[1-2] = source coord
       //   $move[3] = move type, "-"
       //   $move[4-5] = dest square
-      $to_square->set_coord(substr($this->long_format, 4, 2));
+      $to_square->set_coord(drupal_substr($this->long_format, 4, 2));
     }
   
     return $to_square;
@@ -65,7 +65,7 @@ class Move {
    */
   function from_square() {
     $from_square = new Square();
-    $from_square->set_coord(substr($this->long_format, 1, 2));
+    $from_square->set_coord(drupal_substr($this->long_format, 1, 2));
   
     return $from_square;
   }
@@ -95,7 +95,11 @@ class Move {
   
   /**
    * Get the source piece from a given move
-   * e.g. "Ra1-a4" gives "R"
+   * 
+   * e.g. "Ra1-a4" returns "R"
+   * 
+   * @return
+   *   A piece type, one of: 'K', 'Q', 'R', 'B', 'N', 'P'
    */
   function source_piece_type() {
     return $this->long_format[0];
@@ -123,11 +127,10 @@ class Move {
   
   /** 
    * Get the piece type for pawn promotion
-   * 
    *  e.g. Ph7-h8=Q returns "Q"
    *  
-   * @return returns the piece type which is selected, one of:
-   * - Q, R, B or K (Knight)
+   * @return 
+   *   the piece type which is selected, one of: Q, R, B or N
    * 
    * If the move is not a valid promotion move then "" is returned.
    * 
@@ -154,11 +157,11 @@ class Move {
     && ($white_promotion || $black_promotion)) {
       if ($this->type() == "-") {
         // e.g. In "Pb7-b8=Q" the "Q" is the 7th element
-        $piece_type = substr($this->long_format, 7, 1);
+        $piece_type = drupal_substr($this->long_format, 7, 1);
       }
       else {
         // e.g. In "Pb7xRa8=Q" the "Q" is the 8th element
-        $piece_type = substr($this->long_format, 8, 1);
+        $piece_type = drupal_substr($this->long_format, 8, 1);
       } 
     }
     
@@ -193,7 +196,6 @@ class Move {
    * 
    * @param $player 
    *   The color of the player making the move, either "b" or "w"
-   * 
    * @param $board
    *   The board on which the move is being made
    */
@@ -357,12 +359,15 @@ class Move {
         $this->algebraic .= "+";
       }
     }
- 
+
     return $this->algebraic;
   }
   
   /**
    * Get the algebraic version of the move
+   * 
+   * @return
+   *   The algebraic version of the move, e.g. "Nc3"
    */
   function algebraic() {
     return $this->algebraic;

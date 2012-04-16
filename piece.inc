@@ -16,7 +16,7 @@ class Piece {
    * @param string $type
    */
   function set_type($type) {
-    $this->type = strtoupper($type);
+    $this->type = drupal_strtoupper($type);
   }
 
   /**
@@ -56,7 +56,7 @@ class Piece {
   function get_FEN_type() {
     $type = $this->type(); // by default already upper case
     if ($this->color() == 'b') {
-      $type = strtolower($type);
+      $type = drupal_strtolower($type);
     }
     
     return $type;
@@ -68,7 +68,7 @@ class Piece {
   function _name_from_type($type) {
     $name = BLANK;
   
-    $type = strtoupper($type);
+    $type = drupal_strtoupper($type);
     switch ($type) {
       case 'P':
         $name = 'Pawn';
