@@ -1,6 +1,5 @@
 <?php
 
-// $Id: vchess.module,v 1.2 2009/03/18 23:31:51 hrocho Exp $
 /**
  * @file
  * Drupal chess module
@@ -523,4 +522,3 @@
     
     return $html;
   }
-  

@@ -94,7 +94,7 @@ class Game {
     }
     else {
       $bcomment = str_replace("\\", '', strip_tags($bcomment));
-      $bcomment = str_replace("\n", '<br>', $bcomment);
+      $bcomment = str_replace("\n", '<br />', $bcomment);
     }
     
     $black_player = new Player($black_uid);
@@ -121,12 +121,12 @@ class Game {
   }
     
   /**
-  * Load an existing game (try active games first, then archived games) and set various
-  * user-based variables, too. Return game as array or NULL on error.
-  *
-  * @param $gid: Game id
-  *
-  */
+   * Load an existing game (try active games first, then archived games) and set various
+   * user-based variables, too. Return game as array or NULL on error.
+   *
+   * @param $gid: Game id
+   *
+   */
   function load($gid) {
     $sql = "SELECT gid, turn, white_uid, black_uid, status, board, castling_availability, en_passant_target " .
       " FROM {vchess_games} WHERE gid = '" .

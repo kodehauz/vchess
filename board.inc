@@ -87,7 +87,7 @@ class Board {
       }
       else {
         $piece = new Piece();
-        if (strtoupper($char) == $char) {
+        if (drupal_strtoupper($char) == $char) {
            // White piece
           $piece->set_type($char);
           $piece->set_color("w");
@@ -233,7 +233,7 @@ class Board {
       for ($col = 1; $col <= 8; $col++) {
         $coord->set_coord(vchess_col2file($col) . $row);
         if ($this->square_is_empty($coord)) {
-           $empty_squares++;
+          $empty_squares++;
         }
         else {
           $piece = $this->piece($coord);
@@ -254,7 +254,7 @@ class Board {
         $FEN_string .= "/";
       }
     }
-   
+    
     return $FEN_string;
   }
   
@@ -1019,11 +1019,12 @@ class Board {
       case 'P':
         $move_ok = $this->_pawn_may_move_to_square($piece_square, $to_square);
         break;
+      case 'R':
       case 'N':
       case 'B':
       case 'Q':
       case 'K':
-        $move_ok = $this->_piece_may_move_to_square($piece_square, $to_square);
+        $move_ok = $this->_non_pawn_may_move_to_square($piece_square, $to_square);
         break;
       default:
         break;
@@ -1122,7 +1123,7 @@ class Board {
    *   TRUE if the knight may move to the given square
    *   FALSE if the knight may not legally move to the given square
    */
-  function _piece_may_move_to_square($piece_square, $to_square) {
+  function _non_pawn_may_move_to_square($piece_square, $to_square) {
     $move_ok = FALSE;
   
     $color = $this->piece($piece_square)->color();
