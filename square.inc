@@ -1,10 +1,14 @@
 <?php
 
-
 /**
- * A square is something like "h2".  It has a rank and a file.
+ * @file
+ * Handles a chessboard square
  * 
+ * A square is one of the squares on the board, and has a 
+ * coordinate, like "h2", and a file such as "h" and a rank such as "2".
+ * It can be converted to a 1 dimensional index [0..63].
  */
+
 class Square {
   var $coord = "";
   

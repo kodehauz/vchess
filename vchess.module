@@ -237,7 +237,7 @@
       $waiting_text = t("<b>" . $view_user->name . "</b> is waiting for");
     }
     $gc = "";
-    $gc .= '<br /><b>' . $turn_text  . " " . count($greenlist) . " " . t('games') . '</b>';
+    $gc .= '<br /><b>' . $turn_text . " " . count($greenlist) . " " . t('games') . '</b>';
     $gc .= '<br /><b>' . $waiting_text . " " . count($redlist) . " " . t('games') . '</b>';
   
     if (count($games) > 0) {

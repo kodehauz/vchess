@@ -1,8 +1,11 @@
 <?php
 
 /**
- * Tests the functionality of the Vchess.
+ * @file
+ * Implements automatic tests for the Vchess module.
  */
+
+
 class VChessTestCase extends DrupalUnitTestCase {
   protected $privileged_user;
 
@@ -70,12 +73,12 @@ class VChessTestCase extends DrupalUnitTestCase {
   public function testVChessCheck() {
     $game = new Game();
     
-  	$game->setup_position("rnbqkbnr/ppppp1pp/8/5p2/4P3/8/PPPP1PPP/RNBQKBNR");
-  	
-  	$game->make_move(1, "Qd1-h5", "");
-  	
-  	$this->assertTrue($game->king_is_in_check('b'), "King should be in check");
-  	$this->assertEqual($game->turn(), 'b', "It should now be black's turn");
+    $game->setup_position("rnbqkbnr/ppppp1pp/8/5p2/4P3/8/PPPP1PPP/RNBQKBNR");
+  
+    $game->make_move(1, "Qd1-h5", "");
+  
+    $this->assertTrue($game->king_is_in_check('b'), "King should be in check");
+    $this->assertEqual($game->turn(), 'b', "It should now be black's turn");
   }
   
   /** 

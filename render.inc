@@ -77,7 +77,7 @@ function vchess_render_board($board, $player, $active, $gid) {
       //     else {
       //       $oid = $game['white'];
       //     }
-      //	$email=ioLoadUserEmailAddress($oid);
+      //  $email=ioLoadUserEmailAddress($oid);
       $email = FALSE; // Hugh - force following condition to be FALSE
       if ($email) {
         $prot = ($GLOBALS['_SERVER']['HTTPS'] == 'on') ? 'https' : 'http';
@@ -175,7 +175,7 @@ function vchess_render_board($board, $player, $active, $gid) {
         if ($piece_name != BLANK) {
           // square with a piece and player has the ability to move
           if ($active) {
-          	// Build the first part of the move e.g. "Nb1"
+            // Build the first part of the move e.g. "Nb1"
             $cmdpart = sprintf('%s%s', $board->piece($coord)->type(), $coord->coord());
             // if the piece is the opposition then the cmdpart becomes e.g. "xNb1"
             if ($piece_color <> $player) {
@@ -190,7 +190,7 @@ function vchess_render_board($board, $player, $active, $gid) {
         }
         else {
           if ($active) {
-          	// Build the target part of the move e.g. "-c3", so the move will end up as "Nb1-c3"
+            // Build the target part of the move e.g. "-c3", so the move will end up as "Nb1-c3"
             $cmdpart = sprintf('-%s', vchess_i2square($index)->coord());
             $content .= '<td id="' . $coord->coord() . '" class="' . $class . '"><A href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><IMG border=0 src="' . $path . '/images/' . $theme . '/empty.gif"></A></td>';            
           }
@@ -225,8 +225,8 @@ function vchess_render_board($board, $player, $active, $gid) {
  * if set (to restore move when notes were saved).
  */
 function vchess_command_form($form, $context, Game $game, $cmdres, $move) {
-  global $user; 	
-	
+  global $user;   
+  
   $form['cmd'] = array(
     '#type' => 'hidden',
     '#value' => '',

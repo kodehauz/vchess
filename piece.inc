@@ -16,18 +16,18 @@ class Piece {
    * @param string $type
    */
   function set_type($type) {
-	$this->type = strtoupper($type);
+    $this->type = strtoupper($type);
   }
-	
+
   /**
    * Get the type one of R, N, B, Q, K or a blank
    *  
    * @return string
    */
   function type() {
-	return $this->type;
+    return $this->type;
   }
-	  
+  
   /**
    * Get the piece color.  Color is w or b
    * 
@@ -41,7 +41,7 @@ class Piece {
    * Set the piece color.  Color is w or b
    */
   function set_color($color) {
-	$this->color = $color;
+    $this->color = $color;
   }
   
   function name() {

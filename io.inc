@@ -121,16 +121,16 @@ function vchess_io_save_user_stats($uid, $stats) {
     ->execute();
   }
   else {
-  	db_update('vchess_stats')
-  	->fields(array(
-  			'won' => $stats['won'],
-  			'drawn' => $stats['drawn'],
-  			'lost' => $stats['lost'],
-  			'rating' => $stats['rating'],
-  			'played' => $stats['played'],
-  			'rchange' => $stats['rchange']))
-  	->condition('uid', $uid)		
-  	->execute();
-  	
+    db_update('vchess_stats')
+    ->fields(array(
+      'won' => $stats['won'],
+      'drawn' => $stats['drawn'],
+      'lost' => $stats['lost'],
+      'rating' => $stats['rating'],
+      'played' => $stats['played'],
+      'rchange' => $stats['rchange']))
+    ->condition('uid', $uid)
+    ->execute();
+  
   }
 }

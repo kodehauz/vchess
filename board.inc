@@ -171,7 +171,7 @@ class Board {
     // There should be only 1 square returned 
     return $squares[0]; 
   }
-	
+
   /**
    * Returns TRUE if the given square is empty
    * 
@@ -179,11 +179,11 @@ class Board {
    */
   function square_is_empty(Square $square) {
     $empty = TRUE;
-	if (array_key_exists($square->coord(), $this->board)) {
-	  $empty = FALSE;
-	}
+    if (array_key_exists($square->coord(), $this->board)) {
+      $empty = FALSE;
+    }
 
-	return $empty;
+    return $empty;
   }
   
   /**
@@ -204,12 +204,12 @@ class Board {
    * @return 'w', 'b' or ''
    */
   function player_on_square(Square $square) {
-	$player = "";
-	if (!$this->square_is_empty($square)) {
-	  $player = $this->piece($square)->color();
-	}
+    $player = "";
+    if (!$this->square_is_empty($square)) {
+      $player = $this->piece($square)->color();
+    }
 
-	return $player;
+    return $player;
   }
 
   /**
@@ -225,37 +225,37 @@ class Board {
    *
    */
   function position() {
-  	$FEN_string = "";
+    $FEN_string = "";
     
-  	$coord = new Square;
-   	for ($row = 8; $row >= 1; $row--) {
-   	  $empty_squares = 0;
-   	  for ($col = 1; $col <= 8; $col++) {
-   	    $coord->set_coord(vchess_col2file($col) . $row);
-  	    if ($this->square_is_empty($coord)) {
-   	      $empty_squares++;
-   	    }
-   	    else {
-   	      $piece = $this->piece($coord);
-   	      if ($empty_squares > 0) {
-   	        $FEN_string .= $empty_squares;
-   	        $empty_squares = 0;
-   	      }
-   	      $FEN_string .= $piece->get_FEN_type();
-   	    }
-   	  }
-   	  // The row may end with empty squares
-   	  if ($empty_squares > 0) {
-   	    $FEN_string .= $empty_squares;
-   	    $empty_squares = 0;
-   	  }
-   	  // All rows except the row 1 with a / 
-   	  if ($row > 1) {
-   	    $FEN_string .= "/";
-   	  }   	    
+    $coord = new Square;
+    for ($row = 8; $row >= 1; $row--) {
+      $empty_squares = 0;
+      for ($col = 1; $col <= 8; $col++) {
+        $coord->set_coord(vchess_col2file($col) . $row);
+        if ($this->square_is_empty($coord)) {
+           $empty_squares++;
+        }
+        else {
+          $piece = $this->piece($coord);
+          if ($empty_squares > 0) {
+            $FEN_string .= $empty_squares;
+            $empty_squares = 0;
+          }
+          $FEN_string .= $piece->get_FEN_type();
+        }
+      }
+      // The row may end with empty squares
+      if ($empty_squares > 0) {
+        $FEN_string .= $empty_squares;
+        $empty_squares = 0;
+      }
+      // All rows except the row 1 with a / 
+      if ($row > 1) {
+        $FEN_string .= "/";
+      }
     }
    
-   	return $FEN_string;
+    return $FEN_string;
   }
   
   /**
@@ -989,7 +989,7 @@ class Board {
   
     if ($piece_color == 'w') {
       if ($dest_rank == $piece_rank + 1
-          && ($piece_col == ($dest_col - 1) || $piece_col == ($dest_col + 1))){
+          && ($piece_col == ($dest_col - 1) || $piece_col == ($dest_col + 1))) {
         $attacks = TRUE;
       }
     }
@@ -1147,7 +1147,7 @@ class Board {
    * Convert $row (1..8), $col (1..8) to 1dim index [0..63]
    */
   function _xy2i($row, $col) {
-    return ($row * 8) + $col;	
+    return ($row * 8) + $col;
   }
 }
   
@@ -1195,7 +1195,7 @@ function vchess_i2square($index) {
   $square = new Square();
   
   if ($index < 0 || $index > 63) {
-	$square->set_coord('');
+    $square->set_coord('');
   }
   else {
     $y = floor($index / 8) + 1;

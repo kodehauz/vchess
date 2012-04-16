@@ -28,7 +28,7 @@ class Game {
   protected $black_uid;
   
   protected $en_passant_target;
-	
+  
   // chatter: list of chatter lines (first is newest)
   
   // Dynamic (based on user id) entries:
@@ -41,29 +41,29 @@ class Game {
    * Game constructor
    */
   function __construct() {
-  	$this->scoresheet = new Scoresheet();
-  	
-  	// Setup the board
-  	$this->board = new Board;
-  	$this->board->setup_as_standard();
+    $this->scoresheet = new Scoresheet();
+
+    // Setup the board
+    $this->board = new Board;
+    $this->board->setup_as_standard();
 //    $this->board->setup_position("4k3/3p4/8/8/4P3/8/8/4K3");
 
-  	// Ensure the game has players defined by default
-  	$this->white_uid = 1;
-  	$this->black_uid = 1;
-  	
-  	// turn: color of whose turn it is to move (w or b)
-  	$this->turn = "w";
-  	
-  	// status: status of game ('in progress, '1-0', '0-1', '1/2-1/2', D=draw offered, ?=open)
-  	$this->status = STATUS_IN_PROGRESS;
+    // Ensure the game has players defined by default
+    $this->white_uid = 1;
+    $this->black_uid = 1;
+    
+    // turn: color of whose turn it is to move (w or b)
+    $this->turn = "w";
+    
+    // status: status of game ('in progress, '1-0', '0-1', '1/2-1/2', D=draw offered, ?=open)
+    $this->status = STATUS_IN_PROGRESS;
 
-  	// Castling record.  For example, when white king has moved, white may no
-  	// longer castle.  When rook has moved, player may only castle on other side.
-  	$this->white_may_castle_short = TRUE;
-  	$this->white_may_castle_long = TRUE;
-  	$this->black_may_castle_short = TRUE;
-  	$this->black_may_castle_long = TRUE;
+    // Castling record.  For example, when white king has moved, white may no
+    // longer castle.  When rook has moved, player may only castle on other side.
+    $this->white_may_castle_short = TRUE;
+    $this->white_may_castle_long = TRUE;
+    $this->black_may_castle_short = TRUE;
+    $this->black_may_castle_long = TRUE;
   }
   
   /**
@@ -80,44 +80,44 @@ class Game {
    *   it is black's initial comment.
    */
   function new_game($white_uid, $black_uid, $bcomment) {
-  	// Build new game context 
-  	$this->white_uid = $white_uid;
-  	$this->black_uid = $black_uid;
-  	
-  	$this->game['lastmove'] = 'x';
-  	$this->game['lastkill'] = 'x';
-  	$this->game['old_castle_short'] = 'x';
-  	$this->game['old_castle_long'] = 'x';
-  	
-  	if (empty($bcomment)) {
-  		$bcomment = '(silence)';
-  	}
-  	else {
-  		$bcomment = str_replace("\\", '', strip_tags($bcomment));
-  		$bcomment = str_replace("\n", '<br>', $bcomment);
-  	}
-  	
-  	$black_player = new Player($black_uid);
-  	$bcomment = '<u>' . $black_player->name() . '</u>: ' . $bcomment;
-  	$this->game['chatter'] = array($bcomment);
+    // Build new game context 
+    $this->white_uid = $white_uid;
+    $this->black_uid = $black_uid;
+    
+    $this->game['lastmove'] = 'x';
+    $this->game['lastkill'] = 'x';
+    $this->game['old_castle_short'] = 'x';
+    $this->game['old_castle_long'] = 'x';
+    
+    if (empty($bcomment)) {
+      $bcomment = '(silence)';
+    }
+    else {
+      $bcomment = str_replace("\\", '', strip_tags($bcomment));
+      $bcomment = str_replace("\n", '<br>', $bcomment);
+    }
+    
+    $black_player = new Player($black_uid);
+    $bcomment = '<u>' . $black_player->name() . '</u>: ' . $bcomment;
+    $this->game['chatter'] = array($bcomment);
   
-  	//  $gfname = sprintf('%s-%s-%s-', date('YmdHi', $this->game['ts_start']), $white, $black);
-  	//  vchess_io_save($this->game, $gfname);
+    //  $gfname = sprintf('%s-%s-%s-', date('YmdHi', $this->game['ts_start']), $white, $black);
+    //  vchess_io_save($this->game, $gfname);
   
-  	//  return $gfname;
-//  	return $this->game;
+    //  return $gfname;
+//    return $this->game;
 
-  	// Converted to the D7 database API syntax.
-  	$gid = db_insert('vchess_games')
-  	->fields(array(
-  			'turn' => 'w',
-  			'white_uid' => $white_uid,
-  			'black_uid' => $black_uid,
-  			'board' => $this->board->position())
-  			)
-  	->execute();
-  	
-  	return $gid;
+    // Converted to the D7 database API syntax.
+    $gid = db_insert('vchess_games')
+    ->fields(array(
+        'turn' => 'w',
+        'white_uid' => $white_uid,
+        'black_uid' => $black_uid,
+        'board' => $this->board->position())
+        )
+    ->execute();
+    
+    return $gid;
   }
     
   /**
@@ -128,30 +128,26 @@ class Game {
   *
   */
   function load($gid) {
-	$sql = "SELECT gid, turn, white_uid, black_uid, status, board, castling_availability, en_passant_target " .
-	 " FROM {vchess_games} WHERE gid = '" .
-			$gid . "'";
-	// Converted to the D7 database API syntax.
-	$result = db_query($sql);
-	$row = $result->fetchAssoc();
+    $sql = "SELECT gid, turn, white_uid, black_uid, status, board, castling_availability, en_passant_target " .
+      " FROM {vchess_games} WHERE gid = '" .
+      $gid . "'";
+    // Converted to the D7 database API syntax.
+    $result = db_query($sql);
+    $row = $result->fetchAssoc();
 
-	$this->gid = $row['gid'];
-	$this->turn = $row['turn'];
-	
-	// Fill chess board
-	$this->board->setup_position($row['board']);
-	
-	$this->white_uid = $row['white_uid'];
-	$this->black_uid = $row['black_uid'];
-	$this->status = $row['status'];
-	
-	$this->en_passant_target = $row['en_passant_target'];
-	
-	// Handle castling availability
-	$this->initialise_castling($row['castling_availability']);	
+    $this->gid = $row['gid'];
+    $this->turn = $row['turn'];
+  
+    // Fill chess board    $this->board->setup_position($row['board']);
+  
+    $this->white_uid = $row['white_uid'];
+    $this->black_uid = $row['black_uid'];
+    $this->status = $row['status'];  
+    $this->en_passant_target = $row['en_passant_target'];      // Handle castling availability
+    $this->initialise_castling($row['castling_availability']);
     
     $this->scoresheet->load($gid); 
-  }	
+  }
   
   /**
    * Get the last move
@@ -245,7 +241,7 @@ class Game {
    * Get the the black player
    */
   function black_player() {
-  	return new Player($this->black_uid);
+    return new Player($this->black_uid);
   }
   
   /**
@@ -263,43 +259,43 @@ class Game {
    * move_no = 2 (i.e. waiting for move 2) 
    */
   function move_no() {
-  	return $this->scoresheet->move_no();
+    return $this->scoresheet->move_no();
   }
   
   /**
    * See if it's the given players move
    */
   function is_players_move($uid) {
-  	if (($this->turn == 'w' && $this->white_uid == $uid) 
-  	|| ($this->turn == 'b' && $this->black_uid == $uid)) {
-  	  $players_move = TRUE;	
-  	}
-  	else {
-  	  $players_move = FALSE;
-  	}
-  	
-  	return $players_move;
+    if (($this->turn == 'w' && $this->white_uid == $uid) 
+    || ($this->turn == 'b' && $this->black_uid == $uid)) {
+      $players_move = TRUE;
+    }
+    else {
+      $players_move = FALSE;
+    }
+    
+    return $players_move;
   }
   
   /** 
    * Get the game id
    */
   function gid() {
-  	return $this->gid;
+    return $this->gid;
   }
   
   /**
    * Get the game board
    */
   function board() {
-  	return $this->board;
+    return $this->board;
   }
   
   /**
    * Set the board
    */
   function set_board(Board $board) {
-  	$this->board = $board;
+    $this->board = $board;
   }
   
   /**
@@ -353,7 +349,7 @@ class Game {
    * Get the player whose turn it is, either 'w' or 'b'
    */
   function turn() {
-  	return $this->turn;
+    return $this->turn;
   }
   
   /**
@@ -366,41 +362,41 @@ class Game {
    * - "in progress"
    */
   function status() {
-  	return $this->status;
+    return $this->status;
   }
   
   /**
    * Set the player whose turn it is to move to be 'w'
    */
   function set_turn_white() {
-  	$this->turn = 'w';
+    $this->turn = 'w';
   }
   
   /**
    * Set the player whose turn it is to move to be 'b'
    */
   function set_turn_black() {
-  	$this->turn = 'b';
+    $this->turn = 'b';
   }
   
   /**
    * Say whether the game is over or not
    */
   function is_game_over() {
-  	$sql = "SELECT status FROM {vchess_games} WHERE gid = '" . $this->gid . "'";
+    $sql = "SELECT status FROM {vchess_games} WHERE gid = '" . $this->gid . "'";
   
-  	// Converted to the D7 database API syntax.
-  	$result = db_query($sql);
-  	$row = $result->fetchAssoc();
+    // Converted to the D7 database API syntax.
+    $result = db_query($sql);
+    $row = $result->fetchAssoc();
   
-  	if ($row['status'] == STATUS_IN_PROGRESS) {
-  		$game_over = FALSE;
-  	}
-  	else {
-  		$game_over = TRUE;
-  	}
-  	
-  	return $game_over;
+    if ($row['status'] == STATUS_IN_PROGRESS) {
+      $game_over = FALSE;
+    }
+    else {
+      $game_over = TRUE;
+    }
+    
+    return $game_over;
   }
   
   /**
@@ -433,33 +429,33 @@ class Game {
    *   The opposing player
    */
   function opponent($uid) {
-  	if ($this->white_uid == $uid) {
-  		$opponent = $this->black_player();
-  	}
-  	else {
-  		$opponent = $this->white_player();
-  	}
+    if ($this->white_uid == $uid) {
+      $opponent = $this->black_player();
+    }
+    else {
+      $opponent = $this->white_player();
+    }
   
-  	return $opponent;
+    return $opponent;
   }
   
   /**
    * Resign a particular game
    */
   function resign($uid) {
-  	$resigning_player = new Player($uid);
+    $resigning_player = new Player($uid);
   
-  	$winner = $this->opponent($uid);
-  	vchess_update_stats_win($winner, $resigning_player);
+    $winner = $this->opponent($uid);
+    vchess_update_stats_win($winner, $resigning_player);
   
-  	if ($this->player_color($uid) == 'w') {
-  		$this->set_status(STATUS_BLACK_WIN);
-  	}
-  	else {
-  		$this->set_status(STATUS_WHITE_WIN);
-  	}
+    if ($this->player_color($uid) == 'w') {
+      $this->set_status(STATUS_BLACK_WIN);
+    }
+    else {
+      $this->set_status(STATUS_WHITE_WIN);
+    }
   
-  	drupal_set_message(t('Thank you for resigning.'));
+    drupal_set_message(t('Thank you for resigning.'));
   }
   
   /**
@@ -473,28 +469,28 @@ class Game {
     if ($this->white_uid == $this->black_uid) {
       $color = $this->turn();
     }
-  	elseif ($this->white_uid == $uid) {
+    elseif ($this->white_uid == $uid) {
       $color = 'w';
-  	}
-  	else {
+    }
+    else {
       $color = 'b';
-  	}
+    }
   
-  	return $color;
+    return $color;
   }
   
   /**
    * Set status
    */
   function set_status($status) {
-  	$this->status = $status;
+    $this->status = $status;
   }
   
   /**
    * Set last move
    */
   function set_last_move($last_move) {
-//   	$this->game['last_move'] = $last_move;
+//     $this->game['last_move'] = $last_move;
   }
   
  
@@ -509,19 +505,19 @@ class Game {
   }
   
   function set_white_may_castle_short($may_castle_short) {
-    $this->game['white_may_castle_short'] = $may_castle_short;	
+    $this->game['white_may_castle_short'] = $may_castle_short;  
   }
   
   function set_white_may_castle_long($may_castle_long) {
-  	$this->game['white_may_castle_long'] = $may_castle_long;
+    $this->game['white_may_castle_long'] = $may_castle_long;
   }
   
   function set_black_may_castle_short($may_castle_short) {
-  	$this->game['black_may_castle_short'] = $may_castle_short;
+    $this->game['black_may_castle_short'] = $may_castle_short;
   }
   
   function set_black_may_castle_long($may_castle_long) {
-  	$this->game['black_may_castle_long'] = $may_castle_long;
+    $this->game['black_may_castle_long'] = $may_castle_long;
   }
   
   function black_may_castle_long() {
@@ -973,12 +969,12 @@ class Game {
    * have NO influence on the game statistics. Return a status message.
    */
   function abort($uid) {
-    //	global $res_games;
+    //  global $res_games;
   
     $gamefolder =  variable_get('vchess_game_files_folder', 'vchess-data');
     $res_games = $gamefolder;
   
-    //	ioLock();
+    //  ioLock();
   
     $game = new Game($gid);
     if ($game == NULL) {
@@ -989,7 +985,7 @@ class Game {
     }
     unlink("$res_games/$gid");
   
-    //	ioUnlock();
+    //  ioUnlock();
   
     return 'Game "' . $gid . '" deleted.';
   }
