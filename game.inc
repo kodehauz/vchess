@@ -46,7 +46,7 @@ class Game {
     // Setup the board
     $this->board = new Board;
     $this->board->setup_as_standard();
-//    $this->board->setup_position("4k3/R7/3Q5/8/p7/8/P7/4K3");
+//    $this->board->setup_position("4k3/R7/3Q5/b7/p7/8/P7/4K3");
 
     // Ensure the game has players defined by default
     $this->white_uid = 1;
@@ -1005,7 +1005,8 @@ class Game {
     foreach ($pieces_squares as $piece_square) {
       // Can the piece move theoretically thus is there
       // at least one square free for one piece?
-      switch ($board->piece($piece_square)->type()) {
+      $piece_type = $board->piece($piece_square)->type();
+      switch ($piece_type) {
         case 'K':
           $adj_squares = $board->get_adjacent_squares($piece_square);
           foreach ($adj_squares as $adj_square) {
@@ -1019,32 +1020,33 @@ class Game {
           }
           break;
         case 'P':
+        case 'B':
         case 'R':
           $valid_moves = $this->valid_moves($piece_square);
           if (count($valid_moves) > 0) {
             return FALSE;
           }
           break;
-        case 'B':
-          return FALSE; // @todo finish this function
+//         case 'B':
+// //          return FALSE; // @todo finish this function
           
-          if ($square_index -9 >= 0   && $this->player_on_square($square_index -9) != $player &&
-          $this->move_is_ok($player, $square_index, $square_index -9)) {
-            return FALSE;
-          }
-          if ($square_index -7 >= 0   && $this->player_on_square($square_index -7) != $player &&
-              $this->move_is_ok($player, $square_index, $square_index -7)) {
-            return FALSE;
-          }
-          if ($square_index + 9 <= 63 && $this->player_on_square($square_index + 9) != $player &&
-              $this->move_is_ok($player, $square_index, $square_index + 9)) {
-            return FALSE;
-          }
-          if ($square_index + 7 <= 63 && $this->player_on_square($square_index + 7) != $player &&
-              $this->move_is_ok($player, $square_index, $square_index + 7)) {
-            return FALSE;
-          }
-          break;
+//           if ($square_index -9 >= 0   && $this->player_on_square($square_index -9) != $player &&
+//           $this->move_is_ok($player, $square_index, $square_index -9)) {
+//             return FALSE;
+//           }
+//           if ($square_index -7 >= 0   && $this->player_on_square($square_index -7) != $player &&
+//               $this->move_is_ok($player, $square_index, $square_index -7)) {
+//             return FALSE;
+//           }
+//           if ($square_index + 9 <= 63 && $this->player_on_square($square_index + 9) != $player &&
+//               $this->move_is_ok($player, $square_index, $square_index + 9)) {
+//             return FALSE;
+//           }
+//           if ($square_index + 7 <= 63 && $this->player_on_square($square_index + 7) != $player &&
+//               $this->move_is_ok($player, $square_index, $square_index + 7)) {
+//             return FALSE;
+//           }
+//           break;
         case 'Q':
           return FALSE; // @todo finish this function
           
@@ -1110,7 +1112,8 @@ class Game {
   function valid_moves(Square $piece_square) {
     $valid_moves = array();
     
-    switch ($this->board->piece($piece_square)->type()) {
+    $piece_type = $this->board->piece($piece_square)->type();
+    switch ($piece_type) {
       case 'P':
         // See if the move 1 square in front is possible
         if ($this->board->move_is_ok($piece_square, $square_in_front = $this->board->square_in_front($piece_square))) {
@@ -1127,20 +1130,20 @@ class Game {
           }
         }
       case 'R':
-        $rank_squares = $this->board->rank_squares($piece_square->rank());
-        foreach ($rank_squares as $to_square) {
-          if ($this->board->move_is_ok($piece_square, $to_square)) {
-            $valid_moves[] = $this->long_move($piece_square, $to_square);
-          }
-        }
-        
-        $file_squares = $this->board()->file_squares($piece_square->file());
-        foreach ($file_squares as $file_square) {
+        $squares = $this->board->rank_and_file_squares($piece_square);
+        foreach ($squares as $to_square) {
           if ($this->board->move_is_ok($piece_square, $to_square)) {
             $valid_moves[] = $this->long_move($piece_square, $to_square);
           }
         }
         break;
+      case 'B':
+        $squares = $this->board->diagonal_squares($piece_square);
+        foreach ($squares as $to_square) {
+          if ($this->board->move_is_ok($piece_square, $to_square)) {
+            $valid_moves[] = $this->long_move($piece_square, $to_square);
+          }
+        }       
       break;
     }
 

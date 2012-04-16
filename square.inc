@@ -22,7 +22,7 @@ class Square {
   }
   
   /**
-   * Get the rank (=row number), e.g. "4" for "d4"
+   * Get the rank (=row number) as a string, e.g. "4" for "d4"
    * 
    * @return string
    */

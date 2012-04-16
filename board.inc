@@ -14,6 +14,12 @@
 define("BOARD_DEFAULT", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 define("BOARD_PROMOTION", "k7/4P3/8/8/8/8/8/K7");
 
+// Constants for diagonal calculation
+define("DIAGONAL_UP_RIGHT", 9);
+define("DIAGONAL_UP_LEFT", 7);
+define("DIAGONAL_DOWN_LEFT", -9);
+define("DIAGONAL_DOWN_RIGHT", -7);
+
 // Define the column letters
 define("COL_a", 1);
 define("COL_b", 2);
@@ -163,6 +169,69 @@ class Board {
   }
   
   /**
+   * Get the squares on the diagonals from a given square
+   * 
+   * @from_square
+   *   The square which we are starting from
+   */
+  function diagonal_squares(Square $from_square) {
+    $squares = array();
+    
+    $squares = array_merge($squares, $this->_single_diagonal_squares($from_square, DIAGONAL_UP_LEFT));
+    $squares = array_merge($squares, $this->_single_diagonal_squares($from_square, DIAGONAL_DOWN_LEFT));
+    $squares = array_merge($squares, $this->_single_diagonal_squares($from_square, DIAGONAL_UP_RIGHT));
+    $squares = array_merge($squares, $this->_single_diagonal_squares($from_square, DIAGONAL_DOWN_RIGHT));
+    
+    return $squares;
+  }
+  
+  /**
+   * Get the squares from a given start square based on an index increment
+   * 
+   * @param Square $from_square
+   *   Square where diagnonal is starting
+   * @param integer $direction
+   *   Increment of the diagonal, one of:
+   *   - DIAGONAL_UP_LEFT (7)
+   *   - DIAGONAL_UP_RIGHT (9)
+   *   - DIAGONAL_DOWN_LEFT (-9)
+   *   - DIAGONAL_DOWN_RIGHT (-7)
+   *   
+   * @return
+   *   An array of squares
+   */
+  function _single_diagonal_squares(Square $from_square, $direction) {
+    $squares = array();
+    
+    $finished = FALSE;
+    
+    $new_index = $from_square->index();
+    while (!$finished) {
+      $square = vchess_i2square($new_index);
+
+      if ($square->file() == 'a' && ($direction == DIAGONAL_UP_LEFT || $direction == DIAGONAL_DOWN_LEFT)) {
+        $finished = TRUE;
+      }
+      if ($square->file() == 'h' && ($direction == DIAGONAL_UP_RIGHT || $direction == DIAGONAL_DOWN_RIGHT)) {
+        $finished = TRUE;
+      }
+      if ($square->rank() == '1' && ($direction == DIAGONAL_DOWN_LEFT || $direction == DIAGONAL_DOWN_RIGHT)) {
+        $finished = TRUE;
+      }
+      if ($square->rank() == '8' && ($direction == DIAGONAL_UP_LEFT || $direction == DIAGONAL_UP_RIGHT)) {
+        $finished = TRUE;
+      }
+      
+      if (!$finished) {
+        $new_index += $direction;
+        $squares[] = vchess_i2square($new_index);
+      }
+    }
+    
+    return $squares;
+  }
+  
+  /**
    * Get the squares on a given rank
    * 
    * e.g. given a rank like "8" it will return the 
@@ -179,6 +248,24 @@ class Board {
       
       $squares[] = $square;
     }
+    
+    return $squares;
+  }
+  
+  /**
+   * Get the squares on the rank and file from a given square
+   * 
+   * @param $square
+   *   Square to start from
+   *   
+   * @return
+   *   An array of squares
+   */
+  function rank_and_file_squares(Square $square) {
+    $squares = array();
+    
+    $squares = array_merge($squares, $this->rank_squares($square->rank()));
+    $squares = array_merge($squares, $this->file_squares($square->file()));
     
     return $squares;
   }
