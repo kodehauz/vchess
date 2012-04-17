@@ -46,7 +46,7 @@ class Game {
     // Setup the board
     $this->board = new Board;
     $this->board->setup_as_standard();
-//    $this->board->setup_position("4k3/R7/3Q5/b7/p7/8/P7/4K3");
+//    $this->board->setup_position("4k3/R7/3Q5/bq6/p7/8/P7/4K3");
 
     // Ensure the game has players defined by default
     $this->white_uid = 1;
@@ -1022,43 +1022,10 @@ class Game {
         case 'P':
         case 'B':
         case 'R':
+        case 'Q':
           $valid_moves = $this->valid_moves($piece_square);
           if (count($valid_moves) > 0) {
             return FALSE;
-          }
-          break;
-//         case 'B':
-// //          return FALSE; // @todo finish this function
-          
-//           if ($square_index -9 >= 0   && $this->player_on_square($square_index -9) != $player &&
-//           $this->move_is_ok($player, $square_index, $square_index -9)) {
-//             return FALSE;
-//           }
-//           if ($square_index -7 >= 0   && $this->player_on_square($square_index -7) != $player &&
-//               $this->move_is_ok($player, $square_index, $square_index -7)) {
-//             return FALSE;
-//           }
-//           if ($square_index + 9 <= 63 && $this->player_on_square($square_index + 9) != $player &&
-//               $this->move_is_ok($player, $square_index, $square_index + 9)) {
-//             return FALSE;
-//           }
-//           if ($square_index + 7 <= 63 && $this->player_on_square($square_index + 7) != $player &&
-//               $this->move_is_ok($player, $square_index, $square_index + 7)) {
-//             return FALSE;
-//           }
-//           break;
-        case 'Q':
-          return FALSE; // @todo finish this function
-          
-          $adj_squares = $this->get_adjacent_squares($square);
-          foreach ($adj_squares as $pos) {
-            $square = vchess_i2square($pos);
-            //            if ($board[$pos][0] != $player) {
-            if ($this->player_on_square($pos) != $player) {
-              if ($this->move_is_ok($player, $square_index, $pos)) {
-                return FALSE;
-              }
-            }
           }
           break;
         case 'N':
@@ -1143,7 +1110,15 @@ class Game {
           if ($this->board->move_is_ok($piece_square, $to_square)) {
             $valid_moves[] = $this->long_move($piece_square, $to_square);
           }
-        }       
+        }
+      case 'Q':
+        $squares = array_merge($this->board->rank_and_file_squares($piece_square),
+          $this->board->diagonal_squares($piece_square));
+        foreach ($squares as $to_square) {
+          if ($this->board->move_is_ok($piece_square, $to_square)) {
+            $valid_moves[] = $this->long_move($piece_square, $to_square);
+          }
+        } 
       break;
     }
 
