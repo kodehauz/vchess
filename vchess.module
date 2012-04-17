@@ -446,7 +446,7 @@
     $out .= '<table width=100% border=0 cellspacing=0 cellpadding=0><tr><td valign="top" rowspan=2>';
   
     // Find out if the player has the move or not
-    if ($game->turn() == $player_color) {
+    if ($game->turn() == $player_color  && $game->status() == STATUS_IN_PROGRESS) {
       $player_may_move = TRUE;
     }
     else {

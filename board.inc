@@ -35,12 +35,10 @@ define("COL_h", 8);
  * by adding useful functions rather than having the rest of the program need to understand
  * and handle issues like whether a square is blank or not.
  * 
- * The Board is only the static view of what a board looks like (i.e. what pieces are
- * where) and does not include any game information (such as whose move it is or 
- * whether or not a player may castle or not).  Such game information is stored in the
- * Game class.  This Board class only contains what you would see if you came to a 
- * room and saw a chessboard setup in a particular position; you would not know the
- * move history, nor whose move it was etc.
+ * The Board is basically the static view of what a board looks like (i.e. what pieces are
+ * where) and but also includes the following game information:
+ * - whether or not a player may castle (queenside and/or kingside)
+ * - what the en passant target square is, if any
  * 
  * This class acts as the MODEL for the board.
  */
@@ -52,6 +50,8 @@ class Board {
   //      "a2"->Piece /* white knight */,
   //      etc.) 
   protected $board = array();
+  
+  protected $en_passant_target;
 
   /**
    * Initialise the board as empty.  We choose later whether to fill with
@@ -182,6 +182,45 @@ class Board {
     $squares = array_merge($squares, $this->_single_diagonal_squares($from_square, DIAGONAL_UP_RIGHT));
     $squares = array_merge($squares, $this->_single_diagonal_squares($from_square, DIAGONAL_DOWN_RIGHT));
     
+    return $squares;
+  }
+  
+  /**
+   * Get the knight moves from a given square
+   * 
+   * @from_square
+   *   The square which we are starting from
+   */
+  function knight_squares(Square $from_square) {
+    $squares = array();
+    
+    $from_rank = $from_square->rank();  // e.g. "7" in "d7"
+    
+    $from_file = $from_square->file();  // e.g. "d" in "d7"
+    $from_col = vchess_file2col($file); // e.g. "4" for the "d" in "d7"
+    
+    $deltas = array(
+        array(-2, -1),
+        array(-2, 1),
+        array(-1, -2),
+        array(-1, 2),
+        array(1, -2),
+        array(1, 2),
+        array(2, -1),
+        array(2, 1)
+        );
+    foreach ($deltas as $delta_pair) {
+      $delta_rank = $delta_pair[0];
+      $delta_col = $delta_pair[1];
+      if ($from_col + $delta_col >= 1 && $from_col + $delta_col <= 8
+      && $from_rank + $delta_rank >= 1 && $from_rank + $delta_rank <= 8) {
+        $square = new Square;
+        $coord = vchess_col2file($from_col + $delta_col) . ($from_rank + $delta_rank);
+        $square->set_coord($coord);
+        $squares[] = $square;
+      } 
+    }
+
     return $squares;
   }
   
@@ -465,7 +504,7 @@ class Board {
   /**
    * Check whether player's king is in check.
    */
-  function king_is_in_check($player) {
+  function is_check($player) {
     $king_square = $this->king_square($player);
   
     if ($player == 'w') {
@@ -564,7 +603,7 @@ class Board {
    * @param $defender
    *   Player, either 'w' or 'b'
    */
-  function king_is_in_checkmate($defender) {
+  function is_checkmate($defender) {
     $in_checkmate = TRUE;  // we will look to find a counter-example
     
     if ($defender == 'w') {
@@ -997,6 +1036,118 @@ class Board {
   }
   
   /**
+   * Check whether there is no further move possible.  To do this, we look at each of
+   * the opponent pieces and see if any of them have a move which they can make.
+   *
+   * @param $player The player whose turn it is
+   */
+  function is_stalemate($player) {
+    if ($player == 'w') {
+      $opponent = 'b';
+    }
+    else {
+      $opponent = 'w';
+    }
+  
+    // Look at each square to find each of the opponent pieces
+    $pieces_squares = $this->pieces_squares($player);
+    foreach ($pieces_squares as $piece_square) {
+      // Can the piece move theoretically thus is there
+      // at least one square free for one piece?
+      $valid_moves = $this->valid_moves($piece_square);
+      if (count($valid_moves) > 0) {
+        return FALSE;
+      }
+    }
+  
+    return TRUE;
+  }
+  
+  /**
+   * Get the possible valid moves for a particular piece
+   *
+   * @param $piece_square
+   *   The square where the piece is
+   */
+  function valid_moves(Square $piece_square) {
+    $valid_moves = array();
+  
+    $piece_type = $this->piece($piece_square)->type();
+    switch ($piece_type) {
+      case 'K':
+        $adj_squares = $this->get_adjacent_squares($piece_square);
+        foreach ($adj_squares as $to_square) {
+          if ($this->move_is_ok($piece_square, $to_square)) {
+            $valid_moves[] = $this->long_move($piece_square, $to_square);
+          }
+        }
+        break;
+      case 'Q':
+        $squares = array_merge(
+        $this->rank_and_file_squares($piece_square),
+        $this->diagonal_squares($piece_square));
+        foreach ($squares as $to_square) {
+          if ($this->move_is_ok($piece_square, $to_square)) {
+            $valid_moves[] = $this->long_move($piece_square, $to_square);
+          }
+        }
+        break;
+      case 'R':
+        $squares = $this->rank_and_file_squares($piece_square);
+        foreach ($squares as $to_square) {
+          if ($this->move_is_ok($piece_square, $to_square)) {
+            $valid_moves[] = $this->long_move($piece_square, $to_square);
+          }
+        }
+        break;
+      case 'B':
+        $squares = $this->diagonal_squares($piece_square);
+        foreach ($squares as $to_square) {
+          if ($this->move_is_ok($piece_square, $to_square)) {
+            $valid_moves[] = $this->long_move($piece_square, $to_square);
+          }
+        }
+      case 'N':
+        $squares = $this->diagonal_squares($piece_square);
+        foreach ($squares as $to_square) {
+          if ($this->move_is_ok($piece_square, $to_square)) {
+            $valid_moves[] = $this->long_move($piece_square, $to_square);
+          }
+        }
+        break;
+      case 'P':
+        // See if the move 1 square in front is possible
+        if ($this->move_is_ok($piece_square, $square_in_front = $this->square_in_front($piece_square))) {
+          $valid_moves[] = $this->long_move($piece_square, $square_in_front);
+        }
+        // See if the move 2 squares in front is possible
+        if ($this->move_is_ok($piece_square, $square_2_in_front = $this->square_2_in_front($piece_square))) {
+          $valid_moves[] = $this->long_move($piece_square, $square_2_in_front);
+        }
+        // See if an en passant capture is possible
+        if ($this->is_en_passant_target()) {
+          if ($this->move_is_ok($piece_square, $en_passant_square = vchess_coord2square($this->en_passant_target()))) {
+            $valid_moves[] = $this->long_move($piece_square, $en_passant_square);
+          }
+        }
+        break;
+    }
+  
+    return $valid_moves;
+  }
+  
+  /**
+   * Calculate the long move
+   */
+  function long_move(Square $from_square, Square $to_square) {
+    $long_move = $piece_type = $this->piece($from_square)->type .
+      $from_square->coord() . "-" . $to_square->coord();
+    
+    return $long_move;
+  }
+  
+  
+  /**
    * Check whether pawn at $from_square may move to $to_square.
    * First move may be two squares instead of just one.
    *
@@ -1071,7 +1222,7 @@ class Board {
       $new_board = new Board();
       $new_board->setup_position($this->position());
       $new_board->move_piece($from_square, $to_square);           
-      if (!$new_board->king_is_in_check($color)) {
+      if (!$new_board->is_check($color)) {
         $move_ok = TRUE;        
       }
     }
@@ -1086,6 +1237,74 @@ class Board {
    */
   function _xy2i($row, $col) {
     return ($row * 8) + $col;
+  }
+  
+  /**
+   * Set the en_passant_target square
+   * 
+   * @param $square_in_front
+   *   The square which is just in front of the en_passant_target.  For
+   *   example, if white has moved Pe2-e4, then the square passed will 
+   *   be the e4 square and the en_passant_target will be e3
+   */
+  function set_en_passant_target(Square $square_in_front) {
+    $file = $square_in_front->file();
+    if ($square_in_front->rank() == 4) {
+      // White has moved something like "Ph2-h4"
+      // so target will be "h3"
+      $this->en_passant_target = $file . "3";
+    }
+    else {
+      // Black has moved something like "Ph7-h5"
+      // so target will be "h6"
+      $this->en_passant_target = $file . "6";
+    }
+  }
+  
+  /**
+   * Set en_passant_target value
+   * 
+   * @param $value
+   *   Either a coord, e.g. "d3" or "-" 
+   */
+  function set_en_passant_target_value($value) {
+    $this->en_passant_target = $value;
+  }
+  
+  /**
+   * Reset the en_passant_target square
+   */
+  function reset_en_passant_target() {
+    $this->en_passant_target = "-";
+  }
+  
+  /**
+   * Test if there is an en_passant_target square
+   * 
+   * @return bool
+   *   TRUE if an en_passant_target square currently exists
+   */
+  function is_en_passant_target() {
+    $is_en_passant_target = FALSE;
+    if ($this->en_passant_target() <> "-") {
+      $is_en_passant_target = TRUE;
+    }
+  
+    return $is_en_passant_target;
+  }
+  
+  /**
+   * Get the en_passant_target
+   *
+   * The en_passant_target is the coordinates of the square
+   * behind the pawn in the last move to have moved 2 squares.
+   *
+   * @return
+   *   Returns the en_passant_target coord (e.g. "d3"), if there is one,
+   *   otherwise it returns "-"
+   */
+  function en_passant_target() {
+    return $this->en_passant_target;
   }
 }
   

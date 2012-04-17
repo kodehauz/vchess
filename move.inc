@@ -351,13 +351,22 @@ class Move {
     $clone_board = clone $board;
     
     $clone_board->move_piece($from_square, $to_square);
-    if ($clone_board->king_is_in_check($opponent)) {
-      if ($clone_board->king_is_in_checkmate($opponent)) {
+    if ($clone_board->is_check($opponent)) {
+      if ($clone_board->is_checkmate($opponent)) {
         $this->algebraic .= "#";
+        if ($player == 'w') {
+          $this->algebraic .= " 1-0";
+        }
+        else {
+          $this->algebraic .= " 0-1";
+        }
       }
       else {
         $this->algebraic .= "+";
       }
+    }
+    elseif ($clone_board->is_stalemate($player)) {
+      $this->algebraic .= " 1/2-1/2";
     }
 
     return $this->algebraic;
