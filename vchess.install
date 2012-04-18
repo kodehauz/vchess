@@ -44,14 +44,14 @@ function vchess_schema() {
           'turn' => array(
               'description' => 'Whose turn it is to play, either "w" (white) or "b" (black)',
               'type' => 'enum',  // See http://drupal.org/node/1464354 to get this working, or raise an issue on vchess!
-              'enum_items' => array('w', 'b'),
+              'enum' => array('w', 'b'),
               'not null' => TRUE,
               'default' => 'w',
           ),
           'status' => array(
               'description' => 'Status of the game',
               'type' => 'enum',  // See http://drupal.org/node/1464354 to get this working, or raise an issue on vchess!
-              'enum_items' => array('in progress', '1/2-1/2', '1-0', '0-1'),
+              'enum' => array('in progress', '1/2-1/2', '1-0', '0-1'),
               'not null' => TRUE,
               'default' => 'in progress',
           ),
@@ -111,7 +111,7 @@ function vchess_schema() {
           'color' => array(
               'description' => 'Move color',
               'type' => 'enum',
-              'enum_items' => array('w', 'b'),
+              'enum' => array('w', 'b'),
               'not null' => TRUE,
           ),
           'long_move' => array(
@@ -121,9 +121,9 @@ function vchess_schema() {
               'not null' => TRUE,
           ),
           'algebraic' => array(
-              'description' => 'Move in algebraic notation (e.g. e4, Nc3, O-O)',
+              'description' => 'Move in algebraic notation (e.g. "e4", "Nc3", "O-O")',
               'type' => 'varchar',
-              'length' => '10',
+              'length' => '20',
               'not null' => TRUE,
           ),
           'timestamp' => array(

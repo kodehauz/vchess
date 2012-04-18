@@ -21,7 +21,7 @@
   require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/square.inc';
   
   define('HOME_ROOT', "http://localhost/");
-  define('BASE_DIR', "chess_drupal_7/");
+  define('BASE_DIR', "chess_drupal-7.12/");
   
   define('MEDIUM_PATH', HOME_ROOT . BASE_DIR);  // e.g. "http://localhost/chess_drupal_7/"
   define('SUB_PATH', BASE_DIR . drupal_get_path('module', 'vchess'));  // e.g. "chess_drupal_7/sites/all/modules/vchess/"
@@ -191,7 +191,8 @@
     $module_path = drupal_get_path('module', 'vchess');  // e.g. sites/all/modules/vchess
     //  $view_path = "chess_drupal_7/vchess";
     $view_path = $GLOBALS['base_root'] . url("vchess");
-    $full_path = "http://localhost/chess_drupal_7/" . drupal_get_path('module', 'vchess');
+//    $full_path = "http://localhost/chess_drupal-7.12/" . drupal_get_path('module', 'vchess');
+    $full_path = HOME_ROOT . BASE_DIR . drupal_get_path('module', 'vchess');
   
     // Get the list of possible games to view
     $games = vchess_io_load_users_games($uid);
