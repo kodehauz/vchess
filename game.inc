@@ -44,7 +44,7 @@ class Game {
     // Setup the board
     $this->board = new Board;
     $this->board->setup_as_standard();
-//    $this->board->setup_position("4k3/R7/3Q5/bq6/p7/8/P7/4K3");
+//    $this->board->setup_position("4k3/R7/3Q5/8/8/8/8/4K3");
 
     // Ensure the game has players defined by default
     $this->white_uid = 1;

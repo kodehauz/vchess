@@ -112,4 +112,20 @@ class VChessTestCase extends DrupalUnitTestCase {
     $this->assertEqual($game->last_move()->algebraic(), "exd6", 
         "Check en passant algebraic move: " . $game->last_move()->algebraic());
   }
+  
+  /**
+   * Test stalemate handling
+   */
+  public function testVChessStalemateHandling() {
+    $game = new Game();
+    
+    $game->setup_position("4k3/R7/3Q5/8/8/8/8/4K3");
+    $this->assertEqual($game->status(), STATUS_IN_PROGRESS, 
+        "Check game is in progress before stalemate move");
+
+    $game->make_move(1, "Ra7-b7", "");
+
+    $this->assertEqual($game->status(), STATUS_DRAW, 
+        "Check game is drawn after stalemate move");
+  }
 }

@@ -365,7 +365,7 @@ class Move {
         $this->algebraic .= "+";
       }
     }
-    elseif ($clone_board->is_stalemate($player)) {
+    elseif ($clone_board->is_stalemate($opponent)) {
       $this->algebraic .= " 1/2-1/2";
     }
 
