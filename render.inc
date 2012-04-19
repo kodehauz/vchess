@@ -39,7 +39,7 @@ function vchess_render_board($board, $player, $active, $gid) {
 
   if (isset($_POST['cmd']) && !empty($_POST['cmd'])) {
     $cmd = $_POST['cmd'];  // e.g. Pe2-e4
-    $comment = "";
+
     $cmdres = '';
 
     $game = new Game();
@@ -53,13 +53,13 @@ function vchess_render_board($board, $player, $active, $gid) {
       $cmdres = $game->abort($uid);
     }
     elseif ($cmd == 'acceptdraw') {
-      $cmdres = $game->make_move($uid, 'accept_draw', $comment);
+      $cmdres = $game->make_move($uid, 'accept_draw');
     }
     elseif ($cmd == 'refusedraw') {
-      $cmdres = $game->make_move($uid, 'refuse_draw', $comment);
+      $cmdres = $game->make_move($uid, 'refuse_draw');
     }
     else { // try as chess move
-      $cmdres = $game->make_move($uid, $cmd, $comment);
+      $cmdres = $game->make_move($uid, $cmd);
     }
     
     // Only save move and game if a move has actually been made
@@ -82,7 +82,7 @@ function vchess_render_board($board, $player, $active, $gid) {
       if ($email) {
         $prot = ($GLOBALS['_SERVER']['HTTPS'] == 'on') ? 'https' : 'http';
         $url = $prot . '://' . $GLOBALS['_SERVER']['HTTP_HOST'] . $GLOBALS['_SERVER']['SCRIPT_NAME'] . '?gid=' . $gid;
-        $message = "Dear $oid\n\n$uid has just moved.\n\nMove:\n$move\n\nComment:\n$comment\n\nIt is your turn now!\n\nEnter the game:\n$url";
+        $message = "Dear $oid\n\n$uid has just moved.\n\nMove:\n$move\n\nIt is your turn now!\n\nEnter the game:\n$url";
         mail($email, "[OCC] " . $game['white'] . "vs" . $game['black'] . ": $move->long_format()",
             $message, 'From: ' . $mail_from);
       }

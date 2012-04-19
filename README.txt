@@ -93,12 +93,17 @@ The following are the main pages of VChess:
 e.g. http://localhost/chess_drupal_7/?q=vchess/main
 This gives a list of current games and enables you to create a new game
 
-2) New game form
-e.g. http://localhost/chess_drupal_7/?q=vchess/newgame_form
-Allows you to start a new game (you can test against yourself, though the way the board
-flips to the other side is a little disconcerting at first)
+2) New random game
+e.g. http://localhost/chess_drupal_7/?q=vchess/random_game_form
+Allows you to start a new game against a named opponent (you can event play against yourself, 
+though the way the board flips to the other side is a little disconcerting at first)
 
-3) Players
+3) New opponent game
+e.g. http://localhost/chess_drupal_7/?q=vchess/opponent_game_form
+Allows you to start a new game against a named opponent (you can event play against yourself, 
+though the way the board flips to the other side is a little disconcerting at first)
+
+4) Players
 e.g. http://localhost/chess_drupal_7/?q=vchess/players
 Provides a list of all players and the following basic statistics:
 * Played
@@ -108,7 +113,7 @@ Provides a list of all players and the following basic statistics:
 * Rating
 * Rating change (most recent)
 
-4) Reset games
+5) Reset games
 http://localhost/chess_drupal_7/?q=vchess/reset_games
 WARNING: This resets the complete games database!!
 This function is for testing the VChess functionality and being able to 

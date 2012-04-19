@@ -72,11 +72,19 @@
         'type' => MENU_NORMAL_ITEM,
     );
   
-    $items['vchess/newgame_form'] = array(
+    $items['vchess/opponent_game_form'] = array(
         'page callback' => 'drupal_get_form',
         'access arguments' => array('access content'),
-        'page arguments' => array('vchess_new_game_form'),
-        'title' => 'Create VChess chess game',
+        'page arguments' => array('vchess_opponent_game_form'),
+        'title' => 'Create chess game against named player',
+        'type' => MENU_CALLBACK,
+    );
+    
+    $items['vchess/random_game_form'] = array(
+        'page callback' => 'drupal_get_form',
+        'access arguments' => array('access content'),
+        'page arguments' => array('vchess_random_game_form'),
+        'title' => 'Create chess game against random player',
         'type' => MENU_CALLBACK,
     );
   
@@ -288,9 +296,9 @@
   }
   
   /**
-   * menu callback vchess_new_game_page to display new game form
+   * menu callback vchess_opponent_game_page to display new game form
    */
-  function vchess_new_game_form() {
+  function vchess_opponent_game_form() {
     $colors = array('w' => t('white'), 'b' => t('black'));
   
     $form['colorfield'] = array(
@@ -311,13 +319,6 @@
         '#required' => TRUE,
     );
   
-    $form['comment'] = array(
-        '#type' => 'textarea',
-        '#title' => t('comment'),
-        '#cols' => '40',
-        '#rows' => '3',
-    );
-  
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Create Game'),
@@ -327,7 +328,81 @@
   }
   
   /**
-   * menu callback vchess_new_game_page to display new game form
+   * menu callback vchess_random_game_form to display new game form
+   */
+  function vchess_random_game_form() {
+    $form['description'] = array(
+        '#type' => 'item',
+        '#title' => t('Simply click on the button below and we will create
+            a game for you against a random opponent.'),
+    );
+    
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Create Game'),
+    );
+  
+    return $form;
+  }
+  
+  /**
+   * Process the form to start a new randomgame
+   *
+   * @param unknown_type $form
+   * @param unknown_type $form_state
+   */
+  function vchess_random_game_form_submit($form, &$form_state) {
+    global $user;
+    
+    $opponent_uid = vchess_random_uid();
+    
+    // Get the uid and name of a random opponent
+    $sql = "SELECT uid, name FROM {users} WHERE uid = '" . $opponent_uid . "'";
+    $result = db_query($sql);
+    
+    $record = $result->fetchAssoc();
+    $opponent_name = $record['name'];
+    
+    if (rand(0,1)) {
+      // user plays white
+      $white_uid = $user->uid;
+    
+      // opponent plays black
+      $black_uid = $opponent_uid;
+    }
+    else {
+      // user plays black
+      $black_uid = $user->uid;
+    
+      // opponent plays white
+      $white_uid = $opponent_uid;
+    }
+    
+    $game = new Game();
+    $gid = $game->new_game($white_uid, $black_uid);
+    
+    drupal_set_message(t('Game has been created.'));
+    $form_state['redirect'] = 'vchess/board/' . $gid;
+  }
+  
+  /**
+   * Get a random user id (uid)
+   * 
+   * @return
+   *   A user id (uid)
+   */
+  function vchess_random_uid() {
+    $sql = "SELECT uid FROM {users} ORDER BY RAND() LIMIT 1";
+    
+    $result = db_query($sql);
+    
+    $record = $result->fetchAssoc();
+    
+    return $record['uid'];
+  }
+  
+  /**
+   * menu callback vchess_opponent_game_page to display new game form
    */
   function vchess_reset_games_form() {
     $form['submit'] = array(
@@ -361,7 +436,7 @@
    * @param unknown_type $form
    * @param unknown_type $form_state
    */
-  function vchess_new_game_form_submit($form, &$form_state) {
+  function vchess_opponent_game_form_submit($form, &$form_state) {
     global $user;
   
     $form_values = $form_state['values'];
@@ -381,8 +456,6 @@
   
       // opponent plays black
       $black_uid = $opponent_uid;
-  
-      $comment = $form_values['comment'];
     }
     else {
       // user plays black
@@ -390,11 +463,10 @@
   
       // opponent plays white
       $white_uid = $opponent_uid;
-      $comment = $form_values['comment'];
     }
   
     $game = new Game();
-    $gid = $game->new_game($white_uid, $black_uid, $comment);
+    $gid = $game->new_game($white_uid, $black_uid);
   
     drupal_set_message(t('Game has been created.'));
     $form_state['redirect'] = 'vchess/board/' . $gid;
@@ -407,7 +479,7 @@
    * @param unknown_type $form
    * @param unknown_type $form_state
    */
-  function vchess_new_game_form_validate($form, &$form_state) {
+  function vchess_opponent_game_form_validate($form, &$form_state) {
     global $user;
   
     $form_values = $form_state['values'];

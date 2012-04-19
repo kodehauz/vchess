@@ -69,15 +69,13 @@ class Game {
    * 
    * @param $white_uid
    *   Userid of white player
-   *   
    * @param $black_uid
    *   Userid of black player
-   *   
-   * @param $bcomment
-   *   Comment typed in by player at start of game.  If $bcomment is not empty 
-   *   it is black's initial comment.
+   *
+   * @return
+   *   Game id, $gid.   
    */
-  function new_game($white_uid, $black_uid, $bcomment) {
+  function new_game($white_uid, $black_uid) {
     // Build new game context 
     $this->white_uid = $white_uid;
     $this->black_uid = $black_uid;
@@ -85,24 +83,8 @@ class Game {
     $this->game['lastmove'] = 'x';
     $this->game['lastkill'] = 'x';
     
-    if (empty($bcomment)) {
-      $bcomment = '(silence)';
-    }
-    else {
-      $bcomment = str_replace("\\", '', strip_tags($bcomment));
-      $bcomment = str_replace("\n", '<br />', $bcomment);
-    }
-    
     $black_player = new Player($black_uid);
-    $bcomment = '<u>' . $black_player->name() . '</u>: ' . $bcomment;
-    $this->game['chatter'] = array($bcomment);
   
-    //  $gfname = sprintf('%s-%s-%s-', date('YmdHi', $this->game['ts_start']), $white, $black);
-    //  vchess_io_save($this->game, $gfname);
-  
-    //  return $gfname;
-//    return $this->game;
-
     // Converted to the D7 database API syntax.
     $gid = db_insert('vchess_games')
     ->fields(array(
@@ -582,7 +564,7 @@ class Game {
    * @param $comment
    *   @todo Please document this parameter
    */
-  function make_move($uid, $move_string, $comment) {
+  function make_move($uid, $move_string) {
     $mate_type = "";
   
     $move = new Move();

@@ -35,7 +35,7 @@ class VChessTestCase extends DrupalUnitTestCase {
     $game = new Game();
     
     $game->setup_position("r3k3/1P6/8/8/8/8/8/4K3");
-    $game->make_move(1, "Pb7xRa8=Q", "");
+    $game->make_move(1, "Pb7xRa8=Q");
     
     $this->assertEqual($game->position(), "Q3k3/8/8/8/8/8/8/4K3", 
       "After pawn promotion through capturing the rook, the pawn should have become a queen");
@@ -48,7 +48,7 @@ class VChessTestCase extends DrupalUnitTestCase {
     $game = new Game();
     
     $game->setup_position("3qk3/8/8/8/2B5/5Q2/8/4K3");
-    $game->make_move(1, "Qf3-f7", "");
+    $game->make_move(1, "Qf3-f7");
     
     $this->assertTrue($game->is_checkmate('b'), 
       "This should be checkmate from the queen protected by a bishop");
@@ -61,7 +61,7 @@ class VChessTestCase extends DrupalUnitTestCase {
     $game = new Game();
     
     $game->setup_position("2bk4/5Q2/8/4N3/8/8/8/4K3");
-    $game->make_move(1, "Qf7-d7", "");
+    $game->make_move(1, "Qf7-d7");
     
     $this->assertFalse($game->is_checkmate('b'), 
        "Bishop should be able to capture queen so it should not be checkmate");
@@ -75,7 +75,7 @@ class VChessTestCase extends DrupalUnitTestCase {
     
     $game->setup_position("rnbqkbnr/ppppp1pp/8/5p2/4P3/8/PPPP1PPP/RNBQKBNR");
   
-    $game->make_move(1, "Qd1-h5", "");
+    $game->make_move(1, "Qd1-h5");
   
     $this->assertTrue($game->is_check('b'), "King should be in check");
     $this->assertEqual($game->turn(), 'b', "It should now be black's turn");
@@ -89,7 +89,7 @@ class VChessTestCase extends DrupalUnitTestCase {
     
     $game->setup_position("4k3/8/8/8/8/8/5PPP/4K2R");
     
-    $game->make_move(1, "Ke1-g1", "");
+    $game->make_move(1, "Ke1-g1");
     $this->assertEqual($game->position(), "4k3/8/8/8/8/8/5PPP/5RK1",
         "Check position after white king has castled kingside: " . $game->position());
   }
@@ -100,12 +100,11 @@ class VChessTestCase extends DrupalUnitTestCase {
   public function testVChessEnPassant() {
     $game = new Game();
     
-    $comment = "";
-    $game->make_move(1, "Pe2-e4", $comment);  // 1. e4
-    $game->make_move(1, "Nb8-c6", $comment);  // 1. ... Nc6
-    $game->make_move(1, "Pe4-e5", $comment);  // 2. e5
-    $game->make_move(1, "Pd7-d5", $comment);  // 2. ... d5
-    $game->make_move(1, "Pe5-d6", $comment);  // 3. exd6
+    $game->make_move(1, "Pe2-e4");  // 1. e4
+    $game->make_move(1, "Nb8-c6");  // 1. ... Nc6
+    $game->make_move(1, "Pe4-e5");  // 2. e5
+    $game->make_move(1, "Pd7-d5");  // 2. ... d5
+    $game->make_move(1, "Pe5-d6");  // 3. exd6
     
     $this->assertEqual($game->position(), "r1bqkbnr/ppp1pppp/2nP4/8/8/8/PPPP1PPP/RNBQKBNR",
         "Check board after en passant capture: " . $game->position());
@@ -123,7 +122,7 @@ class VChessTestCase extends DrupalUnitTestCase {
     $this->assertEqual($game->status(), STATUS_IN_PROGRESS, 
         "Check game is in progress before stalemate move");
 
-    $game->make_move(1, "Ra7-b7", "");
+    $game->make_move(1, "Ra7-b7");
 
     $this->assertEqual($game->status(), STATUS_DRAW, 
         "Check game is drawn after stalemate move");
