@@ -105,16 +105,12 @@ function vchess_load_all_in_progress_games() {
  */
 function vchess_io_load_user_stats($uid) {
 
-  $sql = "SELECT won, drawn, lost, rating, played, rchange FROM {vchess_stats} WHERE uid = '" . $uid . "'";
-  // Converted to the D7 database API syntax.
+  $sql = "SELECT current, won, drawn, lost, rating, played, rchange FROM {vchess_stats} WHERE uid = '" . $uid . "'";
+
   $result = db_query($sql);
   $stats = $result->fetchAssoc();   
 
   if (!$stats) {  
-//    $rating = vchess_get_init_rating($stats['won'], $stats['drawn'], $stats['lost'], 1200);
-//    $stats['rating'] = floor($rating);
-//  }
-//  else {
     $stats = array();
     $stats['won'] = 0;
     $stats['drawn'] = 0;
@@ -122,6 +118,7 @@ function vchess_io_load_user_stats($uid) {
     $stats['rating'] = INITIAL_RATING;
     $stats['played'] = 0;
     $stats['rchange'] = 0;
+    $stats['current'] = 0;
   }
   
   $stats['name'] = user_load($uid)->name;
@@ -149,7 +146,8 @@ function vchess_io_save_user_stats($uid, $stats) {
       'lost' => $stats['lost'],
       'rating' => $stats['rating'], 
       'played' => $stats['played'], 
-      'rchange' => $stats['rchange']))
+      'rchange' => $stats['rchange'],
+      'current' => $stats['current']))
     ->execute();
   }
   else {
@@ -160,7 +158,8 @@ function vchess_io_save_user_stats($uid, $stats) {
       'lost' => $stats['lost'],
       'rating' => $stats['rating'],
       'played' => $stats['played'],
-      'rchange' => $stats['rchange']))
+      'rchange' => $stats['rchange'],
+      'current' => $stats['current']))
     ->condition('uid', $uid)
     ->execute();
   

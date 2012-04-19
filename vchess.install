@@ -135,8 +135,6 @@ function vchess_schema() {
       'primary key' => array('gid', 'move_no', 'color'),
   );
   
-  
-  
   // Table of player statistics, one row per player  
   $schema['vchess_stats'] = array(
     'fields' => array(
@@ -145,6 +143,12 @@ function vchess_schema() {
         'length' => 33,
         'not null' => TRUE,
         'default' => '',
+      ),
+      'current' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
       ),
       'won' => array(
         'type' => 'int',

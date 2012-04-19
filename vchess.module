@@ -48,12 +48,16 @@
    */
   function vchess_permission() {
     return array(
-        'access content' => array(
-            'title' => t('access content'),
+        'basic access' => array(
+            'title' => t('Basic access'),
             'description' => t('Access VChess as normal user')),
+        'view players table' => array(
+            'title' => t('View players table'),
+            'description' => t('View the list of all players with their statistics')),
         'reset games' => array(
-            'title' => t('reset games'),
-            'description' => t('This enables someone to completely reset the games database'))
+            'title' => t('Reset games'),
+            'description' => t('This enables someone to completely reset the games database. ' .  
+                'WARNING: This permission should normally ONLY be given to administrators.')),
     );
   }
   
@@ -65,8 +69,8 @@
   
     $items['vchess/main'] = array(
         'page callback' => 'vchess_main_page',
-        //      'access arguments' => array('access content'),
-        'title' => 'VChess chess',
+        //      'access arguments' => array('basic access'),
+        'title' => 'Main',
         'access' => TRUE,
         'access callback' => TRUE,
         'type' => MENU_NORMAL_ITEM,
@@ -74,7 +78,7 @@
   
     $items['vchess/opponent_game_form'] = array(
         'page callback' => 'drupal_get_form',
-        'access arguments' => array('access content'),
+        'access arguments' => array('basic access'),
         'page arguments' => array('vchess_opponent_game_form'),
         'title' => 'Create chess game against named player',
         'type' => MENU_CALLBACK,
@@ -82,16 +86,35 @@
     
     $items['vchess/random_game_form'] = array(
         'page callback' => 'drupal_get_form',
-        'access arguments' => array('access content'),
+        'access arguments' => array('basic access'),
         'page arguments' => array('vchess_random_game_form'),
         'title' => 'Create chess game against random player',
         'type' => MENU_CALLBACK,
     );
     
-    $items['vchess/all_active_games'] = array(
-        'page callback' => 'vchess_all_active_games',
+    $items['vchess/my_current_games'] = array(
+        'page callback' => 'vchess_user_current_games_page',
+        'access arguments' => array('view my current games'),
+        'title' => 'My current games',
+        'access' => TRUE,
+        'access callback' => TRUE,
+        'type' => MENU_NORMAL_ITEM,
+    );
+    
+    $items['vchess/current_games/%'] = array(
+        'page callback' => 'vchess_user_current_games_page',
+        'page arguments' => array(2),
+        'access arguments' => array('view my current games'),
+        'title' => 'My current games',
+        'access' => TRUE,
+        'access callback' => TRUE,
+        'type' => MENU_NORMAL_ITEM,
+    );
+    
+    $items['vchess/all_current_games'] = array(
+        'page callback' => 'vchess_all_current_games_page',
         'access arguments' => array('view all active games'),
-        'title' => 'All active games',
+        'title' => 'All current games',
         'access' => TRUE,
         'access callback' => TRUE,
         'type' => MENU_NORMAL_ITEM,
@@ -100,21 +123,21 @@
     $items['vchess/players'] = array(
         'page callback' => 'vchess_players',
         'page arguments' => array(2),
-        'access arguments' => array('access content'),
+        'access arguments' => array('view players table'),
         'type' => MENU_CALLBACK,
     );
   
     $items['vchess/board/%'] = array(
         'page callback' => 'vchess_board',
         'page arguments' => array(2),
-        'access arguments' => array('access content'),
+        'access arguments' => array('basic access'),
         'type' => MENU_CALLBACK,
     );
   
     $items['vchess/player/%'] = array(
         'page callback' => 'vchess_player',
         'page arguments' => array(2),
-        'access arguments' => array('access content'),
+        'access arguments' => array('basic access'),
         'type' => MENU_CALLBACK,
     );
     
@@ -147,12 +170,13 @@
             $player_stats['won'],
             $player_stats['lost'],
             $player_stats['drawn'],
-            $player_stats['rchange']
+            $player_stats['rchange'],
+            $player_stats['current']
         );
       }
     }
   
-    $table['header'] = array('uid', 'name', 'rating', 'played', 'won', 'lost', 'drawn', 'rating change');
+    $table['header'] = array('uid', 'name', 'rating', 'played', 'won', 'lost', 'drawn', 'rating change', 'current');
     $table['attributes'] = array();
     $table['caption'] = array();
     $table['colgroups'] = array();
@@ -172,6 +196,8 @@
   function vchess_main_page() {
     global $user;
   
+    $out = "";
+    
     if (user_is_logged_in()) {
       $gamefolder =  variable_get('vchess_game_files_folder', '/vchess-data');
       $res_games = $gamefolder;
@@ -181,16 +207,63 @@
         return $txt;
       }
   
-      //  $uid = $user->name;
-      $user_stats = vchess_io_load_user_stats($user->uid);
-      $out = '<div style="text-align:center;"><b>' . $user->name . '</b><br />';
-      $out .= t('won:') . " " . $user_stats['won'] . " " . t('lost:') . " " . $user_stats['lost'] . " " .
-          t('drawn:') . " " . $user_stats['drawn'] . '</div>';
+      $out .= vchess_users_current_games($user->uid);
+      $out .= vchess_new_game_links();
+      
+      $out .= vchess_wld_stats($user);
+      $out .= vchess_player_stats($user->uid);
+    }
+    else {
+      $out = "Please log in to access this page";
+    }
   
-      $out .= vchess_current_games($user->uid);
+    return $out;
+  }
   
-      //    $out .= '<p>[ <a href="newgame_form">New Game</a> ]</p>';
-      $out .= "<p>[ <a href=" . url("vchess/newgame_form") . ">New Game</a> ]</p>";
+  /**
+   * Get simple won/lost/drawn stats
+   */
+  function vchess_wld_stats($stats_user) {
+    global $user;
+    
+    $html = "";
+    
+    $stats = vchess_io_load_user_stats($stats_user->uid);
+
+    if ($stats_user->uid == $user->uid) {
+      $html .= "Here are your basic statistics<br />";
+    }
+    else {
+      $html .= "Here are the basic statistics for <b>" . $stats_user->name . "</b><br />";
+    }
+    
+    $html .= '<div style="text-align:center;">';
+    $html .= t('won:') . " " . $stats['won'] . " " . t('lost:') . " " . $stats['lost'] . " " .
+        t('drawn:') . " " . $stats['drawn'] . '</div>';
+    $html .= "<br />";
+
+    return $html;
+  }
+  
+  /**
+   * menu callback to display current games 
+   */
+  function vchess_user_current_games_page() {
+    global $user;
+    
+    $out = "";
+  
+    if (user_is_logged_in()) {
+      $gamefolder =  variable_get('vchess_game_files_folder', '/vchess-data');
+      $res_games = $gamefolder;
+  
+      if (!$user->name) {
+        $txt = t('Please, register to play chess');
+        return $txt;
+      }
+  
+      $out .= vchess_users_current_games($user->uid);
+      $out .= vchess_new_game_links();
     }
     else {
       $out = "Please log in to access this page";
@@ -202,7 +275,7 @@
   /**
    * menu callback to display all active games
    */
-  function vchess_all_active_games() {
+  function vchess_all_current_games_page() {
     global $user;
   
     if (user_is_logged_in()) {
@@ -214,10 +287,8 @@
         return $txt;
       }
   
-      $out = vchess_all_in_progress_games();
-  
-      //    $out .= '<p>[ <a href="newgame_form">New Game</a> ]</p>';
-      $out .= "<p>[ <a href=" . url("vchess/newgame_form") . ">New Game</a> ]</p>";
+      $out = vchess_all_current_games();
+      $out .= vchess_new_game_links();
     }
     else {
       $out = "Please log in to access this page";
@@ -227,9 +298,21 @@
   }
   
   /**
-   * Get table of current games for a given player
+   * Get the "[ New random game ][ New opponent game ]" links
    */
-  function vchess_all_in_progress_games() {
+  function vchess_new_game_links() {
+    $links = "";
+    
+    $links .= "<p>[ <a href=" . url("vchess/random_game_form") . ">New random game</a> ] ";
+    $links .= "[ <a href=" . url("vchess/opponent_game_form") . ">New opponent game</a> ]</p>";
+    
+    return $links;
+  }
+  
+  /**
+   * Get table of all current games
+   */
+  function vchess_all_current_games() {
     global $user;
 
     $gc = "";
@@ -315,7 +398,7 @@
       $gc .= '</table>';
     }
     else {
-      $gc = "You currently do not have any games.";
+      $gc = "There are no current games.";
     }
   
     return $gc;
@@ -324,7 +407,7 @@
   /**
    * Get table of current games for a given player
    */
-  function vchess_current_games($uid) {
+  function vchess_users_current_games($uid) {
     global $user;
   
     $module_path = drupal_get_path('module', 'vchess');  // e.g. sites/all/modules/vchess
@@ -409,7 +492,13 @@
       $gc .= '</table>';
     }
     else {
-      $gc = "You currently do not have any games.";
+      if ($uid == $user->uid) {
+        $gc = "You currently do not have any games.";        
+      }
+      else {
+        $gc = $user->name . "does not have any current games.";
+      }
+
     }
   
     return $gc;
@@ -681,8 +770,9 @@
   
     $html = "";
   
+    $html .= vchess_wld_stats($player);
     $html .= vchess_player_stats($player->uid);
-    $html .= vchess_current_games($player->uid);
+    $html .= vchess_users_current_games($player->uid);
   
     return $html;
   }
@@ -691,17 +781,15 @@
    * Get the stats table for a single player
    */
   function vchess_player_stats($uid) {
-    //  $player = user_load_by_name($name);
-  
     $stats = vchess_io_load_user_stats($uid);
   
-    $header = array('Played', 'Won', 'Drawn', 'Lost', 'Rating', 'Rating change');
+    $header = array('Played', 'Won', 'Drawn', 'Lost', 'Rating', 'Rating change', 'Current');
     $rows = array(array($stats['played'], $stats['won'], $stats['drawn'],
-        $stats['lost'], $stats['rating'], $stats['rchange']));
+        $stats['lost'], $stats['rating'], $stats['rchange'], $stats['current']));
   
     $player = user_load($uid);
   
-    $html = "Here are the statistics for <strong>" . $player->name . "</strong>:";
+    $html = "Here are the full statistics for <b>" . $player->name . "</b>:";
   
     $html .= theme_table(array(
         'header' => $header,
