@@ -29,15 +29,19 @@ function vchess_compareTimestamp($a, $b) {
 
 /**
  * Load a list of games for the given userid
+ * 
+ * @param
+ *   $uid the userid of the user whose games we want
+ *   
+ * @return
+ *   An array of in progress games
  */
-function vchess_io_load_users_games($uid) {
+function vchess_load_users_in_progress_games($uid) {
   $game_list = array();
   
-//  $sql = "SELECT gid FROM {vchess_games} WHERE (white_uid = $uid OR black_uid = $uid) AND status = 'in progress'";
   $sql = "SELECT gid FROM {vchess_games} WHERE (white_uid = :uid OR black_uid = :uid) AND status = 'in progress'";
   $result = db_query($sql, array('uid' => $uid));
 
-//  while ($data = db_fetch_object($result)) {  /* Hugh removed 9/1/2012 */
   foreach ($result as $data) {
     $gid = $data->gid;
     
@@ -55,7 +59,35 @@ function vchess_io_load_users_games($uid) {
   return $game_list;
 }
 
+/**
+ * Load a list of games for the given userid
+ *
+ * @return
+ *   An array of in progress games
+ */
+function vchess_load_all_in_progress_games() {
+  $game_list = array();
 
+  $sql = "SELECT gid FROM {vchess_games} WHERE status = 'in progress'";
+  $result = db_query($sql);
+
+  //  while ($data = db_fetch_object($result)) {  /* Hugh removed 9/1/2012 */
+  foreach ($result as $data) {
+    $gid = $data->gid;
+
+    // Add a game to the list
+    $game = new Game();
+    $game->load($gid);
+    $game_list[] = $game;
+  }
+
+  // NB: sort will destroy index key, therefore $game_list['gid'] is used
+  // later instead.
+  if (count($game_list) > 0) {
+    usort($game_list, 'vchess_compareTimestamp');
+  }
+  return $game_list;
+}
 
 /**
  * Load stats of user. Always return array but values are all zero if not found.

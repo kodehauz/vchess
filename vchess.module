@@ -87,13 +87,14 @@
         'title' => 'Create chess game against random player',
         'type' => MENU_CALLBACK,
     );
-  
-    $items['vchess/reset_games'] = array(
-        'page callback' => 'drupal_get_form',
-        'access arguments' => array('reset games'),
-        'page arguments' => array('vchess_reset_games_form'),
-        'title' => 'Reset ALL games!',
-        'type' => MENU_CALLBACK,
+    
+    $items['vchess/all_active_games'] = array(
+        'page callback' => 'vchess_all_active_games',
+        'access arguments' => array('view all active games'),
+        'title' => 'All active games',
+        'access' => TRUE,
+        'access callback' => TRUE,
+        'type' => MENU_NORMAL_ITEM,
     );
   
     $items['vchess/players'] = array(
@@ -114,6 +115,14 @@
         'page callback' => 'vchess_player',
         'page arguments' => array(2),
         'access arguments' => array('access content'),
+        'type' => MENU_CALLBACK,
+    );
+    
+    $items['vchess/reset_games'] = array(
+        'page callback' => 'drupal_get_form',
+        'access arguments' => array('reset games'),
+        'page arguments' => array('vchess_reset_games_form'),
+        'title' => 'Reset ALL games!',
         'type' => MENU_CALLBACK,
     );
   
@@ -191,6 +200,128 @@
   }
   
   /**
+   * menu callback to display all active games
+   */
+  function vchess_all_active_games() {
+    global $user;
+  
+    if (user_is_logged_in()) {
+      $gamefolder =  variable_get('vchess_game_files_folder', '/vchess-data');
+      $res_games = $gamefolder;
+  
+      if (!$user->name) {
+        $txt = t('Please, register to play chess');
+        return $txt;
+      }
+  
+      $out = vchess_all_in_progress_games();
+  
+      //    $out .= '<p>[ <a href="newgame_form">New Game</a> ]</p>';
+      $out .= "<p>[ <a href=" . url("vchess/newgame_form") . ">New Game</a> ]</p>";
+    }
+    else {
+      $out = "Please log in to access this page";
+    }
+  
+    return $out;
+  }
+  
+  /**
+   * Get table of current games for a given player
+   */
+  function vchess_all_in_progress_games() {
+    global $user;
+
+    $gc = "";
+    
+    $uid = $user->uid;
+  
+    $module_path = drupal_get_path('module', 'vchess');  // e.g. sites/all/modules/vchess
+    //  $view_path = "chess_drupal_7/vchess";
+    $view_path = $GLOBALS['base_root'] . url("vchess");
+    //    $full_path = "http://localhost/chess_drupal-7.12/" . drupal_get_path('module', 'vchess');
+    $full_path = HOME_ROOT . BASE_DIR . drupal_get_path('module', 'vchess');
+  
+    // Get the list of possible games to view
+    $games = vchess_load_all_in_progress_games();
+  
+    $greenlist = array();  // the games which the player has the move
+    $redlist = array();    // the games where the player does not have the move
+    $i = 0;
+    $j = count($games); // required for unique keys for union
+    foreach ($games as $game) {
+      if ($game->is_players_move($uid)) {
+        $greenlist[$i++] = $game;
+      }
+      else {
+        $redlist[$j++] = $game;
+      }
+    }
+    $games = $greenlist + $redlist;
+  
+    $theme = 'default';
+  
+    $gc .= t("There are " . (count($greenlist) + count($redlist)) . " games in progress");
+    
+    // Find if we are looking at our own list
+    $view_user = user_load($uid);
+    if ($view_user->uid == $user->uid) {
+      $turn_text = t('It is your turn in');
+    }
+    else {
+      $turn_text = t("It is <b>" . $view_user->name . "'s</b> turn in");
+    }
+    $gc .= '<br />' . $turn_text . " " . count($greenlist) . " " . t('games');
+//    $gc .= '<br /><b>' . $waiting_text . " " . count($redlist) . " " . t('games') . '</b>';
+  
+    if (count($games) > 0) {
+      $gc .= '<table>';
+      $gc .= '<tr><td></td>';
+      $gc .= '<td><b>' . t('White') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
+      $gc .= '<td><b>' . t('Black') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
+      //    $gc .= '<td><b>' . t('Moves') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
+      //     $gc .= '<td><b>' . t('Starting Date') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
+      //     $gc .= '<td><b>' . t('Last Move On') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
+      $gc .= '<td></td></tr>';
+      foreach ($games as $game) {
+        if ($game->is_players_move($uid)) {
+          $mark = 'greenmark.gif';
+        }
+        else {
+          $mark = 'redmark.gif';
+        }
+        // If it's not a game user is playing, but just one they are watching, then use grey
+        /*
+         if ($game['turn'] == 'w' || $game['turn'] == 'b') {
+        $mark = 'greymark.gif';
+        }
+        */
+  
+        //    $startdate = date('M jS Y H:i', $game['ts_start']);
+        //    $lastdate = date('M jS Y H:i', $game['ts_last']);
+        $startdate = date('M jS Y H:i');
+        $lastdate = date('M jS Y H:i');
+        $gc .= '<tr><td><img alt="" src="' . $full_path . '/images/' . $theme . '/' . $mark . '"></td>';
+        $gc .= "<td><a href=" . url("vchess/player/" . $game->white_player()->name()) . ">" . $game->white_player()->name() . "</a></td>";
+        $gc .= "<td><a href=" . url("vchess/player/" . $game->black_player()->name()) . ">" . $game->black_player()->name() . "</a></td>";
+  
+        //      $game['moves'] = 42; // Hugh - hard-coding for now
+        //      $gc .= '<td>' . 42 . '</td>'; // Hugh - hard-coding for now
+        //      $gc .= '<td>' . $startdate . '&nbsp;&nbsp;</td>';
+        //      $gc .= '<td>' . $lastdate . '&nbsp;&nbsp;</td>';
+        $gc .= "<td><a href='" . $view_path . "/board/" . $game->gid() . "'>";
+        $gc .= t('View') . '</a></td></tr>';
+      }
+      $gc .= '</table>';
+    }
+    else {
+      $gc = "You currently do not have any games.";
+    }
+  
+    return $gc;
+  }
+  
+  /**
    * Get table of current games for a given player
    */
   function vchess_current_games($uid) {
@@ -203,18 +334,7 @@
     $full_path = HOME_ROOT . BASE_DIR . drupal_get_path('module', 'vchess');
   
     // Get the list of possible games to view
-    $games = vchess_io_load_users_games($uid);
-  
-    // Add mark whether user may move in game
-    /**
-     foreach ($games as $key => $game) {
-     $games[$key]['p_maymove'] = FALSE;  // set a default
-     if ((($game['white'] == $user->name && $game['turn'] == 'w') || ($game['black'] == $user->name && $game['turn'] == 'b'))) { // filter_loc =- opengames was removed
-     // p_maymove --> player may move
-     $games[$key]['p_maymove'] = TRUE;
-     }
-     }
-     */
+    $games = vchess_load_users_in_progress_games($uid);
   
     $greenlist = array();  // the games which the player has the move
     $redlist = array();    // the games where the player does not have the move
