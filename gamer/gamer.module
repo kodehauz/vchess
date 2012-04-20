@@ -1,0 +1,36 @@
+<?php
+
+/**
+ * @file
+ * Drupal gamer module
+ */
+
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/rating.inc';
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/player.inc';
+
+/**
+ * Get the stats table for a single player
+ */
+function gamer_player_stats($uid) {
+  $stats = gamer_load_user_stats($uid);
+
+  $header = array('Played', 'Won', 'Drawn', 'Lost', 'Rating', 'Rating change', 'Current');
+  $rows = array(array($stats['played'], $stats['won'], $stats['drawn'],
+      $stats['lost'], $stats['rating'], $stats['rchange'], $stats['current']));
+
+  $player = user_load($uid);
+
+  $html = "Here are the full statistics for <b>" . $player->name . "</b>:";
+
+  $html .= theme_table(array(
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => array(),
+      'caption' => array(),
+      'colgroups' => array(),
+      'sticky' => array(),
+      'empty' => NULL
+  ));
+
+  return $html;
+}

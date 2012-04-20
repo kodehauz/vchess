@@ -1,6 +1,7 @@
 ; $Id$
 name = "VChess"
 description = "Chess module"
+dependencies[] = gamer
 core = 7.x
 php = 5.1
 files[] = vchess.test

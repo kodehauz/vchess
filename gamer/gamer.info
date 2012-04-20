@@ -1,0 +1,4 @@
+name = "Gamer"
+description = "Gamer module"
+core = 7.x
+php = 5.1

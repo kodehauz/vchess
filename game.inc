@@ -55,6 +55,8 @@ class Game {
     
     // status: status of game ('in progress, '1-0', '0-1', '1/2-1/2', D=draw offered, ?=open)
     $this->status = STATUS_IN_PROGRESS;
+    
+    $this->reset_en_passant_target();
 
     // Castling record.  For example, when white king has moved, white may no
     // longer castle.  When rook has moved, player may only castle on other side.
@@ -81,8 +83,7 @@ class Game {
     $this->black_uid = $black_uid;
     
     $this->game['lastmove'] = 'x';
-    $this->game['lastkill'] = 'x';
-    
+   
     $black_player = new Player($black_uid);
   
     // Converted to the D7 database API syntax.
@@ -117,7 +118,7 @@ class Game {
     $this->turn = $row['turn'];
   
     // Fill chess board    $this->board->setup_position($row['board']);
-  
+    
     $this->white_uid = $row['white_uid'];
     $this->black_uid = $row['black_uid'];
     $this->status = $row['status'];  
@@ -435,7 +436,7 @@ class Game {
     $resigning_player = new Player($uid);
   
     $winner = $this->opponent($uid);
-    vchess_update_stats_win($winner, $resigning_player);
+    gamer_update_stats_win($winner, $resigning_player);
   
     if ($this->player_color($uid) == 'w') {
       $this->set_status(STATUS_BLACK_WIN);
