@@ -122,7 +122,7 @@ function vchess_menu() {
   );
 
   $items['vchess/players'] = array(
-      'page callback' => 'vchess_players',
+      'page callback' => 'gamer_players',
       'page arguments' => array(2),
       'access arguments' => array('view players table'),
       'type' => MENU_CALLBACK,
@@ -153,44 +153,6 @@ function vchess_menu() {
   return $items;
 }
   
-/**
- * menu callback vchess_players to display a list of all players
- */
-function vchess_players() {
-  $sql = "SELECT uid FROM {users} ORDER BY name";
-  // Converted to the D7 database API syntax.
-  $result = db_query($sql);
-  foreach ($result as $record) {
-    if ($record->uid <> 0) {
-      $player_stats = gamer_load_user_stats($record->uid);
-      $stats[] = array(
-          $record->uid,
-          "<a href='" . url("vchess/player/" . $player_stats['name']) . "'>" . $player_stats['name'] . "</a>",
-          $player_stats['rating'],
-          $player_stats['played'],
-          $player_stats['won'],
-          $player_stats['lost'],
-          $player_stats['drawn'],
-          $player_stats['rchange'],
-          $player_stats['current']
-      );
-    }
-  }
-
-  $table['header'] = array('uid', 'name', 'rating', 'played', 'won', 'lost', 'drawn', 'rating change', 'current');
-  $table['attributes'] = array();
-  $table['caption'] = array();
-  $table['colgroups'] = array();
-  $table['sticky'] = "";
-  $table['empty'] = "The message to display in an extra row if table does not have any rows.";
-  $table['rows'] = $stats;
-
-  //  ['name'], $stats['wins'], $stats['draws'],
-  //$stats['losses'], $stats['rating'], $stats['rgames'], $stats['rchange']);
-
-  return theme_table($table);
-}
-
 /**
  * menu callback vchess_main_page to display main vchess window
  */

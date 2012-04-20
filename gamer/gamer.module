@@ -9,6 +9,59 @@ require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/rating.i
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/player.inc';
 
 /**
+ * hook_menu() implementation
+ */
+function gamer_menu() {
+  $items = array();
+  
+  $items['gamer/players'] = array(
+      'page callback' => 'gamer_players',
+      'access arguments' => array('view players table'),
+      'type' => MENU_CALLBACK,
+  );
+  
+  return $items;
+}
+
+/**
+ * menu callback gamer_players to display a list of all players
+ */
+function gamer_players() {
+  $sql = "SELECT uid FROM {users} ORDER BY name";
+  // Converted to the D7 database API syntax.
+  $result = db_query($sql);
+  foreach ($result as $record) {
+    if ($record->uid <> 0) {
+      $player_stats = gamer_load_user_stats($record->uid);
+      $stats[] = array(
+          $record->uid,
+          "<a href='" . url("vchess/player/" . $player_stats['name']) . "'>" . $player_stats['name'] . "</a>",
+          $player_stats['rating'],
+          $player_stats['played'],
+          $player_stats['won'],
+          $player_stats['lost'],
+          $player_stats['drawn'],
+          $player_stats['rchange'],
+          $player_stats['current']
+      );
+    }
+  }
+
+  $table['header'] = array('uid', 'name', 'rating', 'played', 'won', 'lost', 'drawn', 'rating change', 'current');
+  $table['attributes'] = array();
+  $table['caption'] = array();
+  $table['colgroups'] = array();
+  $table['sticky'] = "";
+  $table['empty'] = "The message to display in an extra row if table does not have any rows.";
+  $table['rows'] = $stats;
+
+  //  ['name'], $stats['wins'], $stats['draws'],
+  //$stats['losses'], $stats['rating'], $stats['rgames'], $stats['rchange']);
+
+  return theme_table($table);
+}
+
+/**
  * Get the stats table for a single player
  */
 function gamer_player_stats($uid) {
@@ -34,3 +87,4 @@ function gamer_player_stats($uid) {
 
   return $html;
 }
+

@@ -8,7 +8,7 @@
 /**
  * Define the database tables required for this module
  * 
- * There are 3 tables:
+ * There are 2 tables:
  * - vchess_games contains summary of each game 
  *   - who is playing who
  *   - whose move it is
@@ -17,11 +17,6 @@
  * 
  * - vchess_moves contains the list of moves for each game
  * 
- * - vchess_stats contains statistics about each player
- *   - how many games played
- *   - current grade
- *   - etc.
- *   
  * N.B. There are a couple of problems with the enum and timestamp not
  * currently being supported in core.  The patch solution is:
  * - http://drupal.org/node/1464354
@@ -134,60 +129,6 @@ function vchess_schema() {
       ),
       'primary key' => array('gid', 'move_no', 'color'),
   );
-  
-  // Table of player statistics, one row per player  
-  $schema['vchess_stats'] = array(
-    'fields' => array(
-      'uid' => array(
-        'type' => 'varchar',
-        'length' => 33,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'current' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'unsigned' => TRUE,
-        'default' => 0,
-      ),
-      'won' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'unsigned' => TRUE,
-        'default' => 0,
-      ),
-      'drawn' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'unsigned' => TRUE,
-        'default' => 0,
-      ),
-      'lost' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'unsigned' => TRUE,
-        'default' => 0,
-      ),
-      'rating' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'unsigned' => TRUE,
-        'default' => 0,
-      ),
-      'played' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'unsigned' => TRUE,
-        'default' => 0,
-      ),
-      'rchange' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-    ),
-  );
-  
   
   return $schema;
 }
