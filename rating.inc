@@ -26,6 +26,12 @@ define('RATING_CHANGE_MULTIPLIER', 25);
 
 /**
  * Get probability for player to win from difference in rating
+ * 
+ * @param $diff
+ *   Difference between two players ratings
+ *   
+ * @return 
+ *   Probability, between 0 and 1, that the player would win 
  */
 function vchess_get_win_probability($diff) {
   $absdiff = abs($diff);
@@ -148,6 +154,11 @@ function vchess_get_updated_stats($uid, $ustats, $ostats, $score) {
 
 /**
  * Update stats based on a win
+ * 
+ * @param $winner
+ *   The player who won
+ * @param $loser
+ *   The player who lost
  */
 function vchess_update_stats_win(Player $winner, Player $loser) {
   // Load stats. Is always successful (returns zero array if not found).
@@ -169,17 +180,14 @@ function vchess_update_stats_win(Player $winner, Player $loser) {
  * Update stats of both users according to result (w,b,-)
  *
  * @param $white
- *   Name of white player
- *
+ *   Uid of white player
  * @param $black
- *   Name of black player
- *
- * @param
+ *   Uid of black player
+ * @param $result
  *   Result is either "-" (draw), "w" (white win), "b" (black win)
  */
 function vchess_update_stats($white, $black, $result) {
   // Load stats. Is always successful (returns zero array if not found).
-  // Old format is also updated,see compatiblity info in io.php.
   $wstats = vchess_io_load_user_stats($white);
   $bstats = vchess_io_load_user_stats($black);
 
