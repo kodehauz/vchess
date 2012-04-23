@@ -413,15 +413,8 @@ function vchess_users_current_games($uid) {
   $gc .= '<br /><b>' . $turn_text . " " . count($greenlist) . " " . t('games') . '</b>';
   $gc .= '<br /><b>' . $waiting_text . " " . count($redlist) . " " . t('games') . '</b>';
 
+  $table['empty'] = "";
   if (count($games) > 0) {
-    $gc .= '<table>';
-    $gc .= '<tr><td></td>';
-    $gc .= '<td><b>' . t('White') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
-    $gc .= '<td><b>' . t('Black') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
-    //    $gc .= '<td><b>' . t('Moves') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
-    //     $gc .= '<td><b>' . t('Starting Date') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
-    //     $gc .= '<td><b>' . t('Last Move On') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
-    $gc .= '<td></td></tr>';
     foreach ($games as $game) {
       if ($game->is_players_move($uid)) {
         $mark = 'greenmark.gif';
@@ -430,40 +423,38 @@ function vchess_users_current_games($uid) {
         $mark = 'redmark.gif';
       }
       // If it's not a game user is playing, but just one they are watching, then use grey
-      /*
-       if ($game['turn'] == 'w' || $game['turn'] == 'b') {
-      $mark = 'greymark.gif';
-      }
-      */
-
+      //
+      // if ($game['turn'] == 'w' || $game['turn'] == 'b') {
+      //   $mark = 'greymark.gif';
+      // }
+      
       //    $startdate = date('M jS Y H:i', $game['ts_start']);
       //    $lastdate = date('M jS Y H:i', $game['ts_last']);
-      $startdate = date('M jS Y H:i');
-      $lastdate = date('M jS Y H:i');
-      $gc .= '<tr><td><img alt="" src="' . $full_path . '/images/' . $theme . '/' . $mark . '"></td>';
-      $gc .= "<td><a href=" . url("vchess/player/" . $game->white_player()->name()) . ">" . $game->white_player()->name() . "</a></td>";
-      $gc .= "<td><a href=" . url("vchess/player/" . $game->black_player()->name()) . ">" . $game->black_player()->name() . "</a></td>";
-
-      //      $game['moves'] = 42; // Hugh - hard-coding for now
-      //      $gc .= '<td>' . 42 . '</td>'; // Hugh - hard-coding for now
-      //      $gc .= '<td>' . $startdate . '&nbsp;&nbsp;</td>';
-      //      $gc .= '<td>' . $lastdate . '&nbsp;&nbsp;</td>';
-      $gc .= "<td><a href='" . $view_path . "/board/" . $game->gid() . "'>";
-      $gc .= t('View') . '</a></td></tr>';
+      $rows[] = array(
+        "<img alt='' src='" . $full_path . '/images/' . $theme . '/' . $mark . "'>",
+        "<a href='" . url("vchess/player/" . $game->white_player()->name()) . "'>" . $game->white_player()->name() . "</a>",
+        "<a href='" . url("vchess/player/" . $game->black_player()->name()) . "'>" . $game->black_player()->name() . "</a>",
+        "<a href='" . $view_path . "/board/" . $game->gid() . "'>" . t('View') . "</a>",
+        );          
     }
-    $gc .= '</table>';
   }
   else {
     if ($uid == $user->uid) {
-      $gc = "You currently do not have any games.";        
+      $table['empty'] = t("You currently do not have any games.");     
     }
     else {
-      $gc = $user->name . "does not have any current games.";
+      $table['empty'] = $user->name . "does not have any current games.";
     }
-
   }
-
-  return $gc;
+  
+  $table['header'] = array(t('Your move?'), t('White'), t('Black'), t('View'));
+  $table['attributes'] = array();
+  $table['caption'] = array();
+  $table['colgroups'] = array();
+  $table['sticky'] = "";
+  $table['rows'] = $rows;
+  
+  return theme_table($table);
 }
 
 /**
