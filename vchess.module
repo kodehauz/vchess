@@ -319,15 +319,11 @@ function vchess_all_current_games() {
   }
   $gc .= '<br />' . $turn_text . " " . count($greenlist) . " " . t('games');
 
+  $table['empty'] = "";
   if (count($games) > 0) {
-    $gc .= '<table>';
-    $gc .= '<tr><td></td>';
-    $gc .= '<td><b>' . t('White') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
-    $gc .= '<td><b>' . t('Black') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
     //    $gc .= '<td><b>' . t('Moves') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
     //     $gc .= '<td><b>' . t('Starting Date') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
     //     $gc .= '<td><b>' . t('Last Move On') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
-    $gc .= '<td></td></tr>';
     foreach ($games as $game) {
       if ($game->is_players_move($uid)) {
         $mark = 'greenmark.gif';
@@ -344,24 +340,36 @@ function vchess_all_current_games() {
 
       //    $startdate = date('M jS Y H:i', $game['ts_start']);
       //    $lastdate = date('M jS Y H:i', $game['ts_last']);
-      $startdate = date('M jS Y H:i');
-      $lastdate = date('M jS Y H:i');
-      $gc .= '<tr><td><img alt="" src="' . $full_path . '/images/' . $theme . '/' . $mark . '"></td>';
-      $gc .= "<td><a href=" . url("vchess/player/" . $game->white_player()->name()) . ">" . $game->white_player()->name() . "</a></td>";
-      $gc .= "<td><a href=" . url("vchess/player/" . $game->black_player()->name()) . ">" . $game->black_player()->name() . "</a></td>";
-
-      //      $game['moves'] = 42; // Hugh - hard-coding for now
-      //      $gc .= '<td>' . 42 . '</td>'; // Hugh - hard-coding for now
-      //      $gc .= '<td>' . $startdate . '&nbsp;&nbsp;</td>';
-      //      $gc .= '<td>' . $lastdate . '&nbsp;&nbsp;</td>';
-      $gc .= "<td><a href='" . $view_path . "/board/" . $game->gid() . "'>";
-      $gc .= t('View') . '</a></td></tr>';
+      $rows[] = array(
+        'white' => "<a href='" . url("vchess/player/" . $game->white_player()->name()) . "'>" . $game->white_player()->name() . "</a>",
+        'black' => "<a href='" . url("vchess/player/" . $game->black_player()->name()) . "'>" . $game->black_player()->name() . "</a>",
+          
+        'view' =>  "<a href='" . $view_path . "/board/" . $game->gid() . "'>" . t('View') . '</a>'
+        );
     }
-    $gc .= '</table>';
   }
-  else {
-    $gc = "There are no current games.";
-  }
+  
+  $header = array(
+      array('data' => t('White'), 'field' => 'white'),
+      array('data' => t('Black'), 'field' => 'black'),
+      t('View'));
+  
+  // getting the current sort and order parameters from the url
+  // e.g. q=vchess/my_current_games&sort=asc&order=White
+  $order = tablesort_get_order($header);
+  $sort = tablesort_get_sort($header);
+  
+  // sort the table data accordingly (write your own sort function)
+  $rows = vchess_games_sort($rows, $order, $sort);
+  
+  $table['header'] = $header;
+  $table['attributes'] = array();
+  $table['caption'] = array();
+  $table['colgroups'] = array();
+  $table['sticky'] = "";
+  $table['rows'] = $rows;
+  
+  $gc .= theme_table($table);
 
   return $gc;
 }
@@ -402,16 +410,19 @@ function vchess_users_current_games($uid) {
   // Find if we are looking at our own list
   $view_user = user_load($uid);
   if ($view_user->uid == $user->uid) {
+    $playing_text = t('You are playing');
     $turn_text = t('It is your turn in');
     $waiting_text = t('You are waiting for');
   }
   else {
+    $playing_text = $view_user->name . t(" is playing");
     $turn_text = t("It is <b>" . $view_user->name . "'s</b> turn in");
     $waiting_text = t("<b>" . $view_user->name . "</b> is waiting for");
   }
   $gc = "";
-  $gc .= '<br /><b>' . $turn_text . " " . count($greenlist) . " " . t('games') . '</b>';
-  $gc .= '<br /><b>' . $waiting_text . " " . count($redlist) . " " . t('games') . '</b>';
+  $gc .= '<br />' . $playing_text . " " . (count($greenlist) + count($redlist)) . " " . t('games') . ".  ";
+  $gc .= $turn_text . " " . count($greenlist) . " " . t('games') . ".  ";
+  $gc .= $waiting_text . " " . count($redlist) . " " . t('games');
 
   $table['empty'] = "";
   if (count($games) > 0) {
@@ -468,7 +479,9 @@ function vchess_users_current_games($uid) {
   $table['sticky'] = "";
   $table['rows'] = $rows;
   
-  return theme_table($table);
+  $gc .= theme_table($table);
+  
+  return $gc;
 }
 
 /**
@@ -478,26 +491,26 @@ function vchess_games_sort($rows, $order, $sort) {
   switch ($order['sql']) {
     case 'move':
       if ($sort == 'asc') {
-        usort($rows, "vchess_move_cmp_asc");
+        usort($rows, "vchess_move_comp_asc");
       }
       else {
-        usort($rows, "vchess_move_cmp_desc");
+        usort($rows, "vchess_move_comp_desc");
       }
       break;
     case 'white':
       if ($sort == 'asc') {
-        usort($rows, "vchess_white_cmp_asc");
+        usort($rows, "vchess_white_comp_asc");
       }
       else {
-        usort($rows, "vchess_white_cmp_desc");
+        usort($rows, "vchess_white_comp_desc");
       }
       break;
     case 'black':
       if ($sort == 'asc') {
-        usort($rows, "vchess_black_cmp_asc");
+        usort($rows, "vchess_black_comp_asc");
       }
       else {
-        usort($rows, "vchess_black_cmp_desc");
+        usort($rows, "vchess_black_comp_desc");
       }
       break;
   }
@@ -508,42 +521,42 @@ function vchess_games_sort($rows, $order, $sort) {
 /**
  * Compare function to enable 'move' games column to be sorted ascending
  */
-function vchess_move_cmp_asc($a, $b) {
+function vchess_move_comp_asc($a, $b) {
   return strcmp($a['move'], $b['move']);
 }
 
 /**
  * Compare function to enable 'move' games column to be sorted descending
  */
-function vchess_move_cmp_desc($a, $b) {
+function vchess_move_comp_desc($a, $b) {
   return strcmp($b['move'], $a['move']);
 }
 
 /**
  * Compare function to enable 'white' games column to be sorted ascending
  */
-function vchess_white_cmp_asc($a, $b) {
+function vchess_white_comp_asc($a, $b) {
   return strcmp($a['white'], $b['white']);
 }
 
 /**
  * Compare function to enable 'white' games column to be sorted descending
  */
-function vchess_white_cmp_desc($a, $b) {
+function vchess_white_comp_desc($a, $b) {
   return strcmp($b['white'], $a['white']);
 }
 
 /**
  * Compare function to enable 'black' games column to be sorted ascending
  */
-function vchess_black_cmp_asc($a, $b) {
+function vchess_black_comp_asc($a, $b) {
   return strcmp($a['black'], $b['black']);
 }
 
 /**
  * Compare function to enable 'black' games column to be sorted descending
  */
-function vchess_black_cmp_desc($a, $b) {
+function vchess_black_comp_desc($a, $b) {
   return strcmp($b['black'], $a['black']);
 }
 
