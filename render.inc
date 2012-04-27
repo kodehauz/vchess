@@ -98,7 +98,6 @@ function vchess_render_board($board, $player, $active, $gid) {
 
   // build chessboard
   $content = "";
-//  $content .= "player perspective = " . $player . "<br />";
   $content .= '<table class="boardFrame"><tr><td>';
   $content .= '<table class="board">';
   if ($player == 'w') {
@@ -146,7 +145,6 @@ function vchess_render_board($board, $player, $active, $gid) {
         else {
           $i = 9 - $row;
         }
-//        $content .= '<td><b class="boardCoord">' . $i . '</B></td><td><img width=4 src="/' . $path . '/images/spacer.gif"></td>';
         $content .= '<td><b class="boardCoord">' . $i . '</B></td><td><img width=4 src="' . $path . '/images/spacer.gif"></td>';
       }
       else {
@@ -169,9 +167,6 @@ function vchess_render_board($board, $player, $active, $gid) {
           $class = 'boardSquareBlack';
         }
         
-//         if ($board == NULL) {
-//             $content .= '<td class="' . $class . '"><img name="b' . $index . '" src="' . $path . '/images/' . $theme . '/empty.gif"></td>';
-//         }
         if ($piece_name != BLANK) {
           // square with a piece and player has the ability to move
           if ($active) {
@@ -181,11 +176,10 @@ function vchess_render_board($board, $player, $active, $gid) {
             if ($piece_color <> $player) {
               $cmdpart = "x" . $cmdpart;
             }
-//          $content .= '<td id="btd' . $index . '" class="' . $class . '"><a href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><img border=0 src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></a></td>';
             $content .= '<td id="' . $coord->coord() . '" class="' . $class . '"><a href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><img border=0 src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></a></td>';
           }
           else {
-              $content .= '<td class="' . $class . '"><img src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></td>';
+            $content .= '<td class="' . $class . '"><img src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></td>';
           }
         }
         else {
@@ -247,7 +241,8 @@ function vchess_command_form($form, $context, Game $game, $cmdres, $move) {
     '#value' => 'Flip Board',
     );
   
-  if (!$game->is_over()) {
+  if (!$game->is_over()
+  && ($game->white_uid() == $user->uid || $game->black_uid() == $user->uid)) {
     $form['resignButton'] = array(
       '#type' => 'submit',
       '#value' => 'Resign',

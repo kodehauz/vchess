@@ -39,7 +39,7 @@ error_reporting(E_ALL);
  */
 function vchess_help($path, $arg) {
   if ($path == 'admin/help#vchess') {
-    $txt = t('Drupal chess module.Chess games between site users');
+    $txt = t('VChess module.  Chess games between site users');
     return $txt;
   }
 }
@@ -114,7 +114,7 @@ function vchess_menu() {
   
   $items['vchess/all_current_games'] = array(
       'page callback' => 'vchess_all_current_games_page',
-      'access arguments' => array('view all active games'),
+      'access arguments' => array('view all current games'),
       'title' => 'All current games',
       'access' => TRUE,
       'access callback' => TRUE,
@@ -359,8 +359,8 @@ function vchess_all_current_games() {
   $order = tablesort_get_order($header);
   $sort = tablesort_get_sort($header);
   
-  // sort the table data accordingly (write your own sort function)
-  $rows = vchess_games_sort($rows, $order, $sort);
+  // sort the table data accordingly
+  $rows = vchess_tablesort($rows, $sort, $order['sql']);
   
   $table['header'] = $header;
   $table['attributes'] = array();
@@ -445,6 +445,7 @@ function vchess_users_current_games($uid) {
         'move' => "<img alt='' src='" . $full_path . '/images/' . $theme . '/' . $mark . "'>",
         'white' => "<a href='" . url("vchess/player/" . $game->white_player()->name()) . "'>" . $game->white_player()->name() . "</a>",
         'black' => "<a href='" . url("vchess/player/" . $game->black_player()->name()) . "'>" . $game->black_player()->name() . "</a>",
+        'move_no' => $game->move_no(),
         'gid' => "<a href='" . $view_path . "/board/" . $game->gid() . "'>" . t('View') . "</a>",
         );          
     }
@@ -462,15 +463,16 @@ function vchess_users_current_games($uid) {
       array('data' => t('Your move?'), 'field' => 'move'),
       array('data' => t('White'), 'field' => 'white'),
       array('data' => t('Black'), 'field' => 'black'), 
+      array('data' => t('Move #'), 'field' => 'move_no'),
       t('View'));
   
   // getting the current sort and order parameters from the url
   // e.g. q=vchess/my_current_games&sort=asc&order=White
-  $order = tablesort_get_order($header);  
-  $sort = tablesort_get_sort($header);
+  $sort = tablesort_get_sort($header);  
+  $order = tablesort_get_order($header);
   
-  // sort the table data accordingly (write your own sort function)
-  $rows = vchess_games_sort($rows, $order, $sort);
+  // sort the table data accordingly
+  $rows = vchess_tablesort($rows, $sort, $order['sql']);
   
   $table['header'] = $header;
   $table['attributes'] = array();
@@ -485,37 +487,57 @@ function vchess_users_current_games($uid) {
 }
 
 /**
- * Sort the games table
+ * Sort the table
+ * 
+ * @param $rows
+ *   The rows to be sorted
+ * @param $sort
+ *   The sort direction, either 'asc' or 'desc'
+ * @param $order
+ *   The title of column to be ordered
  */
-function vchess_games_sort($rows, $order, $sort) {
-  switch ($order['sql']) {
-    case 'move':
-      if ($sort == 'asc') {
-        usort($rows, "vchess_move_comp_asc");
-      }
-      else {
-        usort($rows, "vchess_move_comp_desc");
-      }
-      break;
-    case 'white':
-      if ($sort == 'asc') {
-        usort($rows, "vchess_white_comp_asc");
-      }
-      else {
-        usort($rows, "vchess_white_comp_desc");
-      }
-      break;
-    case 'black':
-      if ($sort == 'asc') {
-        usort($rows, "vchess_black_comp_asc");
-      }
-      else {
-        usort($rows, "vchess_black_comp_desc");
-      }
-      break;
+function vchess_tablesort($rows, $sort, $order) {
+  // Example:
+  //   $rows = array(
+  //     0 => array("fruit" => "apple", "color" => "red"),
+  //     1 => array("fruit" => "banana", "color" => "yellow")
+  //     2 => array("fruit" => "kiwi", "color" => "green")
+  //   );  
+  // We cannot sort the array as is, since the array is an array of rows, so 
+  // we first create a simple array containing just the column we want to sort
+  // e.g. if $order['sql'] is 'color' then:
+  //   $temp_array = array(
+  //    0 => "red",
+  //    1 => "yellow",
+  //    2 => "green"
+  //  );
+  foreach ($rows as $row) {
+    $temp_array[] = $row[$order];
+  }
+  
+  // Now we sort this temp array, but we preserve the keys, e.g.
+  //   $temp_array = array(
+  //    2 => "green"
+  //    0 => "red",
+  //    1 => "yellow",
+  //   );
+  // The actual sort order depends on whether this is 'asc' or 'desc'
+  if ($sort == 'asc') {
+    asort($temp_array);
+  }
+  else {
+    arsort($temp_array);
+  }
+  
+  // Now we copy in this order into an array of new rows, e.g.
+  //   $new_rows[0] = $rows[2];
+  //   $new_rows[1] = $rows[0];
+  //   $new_rows[2] = $rows[1]; 
+  foreach ($temp_array as $index => $data) {
+    $new_rows[] = $rows[$index];
   }
 
-  return $rows;
+  return $new_rows;
 }
 
 /**

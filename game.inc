@@ -454,15 +454,25 @@ class Game {
    * In the case where a player is playing against themself (!), which we allow
    * at least for testing purposes, the color is the color of whoever's turn it 
    * is to move.
+   * 
+   * @param $uid
+   *   The user id of a player
+   *   
+   * @return
+   *   'w' if the player is playing white
+   *   'b' if the player is playing black
+   *   '' if the player is not a player of this game
    */
   function player_color($uid) {
+    $color = "";
+    
     if ($this->white_uid == $this->black_uid) {
       $color = $this->turn();
     }
     elseif ($this->white_uid == $uid) {
       $color = 'w';
     }
-    else {
+    elseif ($this->black_uid == $uid) {
       $color = 'b';
     }
   
