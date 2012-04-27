@@ -8,6 +8,8 @@
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/rating.inc';
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/player.inc';
 
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'tsort') . '/tsort.module';
+
 /**
  * hook_menu() implementation
  */
@@ -34,29 +36,46 @@ function gamer_players() {
     if ($record->uid <> 0) {
       $player_stats = gamer_load_user_stats($record->uid);
       $stats[] = array(
-          $record->uid,
-          "<a href='" . url("vchess/player/" . $player_stats['name']) . "'>" . $player_stats['name'] . "</a>",
-          $player_stats['rating'],
-          $player_stats['played'],
-          $player_stats['won'],
-          $player_stats['lost'],
-          $player_stats['drawn'],
-          $player_stats['rchange'],
-          $player_stats['current']
+          'uid' => $record->uid,
+          'name' => "<a href='" . url("vchess/player/" . $player_stats['name']) . "'>" . $player_stats['name'] . "</a>",
+          'rating' => $player_stats['rating'],
+          'played' => $player_stats['played'],
+          'won' => $player_stats['won'],
+          'lost' => $player_stats['lost'],
+          'drawn' => $player_stats['drawn'],
+          'rating_change' => $player_stats['rchange'],
+          'current' => $player_stats['current']
       );
     }
   }
 
-  $table['header'] = array('uid', 'name', 'rating', 'played', 'won', 'lost', 'drawn', 'rating change', 'current');
+  $header = array(
+      array('data' => t('uid'), 'field' => 'uid'),
+      array('data' => t('name'), 'field' => 'name'),
+      array('data' => t('rating'), 'field' => 'rating'),
+      array('data' => t('played'), 'field' => 'played'),
+      array('data' => t('won'), 'field' => 'won'),
+      array('data' => t('lost'), 'field' => 'lost'),
+      array('data' => t('drawn'), 'field' => 'drawn'),
+      array('data' => t('rating change'), 'field' =>'rating_change'),
+      array('data' => t('current'), 'field' => 'current')
+  );
+  
+  // getting the current sort and order parameters from the url
+  // e.g. q=vchess/my_current_games&sort=asc&order=White
+  $order = tablesort_get_order($header);
+  $sort = tablesort_get_sort($header);
+  
+  // sort the table data accordingly
+  $stats = tsort_nonsql_sort($stats, $sort, $order['sql']);
+  
+  $table['header'] = $header;
   $table['attributes'] = array();
   $table['caption'] = array();
   $table['colgroups'] = array();
   $table['sticky'] = "";
   $table['empty'] = "The message to display in an extra row if table does not have any rows.";
   $table['rows'] = $stats;
-
-  //  ['name'], $stats['wins'], $stats['draws'],
-  //$stats['losses'], $stats['rating'], $stats['rgames'], $stats['rchange']);
 
   return theme_table($table);
 }

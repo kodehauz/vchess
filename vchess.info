@@ -2,6 +2,7 @@
 name = "VChess"
 description = "Chess module"
 dependencies[] = gamer
+dependencies[] = tsort
 core = 7.x
 php = 5.1
 files[] = vchess.test
