@@ -277,6 +277,8 @@ function vchess_new_game_links() {
  */
 function vchess_all_current_games() {
   global $user;
+  
+  $rows = array();
 
   $gc = "";
   
@@ -364,10 +366,11 @@ function vchess_all_current_games() {
   
   $table['header'] = $header;
   $table['attributes'] = array();
-  $table['caption'] = array();
+  $table['caption'] = "";
   $table['colgroups'] = array();
   $table['sticky'] = "";
   $table['rows'] = $rows;
+  $table['empty'] = t("There are no current games");
   
   $gc .= theme_table($table);
 
@@ -379,6 +382,8 @@ function vchess_all_current_games() {
  */
 function vchess_users_current_games($uid) {
   global $user;
+  
+  $rows = array();
 
   $module_path = drupal_get_path('module', 'vchess');  // e.g. sites/all/modules/vchess
   //  $view_path = "chess_drupal_7/vchess";
@@ -471,12 +476,14 @@ function vchess_users_current_games($uid) {
   $sort = tablesort_get_sort($header);  
   $order = tablesort_get_order($header);
   
-  // sort the table data accordingly
-  $rows = tsort_nonsql_sort($rows, $sort, $order['sql']);
+  if (count($rows) > 1) {
+    // sort the table data accordingly
+    $rows = tsort_nonsql_sort($rows, $sort, $order['sql']);
+  }
   
   $table['header'] = $header;
   $table['attributes'] = array();
-  $table['caption'] = array();
+  $table['caption'] = "";
   $table['colgroups'] = array();
   $table['sticky'] = "";
   $table['rows'] = $rows;

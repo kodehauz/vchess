@@ -58,7 +58,7 @@ function gamer_players() {
       array('data' => t('lost'), 'field' => 'lost'),
       array('data' => t('drawn'), 'field' => 'drawn'),
       array('data' => t('rating change'), 'field' =>'rating_change'),
-      array('data' => t('current'), 'field' => 'current')
+      array('data' => t('in progress'), 'field' => 'current')
   );
   
   // getting the current sort and order parameters from the url
@@ -71,7 +71,7 @@ function gamer_players() {
   
   $table['header'] = $header;
   $table['attributes'] = array();
-  $table['caption'] = array();
+  $table['caption'] = "";
   $table['colgroups'] = array();
   $table['sticky'] = "";
   $table['empty'] = "The message to display in an extra row if table does not have any rows.";
