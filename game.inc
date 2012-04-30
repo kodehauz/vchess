@@ -83,7 +83,7 @@ class Game {
     $this->black_uid = $black_uid;
     
     $this->game['lastmove'] = 'x';
-   
+
     $black_player = new Player($black_uid);
   
     // Converted to the D7 database API syntax.

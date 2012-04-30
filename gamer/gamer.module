@@ -57,7 +57,7 @@ function gamer_players() {
       array('data' => t('won'), 'field' => 'won'),
       array('data' => t('lost'), 'field' => 'lost'),
       array('data' => t('drawn'), 'field' => 'drawn'),
-      array('data' => t('rating change'), 'field' =>'rating_change'),
+      array('data' => t('rating change'), 'field' => 'rating_change'),
       array('data' => t('in progress'), 'field' => 'current')
   );
   
@@ -82,6 +82,12 @@ function gamer_players() {
 
 /**
  * Get the stats table for a single player
+ * 
+ * @param $uid
+ *   User id of player for whom stats are wanted
+ *   
+ * @return $html
+ *   A themed table of the statistics
  */
 function gamer_player_stats($uid) {
   $stats = gamer_load_user_stats($uid);

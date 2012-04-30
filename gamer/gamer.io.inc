@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * input-output functions for games statistics
+ */
+
+/**
  * Load stats of user. Always return array but values are all zero if not found.
  *
  * wins: number of wins
@@ -40,7 +45,7 @@ function gamer_load_user_stats($uid) {
  * Save user stats to file: replace if entry exists or append if it is new.
  */
 function gamer_save_user_stats($uid, $stats) {
-  $sql = "SELECT uid FROM {vchess_stats} WHERE uid = '" . $uid . "'";
+  $sql = "SELECT uid FROM {gamer_stats} WHERE uid = '" . $uid . "'";
   // Converted statement to the D7 database API syntax.
   $result = db_query($sql);
   $out = $result->fetchAssoc();
@@ -61,7 +66,7 @@ function gamer_save_user_stats($uid, $stats) {
         ->execute();
   }
   else {
-    db_update('vchess_stats')
+    db_update('gamer_stats')
     ->fields(array(
         'won' => $stats['won'],
         'drawn' => $stats['drawn'],

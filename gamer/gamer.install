@@ -1,20 +1,20 @@
 <?php
 /**
  * @file
-* Install, update and uninstall functions
-*
-*/
+ * Install, update and uninstall functions
+ *
+ */
 
 /**
  * Define the database tables required for this module
-*
-* There is 1 table:
-* - gamer_stats contains statistics about each player
-*   - how many games played
-*   - current grade
-*   - etc.
-*
-*/
+ *
+ * There is 1 table:
+ *  - gamer_stats contains statistics about each player
+ *  - how many games played
+ *  - current grade
+ *  - etc.
+ *
+ */
 function gamer_schema() {
 
   // Table of player statistics, one row per player

@@ -1,12 +1,15 @@
 <?php
 
 /**
- * @file 
+ * @file
  * Definition of Scoresheet (list of moves).
  * 
  * The scoresheet is the table of moves in the game.
  */
 
+/**
+ * Scoresheet class
+ */
 class Scoresheet {
   protected $scoresheet = array();
   

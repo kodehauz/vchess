@@ -26,12 +26,12 @@ define('RATING_CHANGE_MULTIPLIER', 25);
 
 /**
  * Get probability for player to win from difference in rating
- * 
+ *
  * @param $diff
  *   Difference between two players ratings
- *   
- * @return 
- *   Probability, between 0 and 1, that the player would win 
+ *
+ * @return
+ *   Probability, between 0 and 1, that the player would win
  */
 function gamer_get_win_probability($diff) {
   $absdiff = abs($diff);
@@ -72,10 +72,7 @@ function gamer_get_rating_change_multiplier() {
 }
 
 /**
- * Update user stats and return modified stats. Score is:
- * - 1 (user won),
- * - 0.5 (user drew)
- * - 0 (user lost)
+ * Update user stats and return modified stats.
  *
  * The rating is updated every five games.
  * Modification in between is stored in rating change. If less than five games
@@ -89,7 +86,22 @@ function gamer_get_rating_change_multiplier() {
  *
  * The final rating change is truncated to four digits after the comma.
  *
+ * @param $uid
+ *   Userid of player
+ * @param
+ *   Current stats for player
+ *   @todo: it shouldn't need all the stats of the player (e.g. number of draws!) in order
+ *   to calculate the new ratings!!
+ * @param
+ *   Stats of opposition player
+ * @param
+ *   Score:
+ * - 1 (user won),
+ * - 0.5 (user drew)
+ * - 0 (user lost)
  *
+ * @return
+ *   Returns the new stats
  */
 function gamer_get_updated_stats($uid, $ustats, $ostats, $score) {
   $played = $ustats['won'] + $ustats['drawn'] + $ustats['lost'];
@@ -154,7 +166,7 @@ function gamer_get_updated_stats($uid, $ustats, $ostats, $score) {
 
 /**
  * Update stats based on a win
- * 
+ *
  * @param $winner
  *   The player who won
  * @param $loser
@@ -175,6 +187,30 @@ function gamer_update_stats_win(Player $winner, Player $loser) {
   gamer_save_user_stats($loser->uid, $loser_stats_new);
 }
 
+
+/**
+ * Update stats to note that another game is in progress
+ *
+ * @param $uid1
+ *   The user id of the first player
+ * @param $uid2
+ *   The user id of the second player
+ */
+function gamer_add_in_progress($uid1, $uid2) {
+  // Load stats. Is always successful (returns zero array if not found).
+  $player1_stats = gamer_load_user_stats($uid1);
+  $player2_stats = gamer_load_user_stats($uid2);
+
+//  @todo: rewrite gamer model to be more OO and then finish this function!
+
+// Get the new stats
+//   $winner_stats_new = gamer_get_updated_stats($winner->uid, $winner_stats, $loser_stats, 1);
+//   $loser_stats_new = gamer_get_updated_stats($loser->uid, $loser_stats, $winner_stats, 0);
+
+//   // Save changes
+//   gamer_save_user_stats($winner->uid, $winner_stats_new);
+//   gamer_save_user_stats($loser->uid, $loser_stats_new);
+}
 
 /**
  * Update stats of both users according to result (w,b,-)
