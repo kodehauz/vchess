@@ -8,7 +8,7 @@
 // Define as a FEN string the standard board starting position
 // For FEN, we start with the black side of the board (a8-h8), and finish with the white pieces (a1-h1).
 // For FEN, white pieces are stored in UPPER CASE, black pieces in lower case and blank squares as space.
-// 
+//
 // e.g. after 1.e4 the FEN string will be:
 // rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR
 define("BOARD_DEFAULT", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
@@ -34,23 +34,23 @@ define("COL_h", 8);
  * The Board is designed to take some of the complexity away from the $board array
  * by adding useful functions rather than having the rest of the program need to understand
  * and handle issues like whether a square is blank or not.
- * 
+ *
  * The Board is basically the static view of what a board looks like (i.e. what pieces are
  * where) and but also includes the following game information:
  * - whether or not a player may castle (queenside and/or kingside)
  * - what the en passant target square is, if any
- * 
+ *
  * This class acts as the MODEL for the board.
  */
 class Board {
   // The board is stored as an array where the key is the coord and the elements
   // are items of type Piece
   // e.g. array(
-  //      "a1"->Piece /* white rook */, 
+  //      "a1"->Piece /* white rook */,
   //      "a2"->Piece /* white knight */,
-  //      etc.) 
+  //      etc.)
   protected $board = array();
-  
+
   protected $en_passant_target;
 
   /**
@@ -67,19 +67,19 @@ class Board {
   function setup_as_standard() {
     $this->setup_position(BOARD_DEFAULT);
   }
-  
+
   /**
    * Setup the board using a FEN (Forsyth–Edwards Notation) string, e.g.
    * rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
-   * 
+   *
    * See http://en.wikipedia.org/wiki/Forsyth-Edwards_Notation
    */
   function setup_position($fen_string) {
     // Ensure any previous position is cleared
     unset($this->board);
-    
+
     $chars = str_split($fen_string, 1);
-    
+
     // The FEN string starts from the black side
     $col = COL_a;
     $row = 8;
@@ -101,30 +101,30 @@ class Board {
         else {
           // Black piece
           $piece->set_type($char);
-          $piece->set_color("b"); 
+          $piece->set_color("b");
         }
-        
+
         $coord = vchess_col_row2coord($col, $row);
         $this->board[$coord] = $piece;
         $col++;
       }
     }
   }
-  
+
   /**
    * Set the piece at a given coordinate
-   * 
+   *
    * @param Piece $piece
    * @param coord $coord e.g. "a1"
    */
   function set_piece($piece, $coord) {
     $this->board[$coord] = $piece;
   }
-  
+
   /**
    * Get an array of squares for a given color and piece type.
    * e.g. array("a1", "h1") for white rooks
-   * 
+   *
    * @param $search_type 
    *   The type of being searched for, one of 'K', 'Q', 'R', 'B', 'N' or 'P'
    * @param $color 
@@ -156,7 +156,7 @@ class Board {
    */
   function pieces_squares($color) {
     $squares = array();
-  
+
     foreach ($this->board as $piece_coord => $piece) {
       if ($piece->color() == $color) {
         $square = new Square;
@@ -164,41 +164,41 @@ class Board {
         $squares[] = $square;
       }
     }
-  
+
     return $squares;
   }
-  
+
   /**
    * Get the squares on the diagonals from a given square
-   * 
+   *
    * @from_square
    *   The square which we are starting from
    */
   function diagonal_squares(Square $from_square) {
     $squares = array();
-    
+
     $squares = array_merge($squares, $this->_single_diagonal_squares($from_square, DIAGONAL_UP_LEFT));
     $squares = array_merge($squares, $this->_single_diagonal_squares($from_square, DIAGONAL_DOWN_LEFT));
     $squares = array_merge($squares, $this->_single_diagonal_squares($from_square, DIAGONAL_UP_RIGHT));
     $squares = array_merge($squares, $this->_single_diagonal_squares($from_square, DIAGONAL_DOWN_RIGHT));
-    
+
     return $squares;
   }
   
   /**
    * Get the knight moves from a given square
-   * 
+   *
    * @from_square
    *   The square which we are starting from
    */
   function knight_squares(Square $from_square) {
     $squares = array();
-    
+
     $from_rank = $from_square->rank();  // e.g. "7" in "d7"
-    
+
     $from_file = $from_square->file();  // e.g. "d" in "d7"
     $from_col = vchess_file2col($file); // e.g. "4" for the "d" in "d7"
-    
+
     $deltas = array(
         array(-2, -1),
         array(-2, 1),
@@ -218,7 +218,7 @@ class Board {
         $coord = vchess_col2file($from_col + $delta_col) . ($from_rank + $delta_rank);
         $square->set_coord($coord);
         $squares[] = $square;
-      } 
+      }
     }
 
     return $squares;
@@ -226,7 +226,7 @@ class Board {
   
   /**
    * Get the squares from a given start square based on an index increment
-   * 
+   *
    * @param Square $from_square
    *   Square where diagnonal is starting
    * @param integer $direction
@@ -235,15 +235,15 @@ class Board {
    *   - DIAGONAL_UP_RIGHT (9)
    *   - DIAGONAL_DOWN_LEFT (-9)
    *   - DIAGONAL_DOWN_RIGHT (-7)
-   *   
+   *  
    * @return
    *   An array of squares
    */
   function _single_diagonal_squares(Square $from_square, $direction) {
     $squares = array();
-    
+
     $finished = FALSE;
-    
+
     $new_index = $from_square->index();
     while (!$finished) {
       $square = vchess_i2square($new_index);
