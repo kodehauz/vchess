@@ -2,17 +2,17 @@
 
 /*
  * @file
- * 
+ *
  * This file contains functions related to individual pieces
  */
 
 class Piece {
-  public $type;  // R, N, B, Q, K or a blank 
+  public $type;  // R, N, B, Q, K or a blank
   public $color; // w or b
 
   /**
    * Set the type, one of R, N, B, Q, K or a blank
-   *  
+   *
    * @param string $type
    */
   function set_type($type) {
@@ -21,34 +21,34 @@ class Piece {
 
   /**
    * Get the type one of R, N, B, Q, K or a blank
-   *  
+   *
    * @return string
    */
   function type() {
     return $this->type;
   }
-  
+
   /**
    * Get the piece color.  Color is w or b
-   * 
+   *
    * @return string
    */
   function color() {
     return $this->color;
   }
-  
+
   /**
    * Set the piece color.  Color is w or b
    */
   function set_color($color) {
     $this->color = $color;
   }
-  
+
   function name() {
     return $this->_name_from_type($this->type);
   }
-  
-  /** 
+
+  /**
    * Get the FEN (case-sensitive) type for the piece
    * i.e. white pieces are returned as upper case letters
    * and black pieces as lower case letters
@@ -58,16 +58,16 @@ class Piece {
     if ($this->color() == 'b') {
       $type = drupal_strtolower($type);
     }
-    
+
     return $type;
   }
-  
+
   /**
    * Get full name of chessman from chessman identifier.
    */
   function _name_from_type($type) {
     $name = BLANK;
-  
+
     $type = drupal_strtoupper($type);
     switch ($type) {
       case 'P':

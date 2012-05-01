@@ -86,7 +86,6 @@ class Game {
 
     $black_player = new Player($black_uid);
   
-    // Converted to the D7 database API syntax.
     $gid = db_insert('vchess_games')
     ->fields(array(
         'turn' => 'w',
@@ -433,10 +432,8 @@ class Game {
    * Resign a particular game
    */
   function resign($uid) {
-    $resigning_player = new Player($uid);
-  
     $winner = $this->opponent($uid);
-    gamer_update_stats_win($winner, $resigning_player);
+    gamer_update_stats_win($winner->uid(), $uid);
   
     if ($this->player_color($uid) == 'w') {
       $this->set_status(STATUS_BLACK_WIN);

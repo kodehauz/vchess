@@ -10,7 +10,6 @@
 
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/rating.inc';
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/player.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/gamer.io.inc';
 
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/io.inc';
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/render.inc';
@@ -51,7 +50,7 @@ function vchess_permission() {
   return array(
       'basic access' => array(
           'title' => t('Basic access'),
-          'description' => t('Access VChess as normal user')),
+          'description' => t('Access basic VChess functions such as ability to create a game')),
       'view players table' => array(
           'title' => t('View players table'),
           'description' => t('View the list of all players with their statistics')),
@@ -191,7 +190,8 @@ function vchess_wld_stats($stats_user) {
   
   $html = "";
   
-  $stats = gamer_load_user_stats($stats_user->uid);
+  $player = new Player($stats_user->uid);
+//   $stats = gamer_load_user_stats($stats_user->uid);
 
   if ($stats_user->uid == $user->uid) {
     $html .= "Here are your basic statistics<br />";
@@ -201,8 +201,8 @@ function vchess_wld_stats($stats_user) {
   }
   
   $html .= '<div style="text-align:center;">';
-  $html .= t('won:') . " " . $stats['won'] . " " . t('lost:') . " " . $stats['lost'] . " " .
-      t('drawn:') . " " . $stats['drawn'] . '</div>';
+  $html .= t('won:') . " " . $player->won() . " " . t('lost:') . " " . $player->lost() . " " .
+      t('drawn:') . " " . $player->drawn() . '</div>';
   $html .= "<br />";
 
   return $html;
@@ -493,49 +493,6 @@ function vchess_users_current_games($uid) {
   return $gc;
 }
 
-
-/**
- * Compare function to enable 'move' games column to be sorted ascending
- */
-function vchess_move_comp_asc($a, $b) {
-  return strcmp($a['move'], $b['move']);
-}
-
-/**
- * Compare function to enable 'move' games column to be sorted descending
- */
-function vchess_move_comp_desc($a, $b) {
-  return strcmp($b['move'], $a['move']);
-}
-
-/**
- * Compare function to enable 'white' games column to be sorted ascending
- */
-function vchess_white_comp_asc($a, $b) {
-  return strcmp($a['white'], $b['white']);
-}
-
-/**
- * Compare function to enable 'white' games column to be sorted descending
- */
-function vchess_white_comp_desc($a, $b) {
-  return strcmp($b['white'], $a['white']);
-}
-
-/**
- * Compare function to enable 'black' games column to be sorted ascending
- */
-function vchess_black_comp_asc($a, $b) {
-  return strcmp($a['black'], $b['black']);
-}
-
-/**
- * Compare function to enable 'black' games column to be sorted descending
- */
-function vchess_black_comp_desc($a, $b) {
-  return strcmp($b['black'], $a['black']);
-}
-
 /**
  * menu callback vchess_opponent_game_page to display new game form
  */
@@ -621,6 +578,7 @@ function vchess_random_game_form_submit($form, &$form_state) {
   
   $game = new Game();
   $gid = $game->new_game($white_uid, $black_uid);
+  gamer_start_game($white_uid, $black_uid);
   
   drupal_set_message(t('Game has been created.'));
   $form_state['redirect'] = 'vchess/board/' . $gid;
@@ -663,10 +621,11 @@ function vchess_reset_games_form() {
  * @param unknown_type $form_state
  */
 function vchess_reset_games_form_submit($form, &$form_state) {
-  $result = db_truncate('vchess_stats')->execute();
   $result = db_truncate('vchess_games')->execute();
   $result = db_truncate('vchess_moves')->execute();
 
+  $result = gamer_reset();
+  
   drupal_set_message(t('ALL games have been reset!'));
 }
 
