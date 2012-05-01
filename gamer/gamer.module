@@ -10,6 +10,11 @@ require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/player.i
 
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'tsort') . '/tsort.module';
 
+// Define game statuses
+define('GAMER_WHITE_WIN', '1-0');
+define('GAMER_BLACK_WIN', '0-1');
+define('GAMER_DRAW', '1/2-1/2');
+
 /**
  * hook_menu() implementation
  */
@@ -142,4 +147,59 @@ function gamer_reset() {
   
   return $result;
 }
+
+/**
+ * Update user stats
+ *
+ * The final rating change is truncated to four digits after the comma.
+ *
+ * @param $white_uid
+ *   White player user id
+ * @param $black_uid
+ *   Black player user id
+ * @param $score
+ *   Score is one of:
+ *   - GAMER_WHITE_WIN
+ *   - GAMER_BLACK_WIN
+ *   - GAMER_DRAW
+ */
+function gamer_update_stats($white_uid, $black_uid, $score) {
+  $white = new Player($white_uid);
+  $black = new Player($black_uid);
+
+  // Update wins/draws/losses
+  if ($score == GAMER_WHITE_WIN) {
+    $white->set_won($white->won() + 1);
+    $black->set_lost($black->lost() + 1);
+  }
+  elseif ($score == GAMER_DRAW) {
+    $white->set_drawn($white->drawn() + 1);
+    $black->set_drawn($white->drawn() + 1);
+  }
+  else { // Black won
+    $white->set_lost($white->lost() + 1);
+    $black->set_won($black->won() + 1);
+  }
+  
+  $white->set_current($white->current() - 1);
+  $black->set_current($black->current() - 1);
+
+  $white->set_played($white->played() + 1);
+  $black->set_played($black->played() + 1);
+
+  // Update rating change according to the winning probability
+  $win_probability = gamer_get_win_probability($white->rating() - $black->rating());
+  $rchange = round(gamer_get_rating_change_multiplier() * ($score - $win_probability));
+
+  // Update rating
+  $white->set_rchange($rchange);
+  $black->set_rchange(-$rchange);
+
+  $white->set_rating($white->rating() + $rchange);
+  $black->set_rating($black->rating() - $rchange);
+
+  $white->save_stats();
+  $black->save_stats();
+}
+
 

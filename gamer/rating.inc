@@ -71,20 +71,6 @@ function gamer_get_rating_change_multiplier() {
   return RATING_CHANGE_MULTIPLIER;
 }
 
-
-/**
- * Update stats based on a win
- *
- * @param $winner
- *   The player who won
- * @param $loser
- *   The player who lost
- */
-function gamer_update_stats_win($winner_uid, $loser_uid) {
-  gamer_update_stats($winner_uid, $loser_uid, 1);
-}
-
-
 /**
  * Update stats to note that another game is in progress
  *

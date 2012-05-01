@@ -69,6 +69,21 @@ function vchess_render_board($board, $player, $active, $gid) {
     
       // Save game
       $game->save();
+      
+      if ($game->status() <> STATUS_IN_PROGRESS) {
+        switch ($game->status()) {
+          case STATUS_WHITE_WIN:
+            $score = GAMER_WHITE_WIN;
+            break;
+          case STATUS_BLACK_WIN:
+            $score = GAMER_BLACK_WIN;
+            break;
+          case STATUS_DRAW:
+            $score = GAMER_DRAW;
+            break;
+        }
+      }
+      gamer_update_stats($game->white_uid(), $game->black_uid(), $score);
     
       // Send a notification if email address was supplied.
       //    if ($opponent == 'b') {
@@ -277,21 +292,6 @@ function vchess_command_form($form, $context, Game $game, $cmdres, $move) {
 
   // abort options
   return $form;
-}
-
-/**
- * Resign from a particular game.  This is the form handler for the resignation button.
- */
-function vchess_resign_clicked($form, &$form_state) {
-  global $user;
-  
-  $turn = $form_state['values']['turn'];
-  $gid = $form_state['values']['gid'];
-  
-  $game = new Game();
-  $game->load($gid);
-  $game->resign($user->uid);
-  $game->save();
 }
 
 /**

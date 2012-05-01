@@ -339,7 +339,7 @@ class Game {
    * Status can be one of:
    * - "1-0"
    * - "0-1"
-   * - "draw"
+   * - "1/2-1/2"
    * - "in progress"
    */
   function status() {
@@ -433,7 +433,6 @@ class Game {
    */
   function resign($uid) {
     $winner = $this->opponent($uid);
-    gamer_update_stats_win($winner->uid(), $uid);
   
     if ($this->player_color($uid) == 'w') {
       $this->set_status(STATUS_BLACK_WIN);
@@ -441,8 +440,6 @@ class Game {
     else {
       $this->set_status(STATUS_WHITE_WIN);
     }
-  
-    drupal_set_message(t('Thank you for resigning.'));
   }
   
   /**

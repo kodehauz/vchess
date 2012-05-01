@@ -230,49 +230,4 @@ class Player {
   }
 }
 
-/**
- * Update user stats
- *
- * The final rating change is truncated to four digits after the comma.
- *
- * @param $score
- *   - 1 (user won),
- *   - 0.5 (user drew)
- *   - 0 (user lost)
- */
-function gamer_update_stats($white_uid, $black_uid, $score) {
-  $white = new Player($white_uid);
-  $black = new Player($black_uid);
-  
-  // Update wins/draws/losses
-  if ($score == 1) {
-    $white->set_won($white->won() + 1);
-    $black->set_lost($black->lost() + 1);
-  }
-  elseif ($score == 0.5) {
-    $white->set_drawn($white->drawn() + 1);
-    $black->set_drawn($white->drawn() + 1);
-  }
-  else { // Black won
-    $white->set_lost($white->lost() + 1);
-    $black->set_won($black->won() + 1);
-  }
-  
-  $white->set_played($white->played() + 1);
-  $black->set_played($black->played() + 1);
-
-  // Update rating change according to the winning probability
-  $win_probability = gamer_get_win_probability($white->rating() - $black->rating());
-  $rchange = round(gamer_get_rating_change_multiplier() * ($score - $win_probability));
-
-  // Update rating
-  $white->set_rchange($rchange);
-  $black->set_rchange(-$rchange);
-  
-  $white->set_rating($white->rating() + $rchange);
-  $black->set_rating($black->rating() - $rchange);
-  
-  $white->save_stats();
-  $black->save_stats();
-}
 
