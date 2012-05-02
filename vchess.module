@@ -236,7 +236,7 @@ function vchess_resign_clicked($form, &$form_state) {
   $game->resign($user->uid);
   $game->save();
   
-  if ($turn == 'w') {
+  if ($game->status() == STATUS_BLACK_WIN) {
     $score = GAMER_BLACK_WIN; // white resigned
   }
   else {
@@ -439,7 +439,7 @@ function vchess_build_current_games_table($games, $named_user) {
   if (count($games) > 0) {
     foreach ($games as $game) {
       if ($game->is_playing($user->uid)) {
-        if ($game->is_players_move($named_user->uid)) {
+        if ($game->is_players_move($user->uid)) {
           $mark = 'greenmark.gif';
           $alt = '1.green'; // alt text is used so sort order is green, red, grey
         }

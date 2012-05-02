@@ -112,7 +112,7 @@ function gamer_player_stats($uid) {
       'header' => $header,
       'rows' => $rows,
       'attributes' => array(),
-      'caption' => array(),
+      'caption' => "",
       'colgroups' => array(),
       'sticky' => array(),
       'empty' => NULL
