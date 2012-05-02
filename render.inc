@@ -82,8 +82,9 @@ function vchess_render_board($board, $player, $active, $gid) {
             $score = GAMER_DRAW;
             break;
         }
+        
+        gamer_update_stats($game->white_uid(), $game->black_uid(), $score);
       }
-      gamer_update_stats($game->white_uid(), $game->black_uid(), $score);
     
       // Send a notification if email address was supplied.
       //    if ($opponent == 'b') {

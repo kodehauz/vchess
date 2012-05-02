@@ -36,7 +36,7 @@ function vchess_compareTimestamp($a, $b) {
  * @return
  *   An array of in progress games
  */
-function vchess_load_users_in_progress_games($uid) {
+function vchess_load_users_current_games($uid) {
   $game_list = array();
   
   $sql = "SELECT gid FROM {vchess_games} WHERE (white_uid = :uid OR black_uid = :uid) AND status = 'in progress'";
@@ -65,7 +65,7 @@ function vchess_load_users_in_progress_games($uid) {
  * @return
  *   An array of in progress games
  */
-function vchess_load_all_in_progress_games() {
+function vchess_load_all_current_games() {
   $game_list = array();
 
   $sql = "SELECT gid FROM {vchess_games} WHERE status = 'in progress'";

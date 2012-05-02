@@ -165,8 +165,8 @@ class Scoresheet {
     $table['rows'] = $rows;
     $table['empty'] = "There are no moves played yet.";
     $table['attributes'] = array();  // I don't care, but I'm forced to define this
-    $table['caption'] = array();   // I don't care about this either
-    $table['colgroups'] = array();  // I just don't give a **** about this either
+    $table['caption'] = "";   // I don't care about this either
+    $table['colgroups'] = array();  // I just don't care about this either
     $table['sticky'] = "";  // Nope, don't care
     
     return theme_table($table);

@@ -93,7 +93,7 @@ function vchess_menu() {
   );
   
   $items['vchess/my_current_games'] = array(
-      'page callback' => 'vchess_user_current_games_page',
+      'page callback' => 'vchess_my_current_games',
       'access arguments' => array('view my current games'),
       'title' => 'My current games',
       'access' => TRUE,
@@ -102,10 +102,10 @@ function vchess_menu() {
   );
   
   $items['vchess/current_games/%'] = array(
-      'page callback' => 'vchess_user_current_games_page',
+      'page callback' => 'vchess_users_current_games',
       'page arguments' => array(2),
       'access arguments' => array('view my current games'),
-      'title' => 'My current games',
+      'title' => "Current games",
       'access' => TRUE,
       'access callback' => TRUE,
       'type' => MENU_NORMAL_ITEM,
@@ -169,7 +169,7 @@ function vchess_main_page() {
       return $txt;
     }
 
-    $out .= vchess_users_current_games($user->uid);
+    $out .= vchess_users_current_games($user->name);
     $out .= vchess_new_game_links();
     
     $out .= vchess_wld_stats($user);
@@ -211,27 +211,14 @@ function vchess_wld_stats($stats_user) {
 /**
  * menu callback to display current games 
  */
-function vchess_user_current_games_page() {
+function vchess_my_current_games() {
   global $user;
   
   $out = "";
 
-  if (user_is_logged_in()) {
-    $gamefolder =  variable_get('vchess_game_files_folder', '/vchess-data');
-    $res_games = $gamefolder;
-
-    if (!$user->name) {
-      $txt = t('Please, register to play chess');
-      return $txt;
-    }
-
-    $out .= vchess_users_current_games($user->uid);
-    $out .= vchess_new_game_links();
-  }
-  else {
-    $out = "Please log in to access this page";
-  }
-
+  $out .= vchess_users_current_games($user->name);
+  $out .= vchess_new_game_links();
+  
   return $out;
 }
   
@@ -306,7 +293,7 @@ function vchess_all_current_games() {
   
   $rows = array();
 
-  $gc = "";
+  $html = "";
   
   $uid = $user->uid;
 
@@ -317,189 +304,198 @@ function vchess_all_current_games() {
   $full_path = HOME_ROOT . BASE_DIR . drupal_get_path('module', 'vchess');
 
   // Get the list of possible games to view
-  $games = vchess_load_all_in_progress_games();
-
-  $greenlist = array();  // the games which the player has the move
-  $redlist = array();    // the games where the player does not have the move
-  $i = 0;
-  $j = count($games); // required for unique keys for union
-  foreach ($games as $game) {
-    if ($game->is_players_move($uid)) {
-      $greenlist[$i++] = $game;
-    }
-    else {
-      $redlist[$j++] = $game;
-    }
-  }
-  $games = $greenlist + $redlist;
-
-  $theme = 'default';
-
-  $gc .= t("There are " . (count($greenlist) + count($redlist)) . " games in progress");
+  $games = vchess_load_all_current_games();
   
-  // Find if we are looking at our own list
-  $view_user = user_load($uid);
-  if ($view_user->uid == $user->uid) {
-    $turn_text = t('It is your turn in');
-  }
-  else {
-    $turn_text = t("It is <b>" . $view_user->name . "'s</b> turn in");
-  }
-  $gc .= '<br />' . $turn_text . " " . count($greenlist) . " " . t('games');
+  $html = vchess_build_current_games_table($games, $user);
 
-  $table['empty'] = "";
-  if (count($games) > 0) {
-    //    $gc .= '<td><b>' . t('Moves') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
-    //     $gc .= '<td><b>' . t('Starting Date') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
-    //     $gc .= '<td><b>' . t('Last Move On') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
-    foreach ($games as $game) {
-      if ($game->is_players_move($uid)) {
-        $mark = 'greenmark.gif';
-      }
-      else {
-        $mark = 'redmark.gif';
-      }
-      // If it's not a game user is playing, but just one they are watching, then use grey
-      /*
-       if ($game['turn'] == 'w' || $game['turn'] == 'b') {
-      $mark = 'greymark.gif';
-      }
-      */
+//   $greenlist = array();  // the games which the player has the move
+//   $redlist = array();    // the games where the player does not have the move
+//   $i = 0;
+//   $j = count($games); // required for unique keys for union
+//   foreach ($games as $game) {
+//     if ($game->is_players_move($uid)) {
+//       $greenlist[$i++] = $game;
+//     }
+//     else {
+//       $redlist[$j++] = $game;
+//     }
+//   }
+//   $games = $greenlist + $redlist;
 
-      //    $startdate = date('M jS Y H:i', $game['ts_start']);
-      //    $lastdate = date('M jS Y H:i', $game['ts_last']);
-      $rows[] = array(
-        'white' => "<a href='" . url("vchess/player/" . $game->white_player()->name()) . "'>" . $game->white_player()->name() . "</a>",
-        'black' => "<a href='" . url("vchess/player/" . $game->black_player()->name()) . "'>" . $game->black_player()->name() . "</a>",
+//   $theme = 'default';
+
+//   $html .= t("There are " . (count($greenlist) + count($redlist)) . " games in progress");
+  
+//   // Find if we are looking at our own list
+//   $view_user = user_load($uid);
+//   if ($view_user->uid == $user->uid) {
+//     $turn_text = t('It is your turn in');
+//   }
+//   else {
+//     $turn_text = t("It is <b>" . $view_user->name . "'s</b> turn in");
+//   }
+//   $html .= '<br />' . $turn_text . " " . count($greenlist) . " " . t('games');
+
+//   $table['empty'] = "";
+//   if (count($games) > 0) {
+//     //    $html .= '<td><b>' . t('Moves') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
+//     //     $html .= '<td><b>' . t('Starting Date') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
+//     //     $html .= '<td><b>' . t('Last Move On') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
+//     foreach ($games as $game) {
+//       if ($game->is_players_move($uid)) {
+//         $mark = 'greenmark.gif';
+//       }
+//       else {
+//         $mark = 'redmark.gif';
+//       }
+//       // If it's not a game user is playing, but just one they are watching, then use grey
+//       /*
+//        if ($game['turn'] == 'w' || $game['turn'] == 'b') {
+//       $mark = 'greymark.gif';
+//       }
+//       */
+
+//       //    $startdate = date('M jS Y H:i', $game['ts_start']);
+//       //    $lastdate = date('M jS Y H:i', $game['ts_last']);
+//       $rows[] = array(
+//         'white' => "<a href='" . url("vchess/player/" . $game->white_player()->name()) . "'>" . $game->white_player()->name() . "</a>",
+//         'black' => "<a href='" . url("vchess/player/" . $game->black_player()->name()) . "'>" . $game->black_player()->name() . "</a>",
           
-        'view' =>  "<a href='" . $view_path . "/board/" . $game->gid() . "'>" . t('View') . '</a>'
-        );
-    }
-  }
+//         'view' =>  "<a href='" . $view_path . "/board/" . $game->gid() . "'>" . t('View') . '</a>'
+//         );
+//     }
+//   }
   
-  $header = array(
-      array('data' => t('White'), 'field' => 'white'),
-      array('data' => t('Black'), 'field' => 'black'),
-      t('View'));
+//   $header = array(
+//       array('data' => t('White'), 'field' => 'white'),
+//       array('data' => t('Black'), 'field' => 'black'),
+//       t('View'));
   
-  // getting the current sort and order parameters from the url
-  // e.g. q=vchess/my_current_games&sort=asc&order=White
-  $order = tablesort_get_order($header);
-  $sort = tablesort_get_sort($header);
+//   // getting the current sort and order parameters from the url
+//   // e.g. q=vchess/my_current_games&sort=asc&order=White
+//   $order = tablesort_get_order($header);
+//   $sort = tablesort_get_sort($header);
   
-  // sort the table data accordingly
-  $rows = tsort_nonsql_sort($rows, $sort, $order['sql']);
+//   // sort the table data accordingly
+//   $rows = tsort_nonsql_sort($rows, $sort, $order['sql']);
   
-  $table['header'] = $header;
-  $table['attributes'] = array();
-  $table['caption'] = "";
-  $table['colgroups'] = array();
-  $table['sticky'] = "";
-  $table['rows'] = $rows;
-  $table['empty'] = t("There are no current games");
+//   $table['header'] = $header;
+//   $table['attributes'] = array();
+//   $table['caption'] = "";
+//   $table['colgroups'] = array();
+//   $table['sticky'] = "";
+//   $table['rows'] = $rows;
+//   $table['empty'] = t("There are no current games");
   
-  $gc .= theme_table($table);
+//   $html .= theme_table($table);
 
-  return $gc;
+  return $html;
 }
   
 /**
  * Get table of current games for a given player
  */
-function vchess_users_current_games($uid) {
+function vchess_users_current_games($name) {
+  $named_user = user_load_by_name($name);
+  
+  // Get the list of possible games to view
+  $games = vchess_load_users_current_games($named_user->uid);
+
+  $html = vchess_build_current_games_table($games, $named_user);
+  
+  return $html;
+}
+
+/**
+ * Construct a current games table
+ */
+function vchess_build_current_games_table($games, $named_user) {
   global $user;
   
   $rows = array();
-
+  
   $module_path = drupal_get_path('module', 'vchess');  // e.g. sites/all/modules/vchess
   //  $view_path = "chess_drupal_7/vchess";
   $view_path = $GLOBALS['base_root'] . url("vchess");
   //    $full_path = "http://localhost/chess_drupal-7.12/" . drupal_get_path('module', 'vchess');
   $full_path = HOME_ROOT . BASE_DIR . drupal_get_path('module', 'vchess');
-
-  // Get the list of possible games to view
-  $games = vchess_load_users_in_progress_games($uid);
-
-  $greenlist = array();  // the games which the player has the move
-  $redlist = array();    // the games where the player does not have the move
-  $i = 0;
-  $j = count($games); // required for unique keys for union
-  foreach ($games as $game) {
-    //    if ($game['p_maymove'] && $game['curstate'] <> 'w' && $game['curstate'] <> 'b') {
-    //    if ($game['p_maymove']) {
-    if ($game->is_players_move($uid)) {
-      $greenlist[$i++] = $game;
-    }
-    else {
-      $redlist[$j++] = $game;
-    }
-  }
-  $games = $greenlist + $redlist;
-
+  
   $theme = 'default';
-
+  
   // Find if we are looking at our own list
-  $view_user = user_load($uid);
-  if ($view_user->uid == $user->uid) {
-    $playing_text = t('You are playing');
-    $turn_text = t('It is your turn in');
-    $waiting_text = t('You are waiting for');
-  }
-  else {
-    $playing_text = $view_user->name . " " . t("is playing");
-    $turn_text = t("It is <b>" . $view_user->name . "'s</b> turn in");
-    $waiting_text = t("<b>" . $view_user->name . "</b> is waiting for");
-  }
-  $gc = "";
-  $gc .= '<br />' . $playing_text . " " . (count($greenlist) + count($redlist)) . " " . t('games') . ".  ";
-  $gc .= $turn_text . " " . count($greenlist) . " " . t('games') . ".  ";
-  $gc .= $waiting_text . " " . count($redlist) . " " . t('games');
-
+//   if ($user->uid == $named_user->uid) {
+//     $playing_text = t('You are playing');
+//     $turn_text = t('It is your turn in');
+//     $waiting_text = t('You are waiting for');
+//   }
+//   else {
+//     $playing_text = "<b>" . $named_user->name . "</b> " . t("is playing");
+//     $turn_text = t("It is <b>" . $named_user->name . "'s</b> turn in");
+//     $waiting_text = t("<b>" . $named_user->name . "</b> is waiting for");
+//   }
+  $html = "";
+  
   $table['empty'] = "";
   if (count($games) > 0) {
     foreach ($games as $game) {
-      if ($game->is_players_move($uid)) {
-        $mark = 'greenmark.gif';
+      if ($game->is_playing($user->uid)) {
+        if ($game->is_players_move($named_user->uid)) {
+          $mark = 'greenmark.gif';
+          $alt = '1.green'; // alt text is used so sort order is green, red, grey
+        }
+        else {
+          $mark = 'redmark.gif';
+          $alt = '2.red';
+        }      
       }
       else {
-        $mark = 'redmark.gif';
+        $mark = 'greymark.gif';
+        $alt = '3.grey';
       }
+
       // If it's not a game user is playing, but just one they are watching, then use grey
       //
       // if ($game['turn'] == 'w' || $game['turn'] == 'b') {
       //   $mark = 'greymark.gif';
       // }
-      
+  
       //    $startdate = date('M jS Y H:i', $game['ts_start']);
       //    $lastdate = date('M jS Y H:i', $game['ts_last']);
       $rows[] = array(
-        'move' => "<img alt='' src='" . $full_path . '/images/' . $theme . '/' . $mark . "'>",
-        'white' => "<a href='" . url("vchess/player/" . $game->white_player()->name()) . "'>" . $game->white_player()->name() . "</a>",
-        'black' => "<a href='" . url("vchess/player/" . $game->black_player()->name()) . "'>" . $game->black_player()->name() . "</a>",
-        'move_no' => $game->move_no(),
-        'gid' => "<a href='" . $view_path . "/board/" . $game->gid() . "'>" . t('View') . "</a>",
-        );          
+          'move' => "<img alt='$alt' src='" . $full_path . '/images/' . $theme . '/' . $mark . "'>",
+          'white' => "<a href='" . url("vchess/player/" . $game->white_player()->name()) . "'>" . $game->white_player()->name() . "</a>",
+          'black' => "<a href='" . url("vchess/player/" . $game->black_player()->name()) . "'>" . $game->black_player()->name() . "</a>",
+          'move_no' => $game->move_no(),
+          'gid' => "<a href='" . $view_path . "/board/" . $game->gid() . "'>" . t('View') . "</a>",
+      );
     }
   }
   else {
-    if ($uid == $user->uid) {
-      $table['empty'] = t("You currently do not have any games.");     
+    if ($user->uid == $named_user->uid) {
+      $table['empty'] = t("You currently do not have any games.");
     }
     else {
-      $table['empty'] = $user->name . "does not have any current games.";
+      $table['empty'] = $named_user->name . " " . t("does not have any current games.");
     }
   }
-
+  
+//   $html .= '<br />' . $playing_text . " " . ($green + $red) . " " . t('games') . ".  ";
+//   $html .= $turn_text . " " . $green . " " . t('games') . ".  ";
+//   $html .= $waiting_text . " " . $red . " " . t('games') . ". ";
+//   if ($grey > 0) {
+//     $html .= t("Other games:") . " " . $grey;
+//   }
+  
   $header = array(
       array('data' => t('Your move?'), 'field' => 'move'),
       array('data' => t('White'), 'field' => 'white'),
-      array('data' => t('Black'), 'field' => 'black'), 
+      array('data' => t('Black'), 'field' => 'black'),
       array('data' => t('Move #'), 'field' => 'move_no'),
       t('View'));
   
   // getting the current sort and order parameters from the url
   // e.g. q=vchess/my_current_games&sort=asc&order=White
-  $sort = tablesort_get_sort($header);  
+  $sort = tablesort_get_sort($header);
   $order = tablesort_get_order($header);
   
   if (count($rows) > 1) {
@@ -514,9 +510,9 @@ function vchess_users_current_games($uid) {
   $table['sticky'] = "";
   $table['rows'] = $rows;
   
-  $gc .= theme_table($table);
+  $html .= theme_table($table);
   
-  return $gc;
+  return $html;
 }
 
 /**
@@ -789,7 +785,7 @@ function vchess_player($name) {
 
   $html .= vchess_wld_stats($player);
   $html .= gamer_player_stats($player->uid);
-  $html .= vchess_users_current_games($player->uid);
+  $html .= vchess_users_current_games($name);
 
   return $html;
 }

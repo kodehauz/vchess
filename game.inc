@@ -255,6 +255,23 @@ class Game {
     return $players_move;
   }
   
+  /**
+   * See if the given user is one of the players
+   * 
+   * @return
+   *   TRUE if the given user is one of the players
+   */
+  function is_playing($uid) {
+    if ($this->black_uid == $uid || $this->white_uid == $uid) {
+      $playing = TRUE;
+    }
+    else {
+      $playing = FALSE;
+    }
+    
+    return $playing;
+  }
+  
   /** 
    * Get the game id
    */

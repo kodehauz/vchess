@@ -49,7 +49,10 @@ function gamer_players() {
           'lost' => $player->lost(),
           'drawn' => $player->drawn(),
           'rating_change' => $player->rchange(),
-          'current' => $player->current()
+          // the name tag is used so that the column still sorts correctly
+          'current' => "<a name=" . $player->current() . 
+            " href='" . url("vchess/current_games/" . 
+            $player->name()) . "'>" . $player->current() . "</a>"
       );
     }
   }
