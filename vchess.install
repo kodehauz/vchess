@@ -81,8 +81,22 @@ function vchess_schema() {
               'type' => 'char',
               'length' => '2',
               'not null' => TRUE,
-              'default' => '',
+              'default' => '-',
           ),
+          'time_per_move' => array(
+              'description' => 'Time per move (the units are defined by time_units field)',
+              'type' => 'int',
+              'unsigned' => TRUE,
+              'not null' => TRUE,
+              'default' => 3
+          ),
+          'time_units' => array(
+              'description' => 'Units of the time_per_move field',
+              'type' => 'enum',
+              'enum' => array('days', 'hours', 'mins', 'secs'),
+              'not null' => TRUE,
+              'default' => 'days',
+          )
           ),
               'primary key' => array('gid'),
       );

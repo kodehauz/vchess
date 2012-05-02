@@ -11,6 +11,12 @@ define('STATUS_BLACK_WIN', '0-1');
 define('STATUS_DRAW', '1/2-1/2');
 define('STATUS_IN_PROGRESS', 'in progress');
 
+// Define time units
+define('TIME_UNITS_DAYS', 'days');
+define('TIME_UNITS_HOURS', 'hours');
+define('TIME_UNITS_MINS', 'mins');
+define('TIME_UNITS_SECS', 'secs');
+
 // Define errors
 define('ERROR_CASTLING_SQUARES_BLOCKED', 'ERROR: Castling squares are blocked!');
 define('ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING', 'ERROR: You cannot escape check by castling!');
@@ -67,6 +73,80 @@ class Game {
   }
   
   /**
+   * Calculate time left till next move must be made
+   */
+  function time_left() {
+    // Convert time_per_move into seconds
+    switch ($this->time_units) {
+      case TIME_UNITS_DAYS:
+        $secs_per_unit = 24 * 60 * 60;
+        break;
+      case TIME_UNITS_HOURS:
+        $secs_per_unit = 60 * 60;
+        break;
+      case TIME_UNITS_MINS:
+        $secs_per_unit = 60;
+        break;
+      case TIME_UNITS_SECS:
+        $secs_per_unit = 1;
+        break;
+    }
+    
+    $secs_per_move = $this->time_per_move * $secs_per_unit;
+    
+    if ($this->is_started()) {
+      $move_time = strtotime($this->last_move()->timestamp());
+      $current_time = time();
+      $elapsed = $current_time - $move_time;
+      $time_left = $secs_per_move - $elapsed;
+    }
+    else {
+      $time_left = $secs_per_move;
+    }
+    
+    $time_left = $this->duration($time_left);
+    
+    return $time_left;
+  }
+  
+  /**
+   * Create a user-friendly view of a time in seconds 
+   * 
+   * @param $secs
+   *   Number of seconds
+   */
+  function duration($secs) {
+    $vals = array(
+        TIME_UNITS_DAYS => $secs / 86400 % 7,
+        TIME_UNITS_HOURS => $secs / 3600 % 24,
+        TIME_UNITS_MINS => $secs / 60 % 60,
+        TIME_UNITS_SECS => $secs % 60);
+  
+    $ret = array();
+  
+    $added = false;
+    foreach ($vals as $k => $v) {
+      if ($v > 0 || $added) {
+        $added = true;
+        $ret[] = $v . " " . $k;
+      }
+    }
+  
+    return join(' ', $ret);
+  }
+  
+  /**
+   * Get the game speed, which is the combination of the time_per_move
+   * and the time_units, e.g. "3 days"
+   *
+   * @return
+   *   Returns the speed per move, e.g. "3 days"
+   */
+  function speed() {
+    return $this->time_per_move . " " . $this->time_units;
+  }
+  
+  /**
    * Create a new game. 
    * 
    * @param $white_uid
@@ -106,7 +186,8 @@ class Game {
    *
    */
   function load($gid) {
-    $sql = "SELECT gid, turn, white_uid, black_uid, status, board, castling_availability, en_passant_target " .
+    $sql = "SELECT gid, turn, white_uid, black_uid, status, board, " . 
+      "castling_availability, en_passant_target, time_per_move, time_units " .
       " FROM {vchess_games} WHERE gid = '" .
       $gid . "'";
     // Converted to the D7 database API syntax.
@@ -120,7 +201,9 @@ class Game {
     
     $this->white_uid = $row['white_uid'];
     $this->black_uid = $row['black_uid'];
-    $this->status = $row['status'];  
+    $this->status = $row['status'];
+    $this->time_per_move = $row['time_per_move'];
+    $this->time_units = $row['time_units'];  
     $this->board->set_en_passant_target_value = $row['en_passant_target'];      // Handle castling availability
     $this->initialise_castling($row['castling_availability']);
     
@@ -134,6 +217,7 @@ class Game {
     return $this->scoresheet->last_move();
   }
   
+ 
   /**
    * This sets up the castling state
    * 
@@ -223,9 +307,10 @@ class Game {
   }
   
   /**
-   * Get the number of the current move.  The move number will be the number
-   * of the move which is currently not yet complete.  Each move has a white
-   * move and a black move.
+   * Get the number of the current move.  
+   * 
+   * The move number will be the number of the move which is currently not yet complete.  
+   * Each move has a white move and a black move.
    * 
    * i.e.
    * No moves, i.e.
@@ -253,6 +338,23 @@ class Game {
     }
     
     return $players_move;
+  }
+  
+  /**
+   * See if the game is started yet
+   * 
+   * @return
+   *   TRUE if a move has already been made
+   */
+  function is_started() {
+    if ($this->move_no() == 1 && $this->turn() == "w") {
+      $is_started = FALSE;
+    }
+    else {
+      $is_started = TRUE;
+    }
+    
+    return $is_started;
   }
   
   /**
@@ -948,8 +1050,6 @@ class Game {
    * must have been updated already (newest is first in list).
    */
   function save() {
-    $timestamps = REQUEST_TIME;
-  
     $sql = "SELECT gid FROM {vchess_games} WHERE gid = '" . $this->gid . "'";
     // Converted to the D7 database API syntax.
     $result = db_query($sql);

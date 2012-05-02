@@ -8,6 +8,7 @@
 class Move {
   protected $long_format; // e.g. "Pd2-d4", "Nb1xBc3", "Ke1-g1"
   protected $algebraic; // e.g. "e4"
+  protected $timestamp; // the timestamp of when the move was made
   
   /**
    * Initialise a move with a given string
@@ -380,5 +381,22 @@ class Move {
    */
   function algebraic() {
     return $this->algebraic;
+  }
+  
+  /**
+   * Get the timestamp of the move
+   */
+  function timestamp() {
+    return $this->timestamp;
+  }
+  
+  /**
+   * Set the timestamp of the move
+   * 
+   * @param $timestamp
+   *   The timestamp to be set
+   */
+  function set_timestamp($timestamp) {
+    $this->timestamp = $timestamp;
   }
 }

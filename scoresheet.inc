@@ -33,6 +33,7 @@ class Scoresheet {
       $move = new Move;
       $move->set_long_format($row->long_move);
       $move->set_algebraic($row->algebraic);
+      $move->set_timestamp($row->timestamp);
     
       $this->scoresheet[$row->move_no][$row->color] = $move;
     }

@@ -466,6 +466,8 @@ function vchess_build_current_games_table($games, $named_user) {
           'white' => "<a href='" . url("vchess/player/" . $game->white_player()->name()) . "'>" . $game->white_player()->name() . "</a>",
           'black' => "<a href='" . url("vchess/player/" . $game->black_player()->name()) . "'>" . $game->black_player()->name() . "</a>",
           'move_no' => $game->move_no(),
+          'time_left' => $game->time_left(),
+          'speed' => $game->speed(),
           'gid' => "<a href='" . $view_path . "/board/" . $game->gid() . "'>" . t('View') . "</a>",
       );
     }
@@ -491,6 +493,8 @@ function vchess_build_current_games_table($games, $named_user) {
       array('data' => t('White'), 'field' => 'white'),
       array('data' => t('Black'), 'field' => 'black'),
       array('data' => t('Move #'), 'field' => 'move_no'),
+      array('data' => t('Time left'), 'field' => 'time_left'),
+      array('data' => t('Time per move'), 'field' => 'speed'),
       t('View'));
   
   // getting the current sort and order parameters from the url
@@ -613,7 +617,7 @@ function vchess_random_game_form_submit($form, &$form_state) {
  *   A user id (uid)
  */
 function vchess_random_uid() {
-  $sql = "SELECT uid FROM {users} ORDER BY RAND()";
+  $sql = "SELECT uid FROM {users} WHERE uid <> 0 ORDER BY RAND()";
   
   $result = db_query_range($sql, 0, 1);
   
@@ -653,7 +657,7 @@ function vchess_reset_games_form_submit($form, &$form_state) {
 
 
 /**
- * Process the form to start a new game
+ * Process the form to start a new game against a named opponent
  *
  * @param unknown_type $form
  * @param unknown_type $form_state
