@@ -73,7 +73,10 @@ class Game {
   }
   
   /**
-   * Calculate time left till next move must be made
+   * Calculate time left in seconds till next move must be made
+   * 
+   * @return
+   *   Number of seconds till next move must be made
    */
   function time_left() {
     // Convert time_per_move into seconds
@@ -102,7 +105,7 @@ class Game {
       $move_time = strtotime($this->time_started());
     }
     $elapsed = $current_time - $move_time;
-    $time_left = $this->duration($secs_per_move - $elapsed);
+    $time_left = $secs_per_move - $elapsed;
     
     return $time_left;
   }
@@ -118,10 +121,13 @@ class Game {
   }
   
   /**
-   * Create a user-friendly view of a time in seconds 
+   * Create a user-friendly view of a time, e.g. "56 mins 34 secs"
    * 
    * @param $secs
    *   Number of seconds
+   *   
+   * @return
+   *   A user-friendly string of the time, e.g. "2 days 23 hours 56 mins 34 secs"
    */
   function duration($secs) {
     $vals = array(
@@ -152,6 +158,41 @@ class Game {
    */
   function speed() {
     return $this->time_per_move . " " . $this->time_units;
+  }
+  
+  /**
+   * Check if the game has been lost on time
+   * 
+   * This checks if the time since the last move was made is 
+   * now more than the time allowed for the game 
+   */
+  function is_lost_on_time() {
+    if ($this->time_left() <= 0) {
+      $lost_on_time = TRUE;
+
+      if ($this->status() == STATUS_IN_PROGRESS) {
+        $this->_handle_lost_on_time();
+      }
+    }
+    else {
+      $lost_on_time = FALSE;
+    }
+    
+    return $lost_on_time;
+  }
+  
+  /**
+   * Deal with the case that the player has lost on time
+   */
+  function _handle_lost_on_time() {
+    if ($this->turn() == 'w') {
+      $this->set_status(STATUS_BLACK_WIN);
+    }
+    else {
+      $this->set_status(STATUS_WHITE_WIN);
+    }
+    
+    $this->save();
   }
   
   /**
@@ -460,6 +501,9 @@ class Game {
   
   /**
    * Get the player whose turn it is, either 'w' or 'b'
+   * 
+   * @return
+   *   Whose turn it is, 'w' or 'b'
    */
   function turn() {
     return $this->turn;

@@ -438,38 +438,56 @@ function vchess_build_current_games_table($games, $named_user) {
   $table['empty'] = "";
   if (count($games) > 0) {
     foreach ($games as $game) {
-      if ($game->is_playing($user->uid)) {
-        if ($game->is_players_move($user->uid)) {
-          $mark = 'greenmark.gif';
-          $alt = '1.green'; // alt text is used so sort order is green, red, grey
+      // We need to check first if the game has recently been lost on time, in
+      // which case it is no longer a current game.  If it has, then this is the
+      // first time it has been noticed (since this game was in "In progress") 
+      // and so we need to update the gamer statistics
+      if ($game->is_lost_on_time()) {
+        switch ($game->status()) {
+          case STATUS_WHITE_WIN:
+            $score = GAMER_WHITE_WIN;
+            break;
+          case STATUS_BLACK_WIN:
+            $score = GAMER_BLACK_WIN;
+            break;
         }
-        else {
-          $mark = 'redmark.gif';
-          $alt = '2.red';
-        }      
+        
+        gamer_update_stats($game->white_uid(), $game->black_uid(), $score);
       }
       else {
-        $mark = 'greymark.gif';
-        $alt = '3.grey';
+        if ($game->is_playing($user->uid)) {
+          if ($game->is_players_move($user->uid)) {
+            $mark = 'greenmark.gif';
+            $alt = '1.green'; // alt text is used so sort order is green, red, grey
+          }
+          else {
+            $mark = 'redmark.gif';
+            $alt = '2.red';
+          }
+        }
+        else {
+          $mark = 'greymark.gif';
+          $alt = '3.grey';
+        }
+        
+        // If it's not a game user is playing, but just one they are watching, then use grey
+        //
+        // if ($game['turn'] == 'w' || $game['turn'] == 'b') {
+        //   $mark = 'greymark.gif';
+        // }
+        
+        //    $startdate = date('M jS Y H:i', $game['ts_start']);
+        //    $lastdate = date('M jS Y H:i', $game['ts_last']);
+        $rows[] = array(
+            'move' => "<img alt='$alt' src='" . $full_path . '/images/' . $theme . '/' . $mark . "'>",
+            'white' => "<a href='" . url("vchess/player/" . $game->white_player()->name()) . "'>" . $game->white_player()->name() . "</a>",
+            'black' => "<a href='" . url("vchess/player/" . $game->black_player()->name()) . "'>" . $game->black_player()->name() . "</a>",
+            'move_no' => $game->move_no(),
+            'time_left' => $game->time_left(),
+            'speed' => $game->speed(),
+            'gid' => "<a href='" . $view_path . "/board/" . $game->gid() . "'>" . t('View') . "</a>",
+        );
       }
-
-      // If it's not a game user is playing, but just one they are watching, then use grey
-      //
-      // if ($game['turn'] == 'w' || $game['turn'] == 'b') {
-      //   $mark = 'greymark.gif';
-      // }
-  
-      //    $startdate = date('M jS Y H:i', $game['ts_start']);
-      //    $lastdate = date('M jS Y H:i', $game['ts_last']);
-      $rows[] = array(
-          'move' => "<img alt='$alt' src='" . $full_path . '/images/' . $theme . '/' . $mark . "'>",
-          'white' => "<a href='" . url("vchess/player/" . $game->white_player()->name()) . "'>" . $game->white_player()->name() . "</a>",
-          'black' => "<a href='" . url("vchess/player/" . $game->black_player()->name()) . "'>" . $game->black_player()->name() . "</a>",
-          'move_no' => $game->move_no(),
-          'time_left' => $game->time_left(),
-          'speed' => $game->speed(),
-          'gid' => "<a href='" . $view_path . "/board/" . $game->gid() . "'>" . t('View') . "</a>",
-      );
     }
   }
   else {
