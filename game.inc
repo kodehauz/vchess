@@ -93,20 +93,28 @@ class Game {
     }
     
     $secs_per_move = $this->time_per_move * $secs_per_unit;
-    
-    if ($this->is_started()) {
+
+    $current_time = time();
+    if ($this->is_move_made()) {
       $move_time = strtotime($this->last_move()->timestamp());
-      $current_time = time();
-      $elapsed = $current_time - $move_time;
-      $time_left = $secs_per_move - $elapsed;
     }
     else {
-      $time_left = $secs_per_move;
+      $move_time = strtotime($this->time_started());
     }
-    
-    $time_left = $this->duration($time_left);
+    $elapsed = $current_time - $move_time;
+    $time_left = $this->duration($secs_per_move - $elapsed);
     
     return $time_left;
+  }
+  
+  /**
+   * Get the timestamp of when the game started
+   * 
+   * @return
+   *   A timestamp, e.g. "2012-05-03 12:01:29"
+   */
+  function time_started() {
+    return $this->time_started;
   }
   
   /**
@@ -187,7 +195,7 @@ class Game {
    */
   function load($gid) {
     $sql = "SELECT gid, turn, white_uid, black_uid, status, board, " . 
-      "castling_availability, en_passant_target, time_per_move, time_units " .
+      "castling_availability, en_passant_target, time_per_move, time_units, time_started " .
       " FROM {vchess_games} WHERE gid = '" .
       $gid . "'";
     // Converted to the D7 database API syntax.
@@ -197,14 +205,19 @@ class Game {
     $this->gid = $row['gid'];
     $this->turn = $row['turn'];
   
-    // Fill chess board    $this->board->setup_position($row['board']);
+    // Fill chess board
+    $this->board->setup_position($row['board']);
     
     $this->white_uid = $row['white_uid'];
     $this->black_uid = $row['black_uid'];
     $this->status = $row['status'];
     $this->time_per_move = $row['time_per_move'];
-    $this->time_units = $row['time_units'];  
-    $this->board->set_en_passant_target_value = $row['en_passant_target'];      // Handle castling availability
+    $this->time_units = $row['time_units'];
+    $this->time_started = $row['time_started'];
+  
+    $this->board->set_en_passant_target_value = $row['en_passant_target'];
+  
+    // Handle castling availability
     $this->initialise_castling($row['castling_availability']);
     
     $this->scoresheet->load($gid); 
@@ -346,15 +359,15 @@ class Game {
    * @return
    *   TRUE if a move has already been made
    */
-  function is_started() {
+  function is_move_made() {
     if ($this->move_no() == 1 && $this->turn() == "w") {
-      $is_started = FALSE;
+      $is_move_made = FALSE;
     }
     else {
-      $is_started = TRUE;
+      $is_move_made = TRUE;
     }
     
-    return $is_started;
+    return $is_move_made;
   }
   
   /**
@@ -1124,6 +1137,3 @@ function vchess_en_passant_is_ok($player, $pos, $dest, $opp_ep_flag) {
   }
   return 0;
 }
-
-
-

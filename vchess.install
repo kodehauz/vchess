@@ -96,7 +96,12 @@ function vchess_schema() {
               'enum' => array('days', 'hours', 'mins', 'secs'),
               'not null' => TRUE,
               'default' => 'days',
-          )
+          ),
+          'time_started' => array(
+              'description' => 'Date and time of the start of the game, e.g. 2012-05-03 12:01:29',
+              'type' => 'timestamp',  // See http://drupal.org/node/1466122 or raise an issue on vchess!
+              'not null' => TRUE,
+          ),
           ),
               'primary key' => array('gid'),
       );
