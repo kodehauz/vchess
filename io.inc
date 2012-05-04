@@ -60,10 +60,10 @@ function vchess_load_users_current_games($uid) {
 }
 
 /**
- * Load a list of games for the given userid
+ * Load a list of all current games
  *
  * @return
- *   An array of in progress games
+ *   An array of current (in progress) games
  */
 function vchess_load_all_current_games() {
   $game_list = array();
@@ -71,7 +71,6 @@ function vchess_load_all_current_games() {
   $sql = "SELECT gid FROM {vchess_games} WHERE status = 'in progress'";
   $result = db_query($sql);
 
-  //  while ($data = db_fetch_object($result)) {  /* Hugh removed 9/1/2012 */
   foreach ($result as $data) {
     $gid = $data->gid;
 

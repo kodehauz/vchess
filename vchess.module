@@ -121,8 +121,7 @@ function vchess_menu() {
   );
 
   $items['vchess/players'] = array(
-      'page callback' => 'gamer_players',
-      'page arguments' => array(2),
+      'page callback' => 'vchess_players',
       'access arguments' => array('view players table'),
       'type' => MENU_CALLBACK,
   );
@@ -151,9 +150,34 @@ function vchess_menu() {
 
   return $items;
 }
-  
+
 /**
- * menu callback vchess_main_page to display main vchess window
+ * page callback to display the table of players
+ */
+function vchess_players() {
+  vchess_check_for_lost_on_time_games();
+  
+  return gamer_players();
+}
+
+/**
+ * Check through all the current games to see if any have been lost on time
+ * 
+ * If games are found which are lost on time, then the game is finished and
+ * the player statistics are updated
+ */
+function vchess_check_for_lost_on_time_games() {
+  $games = vchess_load_all_current_games();
+  
+  foreach ($games as $game) {
+    if ($game->is_lost_on_time()) {
+      vchess_update_player_stats($game);
+    }
+  }
+}
+
+/**
+ * page callback vchess_main_page to display main vchess window
  */
 function vchess_main_page() {
   global $user;
@@ -443,16 +467,7 @@ function vchess_build_current_games_table($games, $named_user) {
       // first time it has been noticed (since this game was in "In progress") 
       // and so we need to update the gamer statistics
       if ($game->is_lost_on_time()) {
-        switch ($game->status()) {
-          case STATUS_WHITE_WIN:
-            $score = GAMER_WHITE_WIN;
-            break;
-          case STATUS_BLACK_WIN:
-            $score = GAMER_BLACK_WIN;
-            break;
-        }
-        
-        gamer_update_stats($game->white_uid(), $game->black_uid(), $score);
+        vchess_update_player_stats($game);
       }
       else {
         if ($game->is_playing($user->uid)) {
@@ -535,6 +550,28 @@ function vchess_build_current_games_table($games, $named_user) {
   $html .= theme_table($table);
   
   return $html;
+}
+
+/**
+ * Update the player statistics
+ *  
+ * @param $game
+ *   The game which has just finished
+ */
+function vchess_update_player_stats(Game $game) {
+  switch ($game->status()) {
+    case STATUS_WHITE_WIN:
+      $score = GAMER_WHITE_WIN;
+      break;
+    case STATUS_BLACK_WIN:
+      $score = GAMER_BLACK_WIN;
+      break;
+    case STATUS_DRAW:
+      $score = GAMER_DRAW;
+      break;
+  }
+  
+  gamer_update_stats($game->white_uid(), $game->black_uid(), $score);
 }
 
 /**
