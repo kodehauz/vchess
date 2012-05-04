@@ -94,7 +94,7 @@ function vchess_menu() {
   
   $items['vchess/my_current_games'] = array(
       'page callback' => 'vchess_my_current_games',
-      'access arguments' => array('view my current games'),
+      'access arguments' => array('basic access'),
       'title' => 'My current games',
       'access' => TRUE,
       'access callback' => TRUE,
@@ -104,7 +104,7 @@ function vchess_menu() {
   $items['vchess/current_games/%'] = array(
       'page callback' => 'vchess_users_current_games',
       'page arguments' => array(2),
-      'access arguments' => array('view my current games'),
+      'access arguments' => array('basic access'),
       'title' => "Current games",
       'access' => TRUE,
       'access callback' => TRUE,
@@ -113,7 +113,7 @@ function vchess_menu() {
   
   $items['vchess/all_current_games'] = array(
       'page callback' => 'vchess_all_current_games_page',
-      'access arguments' => array('view all current games'),
+      'access arguments' => array('basic access'),
       'title' => 'All current games',
       'access' => TRUE,
       'access callback' => TRUE,
@@ -418,6 +418,12 @@ function vchess_all_current_games() {
   
 /**
  * Get table of current games for a given player
+ * 
+ * @param $name
+ *   Name of player for whom list of games is required
+ *   
+ * @return
+ *   Table of current games as HTML
  */
 function vchess_users_current_games($name) {
   $named_user = user_load_by_name($name);
