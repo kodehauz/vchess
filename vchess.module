@@ -192,6 +192,13 @@ function vchess_menu() {
       'type' => MENU_NORMAL_ITEM,
   );
   
+  $items['vchess/accept_challenge/%'] = array(
+      'page callback' => 'vchess_accept_challenge',
+      'page arguments' => array(2),
+      'access arguments' => array('basic access'),
+      'type' => MENU_CALLBACK,
+  );
+  
   $items['vchess/my_current_games'] = array(
       'page callback' => 'vchess_my_current_games',
       'access arguments' => array('basic access'),
