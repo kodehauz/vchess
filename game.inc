@@ -229,18 +229,20 @@ class Game {
   }
    
   /**
-   * Get the uid of the current challenger
+   * Get the player who is the current challenger
    */
   function challenger() {
-    $challenger = 0;
+    $uid = 0;
 
     if ($this->white_uid != 0 && $this->black_uid == 0) {
-      $challenger = $this->white_uid;
+      $uid = $this->white_uid;
     }
     elseif ($this->black_uid != 0 && $this->white_uid == 0) {
-      $challenger = $this->black_uid;
+      $uid = $this->black_uid;
     }
   
+    $challenger = new Player($uid);
+    
     return $challenger;
   }
   

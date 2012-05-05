@@ -106,7 +106,7 @@ function gamer_player_stats($uid) {
 
   $player = user_load($uid);
 
-  $html = "Here are the full statistics for <b>" . $player->name . "</b>:";
+  $html = "Statistics for <b>" . $player->name . "</b>:";
 
   $html .= theme_table(array(
       'header' => $header,

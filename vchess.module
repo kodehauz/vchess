@@ -134,6 +134,9 @@ function vchess_help($path, $arg) {
  */
 function vchess_permission() {
   return array(
+      'player access' => array(
+          'title' => t('Player access'),
+          'description' => t('Access to be able to view details of a particular player')),
       'basic access' => array(
           'title' => t('Basic access'),
           'description' => t('Access basic VChess functions such as ability to create a game')),
@@ -142,9 +145,9 @@ function vchess_permission() {
           'description' => t('View the list of all players with their statistics')),
       'reset games' => array(
           'title' => t('Reset games'),
-          'description' => t('This enables someone to completely reset the games database. ' .  
-              'WARNING: This permission should normally ONLY be given to administrators.')),
-          'restrict access' => TRUE,
+          'description' => t('This enables someone to completely reset the games database.'),
+          'restrict access' => TRUE
+          )
   );
 }
 
@@ -156,10 +159,8 @@ function vchess_menu() {
 
   $items['vchess/main'] = array(
       'page callback' => 'vchess_main_page',
-      //      'access arguments' => array('basic access'),
+      'access arguments' => array('basic access'),
       'title' => 'Main',
-      'access' => TRUE,
-      'access callback' => TRUE,
       'type' => MENU_NORMAL_ITEM,
   );
 
@@ -190,8 +191,6 @@ function vchess_menu() {
       'page callback' => 'vchess_challenges',
       'access arguments' => array('basic access'),
       'title' => 'Challenges',
-      'access' => TRUE,
-      'access callback' => TRUE,
       'type' => MENU_NORMAL_ITEM,
   );
   
@@ -206,8 +205,6 @@ function vchess_menu() {
       'page callback' => 'vchess_my_current_games',
       'access arguments' => array('basic access'),
       'title' => 'My current games',
-      'access' => TRUE,
-      'access callback' => TRUE,
       'type' => MENU_NORMAL_ITEM,
   );
   
@@ -216,8 +213,6 @@ function vchess_menu() {
       'page arguments' => array(2),
       'access arguments' => array('basic access'),
       'title' => "Current games",
-      'access' => TRUE,
-      'access callback' => TRUE,
       'type' => MENU_CALLBACK,
   );
   
@@ -225,8 +220,6 @@ function vchess_menu() {
       'page callback' => 'vchess_all_current_games_page',
       'access arguments' => array('basic access'),
       'title' => 'All current games',
-      'access' => TRUE,
-      'access callback' => TRUE,
       'type' => MENU_NORMAL_ITEM,
   );
 
@@ -246,7 +239,7 @@ function vchess_menu() {
   $items['vchess/player/%'] = array(
       'page callback' => 'vchess_player',
       'page arguments' => array(2),
-      'access arguments' => array('basic access'),
+      'access arguments' => array('player access'),
       'type' => MENU_CALLBACK,
   );
   
