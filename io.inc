@@ -68,7 +68,7 @@ function vchess_load_users_current_games($uid) {
 function vchess_load_all_current_games() {
   $game_list = array();
 
-  $sql = "SELECT gid FROM {vchess_games} WHERE status = 'in progress'";
+  $sql = "SELECT gid FROM {vchess_games} WHERE status = '" . STATUS_IN_PROGRESS . "'";
   $result = db_query($sql);
 
   foreach ($result as $data) {
@@ -88,4 +88,32 @@ function vchess_load_all_current_games() {
   return $game_list;
 }
 
+/**
+ * Load a list of all current games
+ *
+ * @return
+ *   An array of current (in progress) games
+ */
+function vchess_load_challenges() {
+  $game_list = array();
+
+  $sql = "SELECT gid FROM {vchess_games} WHERE status = '" . STATUS_AWAITING_PLAYERS . "'";
+  $result = db_query($sql);
+
+  foreach ($result as $data) {
+    $gid = $data->gid;
+
+    // Add a game to the list
+    $game = new Game();
+    $game->load($gid);
+    $game_list[] = $game;
+  }
+
+  // NB: sort will destroy index key, therefore $game_list['gid'] is used
+  // later instead.
+  if (count($game_list) > 0) {
+    usort($game_list, 'vchess_compareTimestamp');
+  }
+  return $game_list;
+}
 

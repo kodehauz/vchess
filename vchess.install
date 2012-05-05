@@ -46,7 +46,12 @@ function vchess_schema() {
           'status' => array(
               'description' => 'Status of the game',
               'type' => 'enum',  // See http://drupal.org/node/1464354 to get this working, or raise an issue on vchess!
-              'enum' => array('in progress', '1/2-1/2', '1-0', '0-1'),
+              'enum' => array(
+                  STATUS_AWAITING_PLAYERS,
+                  STATUS_IN_PROGRESS,
+                  STATUS_DRAW,
+                  STATUS_WHITE_WIN,
+                  STATUS_BLACK_WIN),
               'not null' => TRUE,
               'default' => 'in progress',
           ),

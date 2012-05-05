@@ -32,7 +32,84 @@ define("BLANK", " ");
 
 ini_set('display_errors', 'On');
 error_reporting(E_ALL);
+
+
+/**
+ * Implementation of hook_block_info().
+ */
+function vchess_block_info($delta = 0) {
+  $block = array();
+
+  // The "Outstanding Moves" Block
+  $block[0]['info'] = t('VChess menu');
+
+  // The "Random Chess Game" Block
+//   $block[1]['info'] = t('Chess - Random Chess Game');
+
+  return $block;
+}
+
+/**
+ * Implementation of hook_block_view().
+ */
+function vchess_block_view($delta = 0) {
+  $block = array();
+  // Treat each block seperately
+  switch ($delta) {
+    // The "Outstanding Moves" Block
+    case 0:
+      if ($block['content'] = generate_vchess_menu()) {
+        $block['subject'] = t('VChess menu');
+      }
+      break;
+
+    // The "Random Chess Game" Block
+//     case 1:
+//       // If there are games to show
+//       if ($block['content'] = generate_html_random_game()) {
+//         // Add the style-sheet
+//         drupal_add_css(drupal_get_path('module', 'chess') . '/chess.css');
+//         // Set the subject
+//         $block['subject'] = t('Random Chess Game');
+//       }
+//       break;
+  }
+  return $block;
+}
+
+/**
+ * Generate the HTML for the VChess block
+ */
+function generate_vchess_menu() {
+  $html = "";
   
+  $html .= "Status:";
+  $html .= "<ul>";
+  $html .= "<li><a href='" . "?q=vchess/my_current_games'>My current games</a>";
+  $html .= "<li><a href='" . "?q=vchess/all_current_games'>All current games</a>";
+  $html .= "<li><a href='" . "?q=vchess/players'>Players</a>";
+  $html .= "</ul>";
+  
+  $html .= "Challenges:";
+  $html .= "<ul>";
+  $html .= "<li><a href='" . "?q=vchess/challenges'>Challenges</a>";
+  $html .= "<li><a href='" . "?q=vchess/create_challenge'>New challenge</a>";  
+  $html .= "</ul>";
+  
+  $html .= "New games:";
+  $html .= "<ul>";
+  $html .= "<li><a href='" . "?q=vchess/random_game_form'>New random game</a>";
+  $html .= "<li><a href='" . "?q=vchess/opponent_game_form'>New opponent game</a>";
+  $html .= "</ul>";
+   
+  $html .= "Admin:";
+  $html .= "<ul>";
+  $html .= "<li><a href='" . "?q=vchess/reset_games'>Reset games</a>";
+  $html .= "</ul>";
+  
+  return $html;
+}
+
 /**
  * Display help and module information
  */
@@ -58,6 +135,7 @@ function vchess_permission() {
           'title' => t('Reset games'),
           'description' => t('This enables someone to completely reset the games database. ' .  
               'WARNING: This permission should normally ONLY be given to administrators.')),
+          'restrict access' => TRUE,
   );
 }
 
@@ -92,6 +170,22 @@ function vchess_menu() {
       'type' => MENU_CALLBACK,
   );
   
+  $items['vchess/create_challenge'] = array(
+      'page callback' => 'vchess_create_challenge',
+      'access arguments' => array('basic access'),
+      'title' => 'Create chess game challenge',
+      'type' => MENU_CALLBACK,
+  );
+  
+  $items['vchess/challenges'] = array(
+      'page callback' => 'vchess_challenges',
+      'access arguments' => array('basic access'),
+      'title' => 'Challenges',
+      'access' => TRUE,
+      'access callback' => TRUE,
+      'type' => MENU_NORMAL_ITEM,
+  );
+  
   $items['vchess/my_current_games'] = array(
       'page callback' => 'vchess_my_current_games',
       'access arguments' => array('basic access'),
@@ -108,7 +202,7 @@ function vchess_menu() {
       'title' => "Current games",
       'access' => TRUE,
       'access callback' => TRUE,
-      'type' => MENU_NORMAL_ITEM,
+      'type' => MENU_CALLBACK,
   );
   
   $items['vchess/all_current_games'] = array(
@@ -123,7 +217,7 @@ function vchess_menu() {
   $items['vchess/players'] = array(
       'page callback' => 'vchess_players',
       'access arguments' => array('view players table'),
-      'type' => MENU_CALLBACK,
+      'type' => MENU_NORMAL_ITEM,
   );
 
   $items['vchess/board/%'] = array(
@@ -332,86 +426,31 @@ function vchess_all_current_games() {
   
   $html = vchess_build_current_games_table($games, $user);
 
-//   $greenlist = array();  // the games which the player has the move
-//   $redlist = array();    // the games where the player does not have the move
-//   $i = 0;
-//   $j = count($games); // required for unique keys for union
-//   foreach ($games as $game) {
-//     if ($game->is_players_move($uid)) {
-//       $greenlist[$i++] = $game;
-//     }
-//     else {
-//       $redlist[$j++] = $game;
-//     }
-//   }
-//   $games = $greenlist + $redlist;
+  return $html;
+}
 
-//   $theme = 'default';
+/**
+ * Get table of all current games
+ */
+function vchess_challenges() {
+  global $user;
 
-//   $html .= t("There are " . (count($greenlist) + count($redlist)) . " games in progress");
-  
-//   // Find if we are looking at our own list
-//   $view_user = user_load($uid);
-//   if ($view_user->uid == $user->uid) {
-//     $turn_text = t('It is your turn in');
-//   }
-//   else {
-//     $turn_text = t("It is <b>" . $view_user->name . "'s</b> turn in");
-//   }
-//   $html .= '<br />' . $turn_text . " " . count($greenlist) . " " . t('games');
+  $rows = array();
 
-//   $table['empty'] = "";
-//   if (count($games) > 0) {
-//     //    $html .= '<td><b>' . t('Moves') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
-//     //     $html .= '<td><b>' . t('Starting Date') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
-//     //     $html .= '<td><b>' . t('Last Move On') . '&nbsp;&nbsp;&nbsp;&nbsp;</b></td>';
-//     foreach ($games as $game) {
-//       if ($game->is_players_move($uid)) {
-//         $mark = 'greenmark.gif';
-//       }
-//       else {
-//         $mark = 'redmark.gif';
-//       }
-//       // If it's not a game user is playing, but just one they are watching, then use grey
-//       /*
-//        if ($game['turn'] == 'w' || $game['turn'] == 'b') {
-//       $mark = 'greymark.gif';
-//       }
-//       */
+  $html = "";
 
-//       //    $startdate = date('M jS Y H:i', $game['ts_start']);
-//       //    $lastdate = date('M jS Y H:i', $game['ts_last']);
-//       $rows[] = array(
-//         'white' => "<a href='" . url("vchess/player/" . $game->white_player()->name()) . "'>" . $game->white_player()->name() . "</a>",
-//         'black' => "<a href='" . url("vchess/player/" . $game->black_player()->name()) . "'>" . $game->black_player()->name() . "</a>",
-          
-//         'view' =>  "<a href='" . $view_path . "/board/" . $game->gid() . "'>" . t('View') . '</a>'
-//         );
-//     }
-//   }
-  
-//   $header = array(
-//       array('data' => t('White'), 'field' => 'white'),
-//       array('data' => t('Black'), 'field' => 'black'),
-//       t('View'));
-  
-//   // getting the current sort and order parameters from the url
-//   // e.g. q=vchess/my_current_games&sort=asc&order=White
-//   $order = tablesort_get_order($header);
-//   $sort = tablesort_get_sort($header);
-  
-//   // sort the table data accordingly
-//   $rows = tsort_nonsql_sort($rows, $sort, $order['sql']);
-  
-//   $table['header'] = $header;
-//   $table['attributes'] = array();
-//   $table['caption'] = "";
-//   $table['colgroups'] = array();
-//   $table['sticky'] = "";
-//   $table['rows'] = $rows;
-//   $table['empty'] = t("There are no current games");
-  
-//   $html .= theme_table($table);
+  $uid = $user->uid;
+
+  $module_path = drupal_get_path('module', 'vchess');  // e.g. sites/all/modules/vchess
+  //  $view_path = "chess_drupal_7/vchess";
+  $view_path = $GLOBALS['base_root'] . url("vchess");
+  //    $full_path = "http://localhost/chess_drupal-7.12/" . drupal_get_path('module', 'vchess');
+  $full_path = HOME_ROOT . BASE_DIR . drupal_get_path('module', 'vchess');
+
+  // Get the list of possible games to view
+  $games = vchess_load_challenges();
+
+  $html = vchess_build_current_games_table($games, $user);
 
   return $html;
 }
@@ -476,7 +515,7 @@ function vchess_build_current_games_table($games, $named_user) {
         vchess_update_player_stats($game);
       }
       else {
-        if ($game->is_playing($user->uid)) {
+        if ($game->is_user_playing($user->uid)) {
           if ($game->is_players_move($user->uid)) {
             $mark = 'greenmark.gif';
             $alt = '1.green'; // alt text is used so sort order is green, red, grey
@@ -504,7 +543,7 @@ function vchess_build_current_games_table($games, $named_user) {
             'white' => "<a href='" . url("vchess/player/" . $game->white_player()->name()) . "'>" . $game->white_player()->name() . "</a>",
             'black' => "<a href='" . url("vchess/player/" . $game->black_player()->name()) . "'>" . $game->black_player()->name() . "</a>",
             'move_no' => $game->move_no(),
-            'time_left' => $game->time_left(),
+            'time_left' => vchess_duration($game->time_left()),
             'speed' => $game->speed(),
             'gid' => "<a href='" . $view_path . "/board/" . $game->gid() . "'>" . t('View') . "</a>",
         );
@@ -631,6 +670,22 @@ function vchess_random_game_form() {
 }
 
 /**
+ * Menu callback to create new challenge
+ */
+function vchess_create_challenge() {
+  global $user;
+  
+  $game = new Game();
+
+  $gid = $game->gid();
+  $game->set_player($user->uid);
+
+  drupal_set_message(t('Challenge has been created.'));
+  
+  drupal_goto("vchess/board/$gid");
+}
+
+/**
  * Process the form to start a new randomgame
  *
  * @param unknown_type $form
@@ -664,7 +719,8 @@ function vchess_random_game_form_submit($form, &$form_state) {
   }
   
   $game = new Game();
-  $gid = $game->new_game($white_uid, $black_uid);
+  $game->set_players($white_uid, $black_uid);
+  $gid = $game->gid();
   gamer_start_game($white_uid, $black_uid);
   
   drupal_set_message(t('Game has been created.'));
@@ -753,7 +809,8 @@ function vchess_opponent_game_form_submit($form, &$form_state) {
   }
 
   $game = new Game();
-  $gid = $game->new_game($white_uid, $black_uid);
+  $game->set_players($white_uid, $black_uid);
+  $gid = $game->gid();
 
   drupal_set_message(t('Game has been created.'));
   $form_state['redirect'] = 'vchess/board/' . $gid;
@@ -853,6 +910,35 @@ function vchess_player($name) {
   $html .= vchess_users_current_games($name);
 
   return $html;
+}
+
+/**
+ * Create a user-friendly view of a time, e.g. "56 mins 34 secs"
+ *
+ * @param $secs
+ *   Number of seconds
+ *
+ * @return
+ *   A user-friendly string of the time, e.g. "2 days 23 hours 56 mins 34 secs"
+ */
+function vchess_duration($secs) {
+  $vals = array(
+      TIME_UNITS_DAYS => $secs / 86400 % 7,
+      TIME_UNITS_HOURS => $secs / 3600 % 24,
+      TIME_UNITS_MINS => $secs / 60 % 60,
+      TIME_UNITS_SECS => $secs % 60);
+
+  $ret = array();
+
+  $added = false;
+  foreach ($vals as $k => $v) {
+    if ($v > 0 || $added) {
+      $added = true;
+      $ret[] = $v . " " . $k;
+    }
+  }
+
+  return join(' ', $ret);
 }
 
 

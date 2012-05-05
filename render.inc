@@ -253,11 +253,12 @@ function vchess_command_form($form, $context, Game $game, $cmdres, $move) {
   );
 
   $form['flipBoardButton'] = array(
-    '#type' => 'submit', //original button
-    '#value' => 'Flip Board',
+    '#type' => 'submit', // For now!
+    '#value' => '        ',
     );
   
-  if (!$game->is_over()
+  if ($game->is_move_made() 
+  && !$game->is_over()
   && ($game->white_uid() == $user->uid || $game->black_uid() == $user->uid)) {
     $form['resignButton'] = array(
       '#type' => 'submit',

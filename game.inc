@@ -10,6 +10,7 @@ define('STATUS_WHITE_WIN', '1-0');
 define('STATUS_BLACK_WIN', '0-1');
 define('STATUS_DRAW', '1/2-1/2');
 define('STATUS_IN_PROGRESS', 'in progress');
+define('STATUS_AWAITING_PLAYERS', 'awaiting players');
 
 // Define time units
 define('TIME_UNITS_DAYS', 'days');
@@ -53,14 +54,13 @@ class Game {
 //    $this->board->setup_position("4k3/R7/3Q5/8/8/8/8/4K3");
 
     // Ensure the game has players defined by default
-    $this->white_uid = 1;
-    $this->black_uid = 1;
+    $this->white_uid = 0;
+    $this->black_uid = 0;
     
     // turn: color of whose turn it is to move (w or b)
     $this->turn = "w";
     
-    // status: status of game ('in progress, '1-0', '0-1', '1/2-1/2', D=draw offered, ?=open)
-    $this->status = STATUS_IN_PROGRESS;
+    $this->status = STATUS_AWAITING_PLAYERS;
     
     $this->reset_en_passant_target();
 
@@ -70,6 +70,8 @@ class Game {
     $this->white_may_castle_long = TRUE;
     $this->black_may_castle_short = TRUE;
     $this->black_may_castle_long = TRUE;
+    
+    $this->is_started = FALSE;
   }
   
   /**
@@ -97,15 +99,20 @@ class Game {
     
     $secs_per_move = $this->time_per_move * $secs_per_unit;
 
-    $current_time = time();
-    if ($this->is_move_made()) {
-      $move_time = strtotime($this->last_move()->timestamp());
+    if ($this->is_started()) {
+      $current_time = time();
+      if ($this->is_move_made()) {
+        $move_time = strtotime($this->last_move()->timestamp());
+      }
+      else {
+        $move_time = strtotime($this->time_started());
+      }
+      $elapsed = $current_time - $move_time;
+      $time_left = $secs_per_move - $elapsed;
     }
     else {
-      $move_time = strtotime($this->time_started());
+      $time_left = $secs_per_move;
     }
-    $elapsed = $current_time - $move_time;
-    $time_left = $secs_per_move - $elapsed;
     
     return $time_left;
   }
@@ -117,36 +124,14 @@ class Game {
    *   A timestamp, e.g. "2012-05-03 12:01:29"
    */
   function time_started() {
-    return $this->time_started;
-  }
-  
-  /**
-   * Create a user-friendly view of a time, e.g. "56 mins 34 secs"
-   * 
-   * @param $secs
-   *   Number of seconds
-   *   
-   * @return
-   *   A user-friendly string of the time, e.g. "2 days 23 hours 56 mins 34 secs"
-   */
-  function duration($secs) {
-    $vals = array(
-        TIME_UNITS_DAYS => $secs / 86400 % 7,
-        TIME_UNITS_HOURS => $secs / 3600 % 24,
-        TIME_UNITS_MINS => $secs / 60 % 60,
-        TIME_UNITS_SECS => $secs % 60);
-  
-    $ret = array();
-  
-    $added = false;
-    foreach ($vals as $k => $v) {
-      if ($v > 0 || $added) {
-        $added = true;
-        $ret[] = $v . " " . $k;
-      }
+    if ($this->is_started()) {
+      $time_started = $this->time_started;
     }
-  
-    return join(' ', $ret);
+    else {
+      $time_started = FALSE;
+    }
+    
+    return $time_started;
   }
   
   /**
@@ -196,7 +181,9 @@ class Game {
   }
   
   /**
-   * Create a new game. 
+   * Set the players for a new game.
+   * 
+   * It is at this stage that the game really begins playing.
    * 
    * @param $white_uid
    *   Userid of white player
@@ -206,26 +193,42 @@ class Game {
    * @return
    *   Game id, $gid.   
    */
-  function new_game($white_uid, $black_uid) {
+  function set_players($white_uid, $black_uid) {
     // Build new game context 
     $this->white_uid = $white_uid;
     $this->black_uid = $black_uid;
     
-    $this->game['lastmove'] = 'x';
-
-    $black_player = new Player($black_uid);
-  
-    $gid = db_insert('vchess_games')
-    ->fields(array(
-        'turn' => 'w',
-        'white_uid' => $white_uid,
-        'black_uid' => $black_uid,
-        'board' => $this->board->position())
-        )
-    ->execute();
+    $this->save();
     
-    return $gid;
+    $this->is_started = TRUE;
   }
+  
+  /**
+   * Set a single player 
+   */
+  function set_player($uid) {
+    if ($this->white_uid == 0 && $this->black_uid == 0) {
+      if (rand(1,100) < 50) {
+        $this->white_uid = $uid;
+      }
+      else {
+        $this->black_uid = $uid;
+      }
+    }
+    else {
+      if ($this->white_uid == 0) {
+        $this->white_uid = $uid;
+      }
+      else {
+        $this->black_uid = $uid;
+      }
+      
+      $this->is_started = TRUE;
+    }
+    
+    $this->save();
+  }
+
     
   /**
    * Load an existing game (try active games first, then archived games) and set various
@@ -286,28 +289,28 @@ class Game {
    */
   function initialise_castling($castling_availability) {
     if (strpos($castling_availability, "K") !== FALSE) {
-      $this->game['white_may_castle_short'] = TRUE;
+      $this->white_may_castle_short = TRUE;
     }
     else {
-      $this->game['white_may_castle_short'] = FALSE;
+      $this->white_may_castle_short = FALSE;
     }
     if (strpos($castling_availability, "Q") !== FALSE) {
-      $this->game['white_may_castle_long'] = TRUE;
+      $this->white_may_castle_long = TRUE;
     }
     else {
-      $this->game['white_may_castle_long'] = FALSE;
+      $this->white_may_castle_long = FALSE;
     }
     if (strpos($castling_availability, "k") !== FALSE) {
-      $this->game['black_may_castle_short'] = TRUE;
+      $this->black_may_castle_short = TRUE;
     }
     else {
-      $this->game['black_may_castle_short'] = FALSE;
+      $this->black_may_castle_short = FALSE;
     }
     if (strpos($castling_availability, "q") !== FALSE) {
-      $this->game['black_may_castle_long'] = TRUE;
+      $this->black_may_castle_long = TRUE;
     }
     else {
-      $this->game['black_may_castle_long'] = FALSE;
+      $this->black_may_castle_long = FALSE;
     }
   }
   
@@ -327,16 +330,16 @@ class Game {
   function castling_availability() {
     $castling_availability = "";
     
-    if ($this->game['white_may_castle_short']) {
+    if ($this->white_may_castle_short) {
       $castling_availability .= "K";
     }
-    if ($this->game['white_may_castle_long']) {
+    if ($this->white_may_castle_long) {
       $castling_availability .= "Q";
     }
-    if ($this->game['black_may_castle_short']) {
+    if ($this->black_may_castle_short) {
       $castling_availability .= "k";
     }
-    if ($this->game['black_may_castle_long']) {
+    if ($this->black_may_castle_long) {
       $castling_availability .= "q";
     }
     if ($castling_availability == "") {
@@ -417,7 +420,7 @@ class Game {
    * @return
    *   TRUE if the given user is one of the players
    */
-  function is_playing($uid) {
+  function is_user_playing($uid) {
     if ($this->black_uid == $uid || $this->white_uid == $uid) {
       $playing = TRUE;
     }
@@ -428,10 +431,24 @@ class Game {
     return $playing;
   }
   
+  /**
+   * See if the game has actually started
+   * 
+   * A game is only started once it has a player assigned to white
+   * and to black 
+   */
+  function is_started() {
+    return $this->is_started;
+  }
+  
   /** 
    * Get the game id
    */
   function gid() {
+    // This game may never have been saved
+    if (!isset($this->gid)) {
+      $this->save();
+    }
     return $this->gid;
   }
   
@@ -513,10 +530,11 @@ class Game {
    * Get the status
    * 
    * Status can be one of:
+   * - "awaiting players"
+   * - "in progress"
    * - "1-0"
    * - "0-1"
    * - "1/2-1/2"
-   * - "in progress"
    */
   function status() {
     return $this->status;
@@ -542,18 +560,6 @@ class Game {
    * @return TRUE if the game is over
    */
   function is_over() {
-//     $sql = "SELECT status FROM {vchess_games} WHERE gid = '" . $this->gid . "'";
-  
-//     // Converted to the D7 database API syntax.
-//     $result = db_query($sql);
-//     $row = $result->fetchAssoc();
-  
-//     if ($row['status'] == STATUS_IN_PROGRESS) {
-//       $game_over = FALSE;
-//     }
-//     else {
-//       $game_over = TRUE;
-//     }
     if ($this->status() == STATUS_IN_PROGRESS) {
       $is_over = FALSE;
     }
@@ -664,29 +670,29 @@ class Game {
   }
   
   function white_may_not_castle() {
-    $this->game['white_may_castle_short'] = FALSE;
-    $this->game['white_may_castle_long'] = FALSE;
+    $this->white_may_castle_short = FALSE;
+    $this->white_may_castle_long = FALSE;
   }
   
   function black_may_not_castle() {
-    $this->game['black_may_castle_short'] = FALSE;
-    $this->game['black_may_castle_long'] = FALSE;
+    $this->black_may_castle_short = FALSE;
+    $this->black_may_castle_long = FALSE;
   }
   
   function set_white_may_castle_short($may_castle_short) {
-    $this->game['white_may_castle_short'] = $may_castle_short;  
+    $this->white_may_castle_short = $may_castle_short;  
   }
   
   function set_white_may_castle_long($may_castle_long) {
-    $this->game['white_may_castle_long'] = $may_castle_long;
+    $this->white_may_castle_long = $may_castle_long;
   }
   
   function set_black_may_castle_short($may_castle_short) {
-    $this->game['black_may_castle_short'] = $may_castle_short;
+    $this->black_may_castle_short = $may_castle_short;
   }
   
   function set_black_may_castle_long($may_castle_long) {
-    $this->game['black_may_castle_long'] = $may_castle_long;
+    $this->black_may_castle_long = $may_castle_long;
   }
   
   function black_may_castle_long() {
@@ -1103,31 +1109,45 @@ class Game {
   }
   
   /**
-   * Save an open game and update last move time stamp to current time. Chatter
-   * must have been updated already (newest is first in list).
+   * Save an open game
    */
   function save() {
-    $sql = "SELECT gid FROM {vchess_games} WHERE gid = '" . $this->gid . "'";
-    // Converted to the D7 database API syntax.
-    $result = db_query($sql);
-    $exists = $result->fetchField();
-  
-    if ($exists) {
-      // Converted to the D7 database API syntax.
-      db_update('vchess_games')->fields(array(
-          'turn' => $this->turn(),
+    if (!isset($this->gid)) {
+      $this->gid = db_insert('vchess_games')
+      ->fields(array(
+          'turn' => 'w',
           'status' => $this->status(),
-          'white_uid' => $this->white_uid(),
-          'black_uid' => $this->black_uid(),
-          'board' => $this->board()->position(),
+          'white_uid' => $this->white_uid,
+          'black_uid' => $this->black_uid,
+          'board' => $this->board->position(),
           'castling_availability' => $this->castling_availability(),
-          'en_passant_target' => $this->en_passant_target(),
-      ))
-      ->condition('gid', $this->gid)
+          'en_passant_target' => $this->en_passant_target()
+          )
+      )
       ->execute();
     }
-  }
+    else {
+      $sql = "SELECT gid FROM {vchess_games} WHERE gid = '" . $this->gid . "'";
   
+      $result = db_query($sql);
+      $exists = $result->fetchField();
+    
+      if ($exists) {
+        db_update('vchess_games')->fields(array(
+            'turn' => $this->turn(),
+            'status' => $this->status(),
+            'white_uid' => $this->white_uid(),
+            'black_uid' => $this->black_uid(),
+            'board' => $this->board()->position(),
+            'castling_availability' => $this->castling_availability(),
+            'en_passant_target' => $this->en_passant_target(),
+        ))
+        ->condition('gid', $this->gid)
+        ->execute();
+      }
+    }
+  }
+
   /**
    * Abort an open game. This is only possible if your opponent did not move
    * at all yet or did not move for more than four weeks. Aborting a game will
