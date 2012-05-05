@@ -227,8 +227,23 @@ class Game {
     
     $this->save();
   }
+   
+  /**
+   * Get the uid of the current challenger
+   */
+  function challenger() {
+    $challenger = 0;
 
-    
+    if ($this->white_uid != 0 && $this->black_uid == 0) {
+      $challenger = $this->white_uid;
+    }
+    elseif ($this->black_uid != 0 && $this->white_uid == 0) {
+      $challenger = $this->black_uid;
+    }
+  
+    return $challenger;
+  }
+  
   /**
    * Load an existing game (try active games first, then archived games) and set various
    * user-based variables, too. Return game as array or NULL on error.
