@@ -51,6 +51,7 @@ class Game {
     // Setup the board
     $this->board = new Board;
     $this->board->setup_as_standard();
+//    $this->board->setup_position("3qk3/8/8/8/2B5/5Q2/8/4K3");
 //    $this->board->setup_position("4k3/R7/3Q5/8/8/8/8/4K3");
 
     // Ensure the game has players defined by default
@@ -70,8 +71,6 @@ class Game {
     $this->white_may_castle_long = TRUE;
     $this->black_may_castle_short = TRUE;
     $this->black_may_castle_long = TRUE;
-    
-    $this->is_started = FALSE;
   }
   
   /**
@@ -99,7 +98,7 @@ class Game {
     
     $secs_per_move = $this->time_per_move * $secs_per_unit;
 
-    if ($this->is_started()) {
+    if ($this->status == STATUS_IN_PROGRESS) {
       $current_time = time();
       if ($this->is_move_made()) {
         $move_time = strtotime($this->last_move()->timestamp());
@@ -124,7 +123,7 @@ class Game {
    *   A timestamp, e.g. "2012-05-03 12:01:29"
    */
   function time_started() {
-    if ($this->is_started()) {
+    if ($this->status == STATUS_IN_PROGRESS) {
       $time_started = $this->time_started;
     }
     else {
@@ -197,10 +196,10 @@ class Game {
     // Build new game context 
     $this->white_uid = $white_uid;
     $this->black_uid = $black_uid;
+
+    $this->status = STATUS_IN_PROGRESS;
     
     $this->save();
-    
-    $this->is_started = TRUE;
   }
   
   /**
@@ -223,7 +222,7 @@ class Game {
         $this->black_uid = $uid;
       }
       
-      $this->is_started = TRUE;
+      $this->status = STATUS_IN_PROGRESS;
     }
     
     $this->save();
@@ -429,16 +428,6 @@ class Game {
     }
     
     return $playing;
-  }
-  
-  /**
-   * See if the game has actually started
-   * 
-   * A game is only started once it has a player assigned to white
-   * and to black 
-   */
-  function is_started() {
-    return $this->is_started;
   }
   
   /** 

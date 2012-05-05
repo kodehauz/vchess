@@ -104,6 +104,7 @@ function generate_vchess_menu() {
    
   $html .= "Admin:";
   $html .= "<ul>";
+  $html .= "<li><a href='" . "?q=admin/config/development/testing'>Run tests</a>";
   $html .= "<li><a href='" . "?q=vchess/reset_games'>Reset games</a>";
   $html .= "</ul>";
   

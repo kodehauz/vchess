@@ -6,9 +6,9 @@
  */
 
 
-class VChessTestCase extends DrupalUnitTestCase {
+class VChessTestCase extends DrupalWebTestCase {
   protected $privileged_user;
-
+  
   public static function getInfo() {
     // Note: getInfo() strings are not translated with t().
     return array(
@@ -16,6 +16,10 @@ class VChessTestCase extends DrupalUnitTestCase {
         'description' => 'Ensure that VChess functions properly.',
         'group' => 'VChess',
     );
+  }
+  
+  function setUp() {
+    parent::setUp('vchess');
   }
 
   /**
@@ -33,12 +37,13 @@ class VChessTestCase extends DrupalUnitTestCase {
    */
   public function testVChessPromotion() {
     $game = new Game();
-    
+        
     $game->setup_position("r3k3/1P6/8/8/8/8/8/4K3");
+    $game->set_players(1, 1);
+    
     $game->make_move(1, "Pb7xRa8=Q");
     
-    $this->assertEqual($game->position(), "Q3k3/8/8/8/8/8/8/4K3", 
-      "After pawn promotion through capturing the rook, the pawn should have become a queen");
+    $this->assertEqual($game->position(), "Q3k3/8/8/8/8/8/8/4K3");
   }
   
   /**
@@ -48,6 +53,8 @@ class VChessTestCase extends DrupalUnitTestCase {
     $game = new Game();
     
     $game->setup_position("3qk3/8/8/8/2B5/5Q2/8/4K3");
+    
+    // White queen delivers checkmate on f7 protected by a bishop on c4 
     $game->make_move(1, "Qf3-f7");
     
     $this->assertTrue($game->is_checkmate('b'), 
