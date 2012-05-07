@@ -93,14 +93,14 @@ function vchess_schema() {
               'type' => 'int',
               'unsigned' => TRUE,
               'not null' => TRUE,
-              'default' => 1
+              'default' => DEFAULT_TIME_PER_MOVE,
           ),
           'time_units' => array(
               'description' => 'Units of the time_per_move field',
               'type' => 'enum',
-              'enum' => array('days', 'hours', 'mins', 'secs'),
+              'enum' => array(TIME_UNITS_DAYS, TIME_UNITS_HOURS, TIME_UNITS_MINS, TIME_UNITS_SECS),
               'not null' => TRUE,
-              'default' => 'mins',
+              'default' => DEFAULT_TIME_UNITS,
           ),
           'time_started' => array(
               'description' => 'Date and time of the start of the game, e.g. 2012-05-03 12:01:29',

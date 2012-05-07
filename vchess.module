@@ -26,21 +26,23 @@ require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/move.in
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/square.inc';
 
 global $base_url; // e.g. http://localhost/chess_drupal-7.14
-//define('HOME_ROOT', "http://localhost/");
-//define('BASE_DIR', "chess_drupal-7.14/");
-
-// define('SUB_PATH', BASE_DIR . drupal_get_path('module', 'vchess'));  // e.g. "chess_drupal_7/sites/all/modules/vchess/"
-// define('FULL_PATH', HOME_ROOT . BASE_DIR . drupal_get_path('module', 'vchess'));  // e.g. "http://localhost/chess_drupal_7/sites/all/modules/vchess/"
 
 // The name of a blank piece
 define("BLANK", " ");
+
+// Define the default time per move
+define("DEFAULT_TIME_PER_MOVE", 3);
+define("DEFAULT_TIME_UNITS", 'days');
 
 // During testing, it is sometimes useful to allow the possiblity to play against
 // oneself.
 define("MAY_PLAY_SELF", FALSE);
 
-ini_set('display_errors', 'On');
-error_reporting(E_ALL);
+// Only set the error display on if debugging locally
+if (strpos($base_url, "localhost") > 0) {
+  ini_set('display_errors', 'On');
+  error_reporting(E_ALL);
+}
 
 /**
  * Implementation of hook_block_info().

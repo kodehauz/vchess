@@ -34,6 +34,9 @@ class Game {
   protected $white_uid;
   protected $black_uid;
   
+  protected $time_per_move;  // e.g. 3
+  protected $time_units;     // e.g. TIME_UNITS_DAYS
+  
   // chatter: list of chatter lines (first is newest)
   
   // Dynamic (based on user id) entries:
@@ -71,6 +74,9 @@ class Game {
     $this->white_may_castle_long = TRUE;
     $this->black_may_castle_short = TRUE;
     $this->black_may_castle_long = TRUE;
+    
+    $this->time_per_move = DEFAULT_TIME_PER_MOVE;
+    $this->time_units = DEFAULT_TIME_UNITS;
   }
   
   /**
@@ -1127,7 +1133,9 @@ class Game {
           'black_uid' => $this->black_uid,
           'board' => $this->board->position(),
           'castling_availability' => $this->castling_availability(),
-          'en_passant_target' => $this->en_passant_target()
+          'en_passant_target' => $this->en_passant_target(),
+          'time_per_move' => $this->time_per_move,
+          'time_units' => $this->time_units,
           )
       )
       ->execute();
@@ -1147,6 +1155,8 @@ class Game {
             'board' => $this->board()->position(),
             'castling_availability' => $this->castling_availability(),
             'en_passant_target' => $this->en_passant_target(),
+            'time_per_move' => $this->time_per_move,
+            'time_units' => $this->time_units,
         ))
         ->condition('gid', $this->gid)
         ->execute();

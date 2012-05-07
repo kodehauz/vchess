@@ -179,7 +179,7 @@ function vchess_render_board($board, $player, $active, $gid) {
           $coord->set_coord(vchess_col2file(9 - $col) . (9 - $row));
         }
         $piece = $board->piece($coord);
-        $piece_name = $piece->name();
+        $piece_name = strtolower($piece->name());
         $piece_color = $piece->color();
 
         if ((($row + 1) + ($col)) % 2 == 0) {
@@ -201,7 +201,7 @@ function vchess_render_board($board, $player, $active, $gid) {
             $content .= '<td id="' . $coord->coord() . '" class="' . $class . '"><a href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><img border=0 src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></a></td>';
           }
           else {
-            $content .= '<td class="' . $class . '"><img src="' . $path . '/images/' . $theme . '/' . $piece_color . strtolower($piece_name) . '.gif"></td>';
+            $content .= '<td class="' . $class . '"><img src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></td>';
           }
         }
         else {
