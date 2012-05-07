@@ -25,11 +25,12 @@ require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/board.i
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/move.inc';
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/square.inc';
 
-define('HOME_ROOT', "http://localhost/");
-define('BASE_DIR', "chess_drupal-7.14/");
+global $base_url; // e.g. http://localhost/chess_drupal-7.14
+//define('HOME_ROOT', "http://localhost/");
+//define('BASE_DIR', "chess_drupal-7.14/");
 
-define('SUB_PATH', BASE_DIR . drupal_get_path('module', 'vchess'));  // e.g. "chess_drupal_7/sites/all/modules/vchess/"
-define('FULL_PATH', HOME_ROOT . BASE_DIR . drupal_get_path('module', 'vchess'));  // e.g. "http://localhost/chess_drupal_7/sites/all/modules/vchess/"
+// define('SUB_PATH', BASE_DIR . drupal_get_path('module', 'vchess'));  // e.g. "chess_drupal_7/sites/all/modules/vchess/"
+// define('FULL_PATH', HOME_ROOT . BASE_DIR . drupal_get_path('module', 'vchess'));  // e.g. "http://localhost/chess_drupal_7/sites/all/modules/vchess/"
 
 // The name of a blank piece
 define("BLANK", " ");

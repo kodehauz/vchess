@@ -31,9 +31,15 @@
  */
 function vchess_render_board($board, $player, $active, $gid) {
   global $user;
+  global $base_url;
   
   $uid = $user->uid;
-  $path = "http://localhost" . base_path() . drupal_get_path('module', 'vchess');
+  //  $path = "http://localhost" . base_path() . drupal_get_path('module', 'vchess');
+  // e.g.
+  // $base_url = http://localhost/chess_drupal-7.14
+  // base_root() = http://localhost
+  // base_path() = /chess_drupal-7.14
+  $path = $base_url . "/" . drupal_get_path('module', 'vchess');
 
   $theme = 'default'; // later add global theme
 
@@ -195,7 +201,7 @@ function vchess_render_board($board, $player, $active, $gid) {
             $content .= '<td id="' . $coord->coord() . '" class="' . $class . '"><a href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><img border=0 src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></a></td>';
           }
           else {
-            $content .= '<td class="' . $class . '"><img src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></td>';
+            $content .= '<td class="' . $class . '"><img src="' . $path . '/images/' . $theme . '/' . $piece_color . strtolower($piece_name) . '.gif"></td>';
           }
         }
         else {
