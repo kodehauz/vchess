@@ -151,10 +151,28 @@ class Game {
   }
   
   /**
+   * Set the time per move
+   * 
+   * This just sets the value of the time per move (e.g. 1 or 3).  The units of time 
+   * would be set in set_time_units(), which isn't currently needed so does not exist. 
+   * 
+   * @parm $time_per_move
+   *   Time per move, e.g. "3".  
+   */
+  function set_time_per_move($time_per_move) {
+    $this->time_per_move = $time_per_move;
+
+    $this->save();
+  }
+  
+  /**
    * Check if the game has been lost on time
    * 
    * This checks if the time since the last move was made is 
    * now more than the time allowed for the game 
+   * 
+   * @return
+   *   TRUE if the game has been lost on time
    */
   function is_lost_on_time() {
     if ($this->time_left() <= 0) {

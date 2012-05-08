@@ -2,7 +2,8 @@
 	margin-left:auto;
 	margin-right:auto;
 	width:400px;
-	background-color: #eeffff;
+/*	background-color: #eeffff; */
+  background-color: #DACEA9; 
 	padding: 2;
 	border-spacing: 2;
 }
@@ -17,14 +18,16 @@
 }
 
 .boardSquareWhite {
-	background-color: #ffffff;
-	background-image: url(images/default/wsquare.jpg);
+/*	background-color: #ffffff; */
+  background-color: #F5f8cE;
+/*	background-image: url(images/default/wsquare.jpg); */
 	padding: 2;
 }
 
 .boardSquareBlack {
-	background-color: #cccccc;
-	background-image: url(images/default/bsquare.jpg);
+/*	background-color: #cccccc; */
+    background-color: #DACEA9; 
+/*	background-image: url(images/default/bsquare.jpg); */
 	padding: 2;
 }
 

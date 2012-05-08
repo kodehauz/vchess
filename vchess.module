@@ -34,6 +34,8 @@ define("BLANK", " ");
 define("DEFAULT_TIME_PER_MOVE", 3);
 define("DEFAULT_TIME_UNITS", 'days');
 
+define("VCHESS_PENDING_LIMIT", 3);
+
 // During testing, it is sometimes useful to allow the possiblity to play against
 // oneself.
 define("MAY_PLAY_SELF", FALSE);
@@ -104,7 +106,8 @@ function generate_vchess_menu() {
   $html .= "Challenges:";
   $html .= "<ul>";
   $html .= "<li><a href='" . "?q=vchess/challenges'>Challenges</a>";
-  $html .= "<li><a href='" . "?q=vchess/create_challenge'>New challenge</a>";  
+  $html .= "<li><a href='" . "?q=vchess/create_challenge'>Create challenge</a>";  
+  $html .= "<li><a href='" . "?q=vchess/default_challenge'>Default challenge</a>";
   $html .= "</ul>";
   
   $html .= "New games:";
@@ -183,8 +186,17 @@ function vchess_menu() {
       'type' => MENU_CALLBACK,
   );
   
+  $items['vchess/default_challenge'] = array(
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('vchess_create_default_challenge'),
+      'access arguments' => array('basic access'),
+      'title' => 'Create chess game challenge',
+      'type' => MENU_CALLBACK,
+  );
+  
   $items['vchess/create_challenge'] = array(
-      'page callback' => 'vchess_create_challenge',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('vchess_create_challenge_form'),
       'access arguments' => array('basic access'),
       'title' => 'Create chess game challenge',
       'type' => MENU_CALLBACK,
