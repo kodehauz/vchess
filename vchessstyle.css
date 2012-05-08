@@ -1,18 +1,16 @@
 .boardFrame {
 	margin-left:auto;
 	margin-right:auto;
-	width:400px;
-/*	background-color: #eeffff; */
-  background-color: #DACEA9; 
-	padding: 2;
-	border-spacing: 2;
+/*    background-color: #DACEA9; */ 
+/*	padding: 2; */
+/*	border-spacing: 2; */
 }
 
 .boardCoord {
 	color: #666666;
 }
 
-.board {
+.boardMain {
 	border-spacing: 0;
 	padding: 0;
 }

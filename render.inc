@@ -31,17 +31,8 @@
  */
 function vchess_render_board($board, $player, $active, $gid) {
   global $user;
-  global $base_url;
   
   $uid = $user->uid;
-  //  $path = "http://localhost" . base_path() . drupal_get_path('module', 'vchess');
-  // e.g.
-  // $base_url = http://localhost/chess_drupal-7.14
-  // base_root() = http://localhost
-  // base_path() = /chess_drupal-7.14
-  $path = $base_url . "/" . drupal_get_path('module', 'vchess');
-
-  $theme = 'default'; // later add global theme
 
   if (isset($_POST['cmd']) && !empty($_POST['cmd'])) {
     $cmd = $_POST['cmd'];  // e.g. Pe2-e4
@@ -118,10 +109,35 @@ function vchess_render_board($board, $player, $active, $gid) {
     $player = 'w';
   }
 
-  // build chessboard
+  // build the actual frame and the board of chessboard squares
   $content = "";
-  $content .= '<table class="boardFrame"><tr><td>';
-  $content .= '<table class="board">';
+  $content .= '<table class="boardFrame"><tr><td>';  // table to frame board of squares
+  $content .= vchess_build_board_squares($board, $player, $active);
+  $content .= "</td></tr></table>"; // end of table framing board
+  
+  $content .= "<br />";
+  
+  return $content;
+}
+
+/**
+ * Build the table of board squares
+ */
+function vchess_build_board_squares($board, $player, $active) {
+  global $base_url;
+  
+  $theme = 'default'; // later add global theme
+  
+  $content = "";
+  
+  //  $path = "http://localhost" . base_path() . drupal_get_path('module', 'vchess');
+  // e.g.
+  // $base_url = http://localhost/chess_drupal-7.14
+  // base_root() = http://localhost
+  // base_path() = /chess_drupal-7.14
+  $path = $base_url . "/" . drupal_get_path('module', 'vchess');
+  
+  $content .= '<table class="boardMain">';
   if ($player == 'w') {
     $index = 56;
     $pos_change = 1;
@@ -137,7 +153,7 @@ function vchess_render_board($board, $player, $active, $gid) {
   for ($row = 8; $row >= 0; $row--) {
     $content .= '<tr>';
     // column 0 contains the row labels "1" to "8"
-    // columns [1..8] are normal board columns 
+    // columns [1..8] are normal board columns
     for ($col = 0; $col <= 8; $col++) {
       if ($row == 0) {
         // letters a-h at bottom
@@ -153,10 +169,12 @@ function vchess_render_board($board, $player, $active, $gid) {
           else {
             $c = chr(105 - $col);
           }
-          $content .= '<td align="center"><img height=4 src="' . $path . '/images/spacer.gif"><br /><b class="boardSquare">' . $c . '</B></td>';
+          $cell = '<img height=4 src="' . $path . '/images/spacer.gif"><br /><b class="boardSquare">' . $c . '</b>';
+          $content .= '<td align="center">' . $cell . '</td>';
         }
         else {
-          $content .= '<td></td><td></td>';
+          $table_rows[$row][$col] = "This is col $col";
+          $content .= "<td></td>"; // Bottom left
         }
       }
       elseif ($col == 0) {
@@ -167,10 +185,12 @@ function vchess_render_board($board, $player, $active, $gid) {
         else {
           $i = 9 - $row;
         }
-        $content .= '<td><b class="boardCoord">' . $i . '</B></td><td><img width=4 src="' . $path . '/images/spacer.gif"></td>';
+        $cell = '<b class="boardCoord">' . $i . '</B>';
+        $cell2 = '<img width=4 src="' . $path . '/images/spacer.gif">';
+        $content .= '<td>' . $cell . '</td>';
       }
       else {
-        // normal square 
+        // normal square
         $coord = new Square();
         if ($player == 'w') {
           $coord->set_coord(vchess_col2file($col) . $row);
@@ -181,14 +201,14 @@ function vchess_render_board($board, $player, $active, $gid) {
         $piece = $board->piece($coord);
         $piece_name = strtolower($piece->name());
         $piece_color = $piece->color();
-
+  
         if ((($row + 1) + ($col)) % 2 == 0) {
           $class = 'boardSquareWhite';
         }
         else {
           $class = 'boardSquareBlack';
         }
-        
+  
         if ($piece_name != BLANK) {
           // square with a piece and player has the ability to move
           if ($active) {
@@ -198,20 +218,26 @@ function vchess_render_board($board, $player, $active, $gid) {
             if ($piece_color <> $player) {
               $cmdpart = "x" . $cmdpart;
             }
-            $content .= '<td id="' . $coord->coord() . '" class="' . $class . '"><a href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><img border=0 src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></a></td>';
+            $cell = '<a href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><img border=0 src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></a>';
+            $content .= '<td id="' . $coord->coord() . '" class="' . $class . '">' . $cell . '</td>';
           }
           else {
-            $content .= '<td class="' . $class . '"><img src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif"></td>';
+            // Square with piece which is not movable
+            $cell = '<img src="' . $path . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif">';
+            $content .= '<td class="' . $class . '">' . $cell . '</td>';
           }
         }
         else {
           if ($active) {
-            // Build the target part of the move e.g. "-c3", so the move will end up as "Nb1-c3"
+            // Build a blank square on active board
+            // For this we build the target part of the move e.g. "-c3", so the move will end up as "Nb1-c3"
             $cmdpart = sprintf('-%s', vchess_i2square($index)->coord());
-            $content .= '<td id="' . $coord->coord() . '" class="' . $class . '"><a href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><img border=0 src="' . $path . '/images/' . $theme . '/empty.gif"></a></td>';            
+            $cell = '<a href="" onClick="return assembleCmd(\'' . $cmdpart . '\');"><img border=0 src="' . $path . '/images/' . $theme . '/empty.gif"></a>';
+            $content .= '<td id="' . $coord->coord() . '" class="' . $class . '">' . $cell . '</td>';
           }
           else {
-            $content .= '<td class="' . $class . '"><img src="' . $path . '/images/' . $theme . '/empty.gif"></td>';
+            $cell = '<img src="' . $path . '/images/' . $theme . '/empty.gif">';
+            $content .= '<td class="' . $class . '">' . $cell . '</td>';
           }
         }
         $index += $pos_change;
@@ -220,14 +246,7 @@ function vchess_render_board($board, $player, $active, $gid) {
     $index += $line_change;
     $content .= "</tr>";
   }
-  $content .= "</table></td></tr></table>";
-  
-  $content .= "<br />";
-  
-  // Prepare the scoresheet
-  $scoresheet = new Scoresheet();
-  $scoresheet->load($gid);
-  $content .= $scoresheet->get_table();
+  $content .= "</table>"; // end of table with squares including coordinates
   
   return $content;
 }
@@ -260,8 +279,9 @@ function vchess_command_form($form, $context, Game $game, $cmdres, $move) {
 
   $form['flipBoardButton'] = array(
     '#type' => 'submit', // For now!
-    '#value' => '        ',
-    );
+    '#value' => 'Flip board',
+    '#validate' => array('vchess_flip_board_clicked')
+  );
   
   if ($game->is_move_made() 
   && !$game->is_over()

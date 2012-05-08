@@ -244,8 +244,8 @@ function vchess_menu() {
       'type' => MENU_NORMAL_ITEM,
   );
 
-  $items['vchess/board/%'] = array(
-      'page callback' => 'vchess_board',
+  $items['vchess/game/%'] = array(
+      'page callback' => 'vchess_game',
       'page arguments' => array(2),
       'access arguments' => array('basic access'),
       'type' => MENU_CALLBACK,
