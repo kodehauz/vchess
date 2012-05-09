@@ -127,6 +127,7 @@ function vchess_build_board_squares($board, $player, $active) {
   global $base_url;
   
   $theme = 'default'; // later add global theme
+//  $theme = 'wikipedia';  // does not work because pieces include their own background
   
   $content = "";
   
