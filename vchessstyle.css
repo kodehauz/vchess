@@ -59,3 +59,15 @@
 	color: #0000bb;
 }
 
+#container {
+  display: table;
+  text-align: center;
+}
+
+#board_commands {
+
+}
+
+#board {
+
+}
