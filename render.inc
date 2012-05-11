@@ -6,12 +6,10 @@
  */
 
 /**
- * Create a visible view of the board
- * 
- * @param array $board
- *   This is an array of 64 elements, one per square.  A square will
- *   either be empty or contain a 2-character indication of color
- *   followed by piece, e.g. "wR" is white rook, "bP" is black Pawn.
+ * Create a visible view of the game
+ *
+ * @param $gid
+ *   Game id
  *   
  * @param char $player
  *   This indicates the color of the player who is playing, and thus the 
@@ -25,23 +23,21 @@
  *   This indicates whether or not the board allows moves or not (i.e. whether the
  *   board is in a view-only state or not) 
  *   
- * @param $gid
- *   Game id
  * 
  */
-function vchess_render_board($board, $player, $active, $gid) {
+function vchess_render_game($gid, $player, $active) {
   global $user;
   
   $uid = $user->uid;
 
+  $game = new Game();
+  $game->load($gid);
+  
   if (isset($_POST['cmd']) && !empty($_POST['cmd'])) {
     $cmd = $_POST['cmd'];  // e.g. Pe2-e4
 
     $cmdres = '';
 
-    $game = new Game();
-    $game->load($gid);
-    
     // Save the values for when we need to save to database
     $player_with_turn = $game->turn();
     $move_no = $game->move_no();
@@ -120,7 +116,7 @@ function vchess_render_board($board, $player, $active, $gid) {
   // build the actual frame and the board of chessboard squares
   $content = "";
   $content .= '<table class="boardFrame"><tr><td>';  // table to frame board of squares
-  $content .= vchess_build_board_squares($board, $player, $active, $flipped);
+  $content .= vchess_render_board_squares($game->board(), $player, $active, $flipped);
   $content .= "</td></tr></table>"; // end of table framing board
   
   $content .= "<br />";
@@ -130,9 +126,22 @@ function vchess_render_board($board, $player, $active, $gid) {
 
 /**
  * Build the table of board squares
+ * 
+ * @param char $player
+ *   This indicates the color of the player who is playing, and thus the 
+ *   viewing perspective of the board.  It is either 'w' (white) or 'b' (black).  
+ *   If it is empty then the game is being observed
+ *   by someone who is not the player.  Note that player is not necessarily the
+ *   same as the person who is to move.  It may be the player is white but it is
+ *   black to move.
  */
-function vchess_build_board_squares($board, $player, $active, $flipped) {
+function vchess_render_board_squares($board, $player, $active, $flipped) {
   global $base_url;
+  
+  $module_path = drupal_get_path('module', 'vchess');
+  
+  drupal_add_css($module_path . '/vchessstyle.css');
+  drupal_add_js($module_path . '/board.js');
   
   $theme = 'default'; // later add global theme
 //  $theme = 'wikipedia';  // does not work because pieces include their own background
@@ -186,8 +195,9 @@ function vchess_build_board_squares($board, $player, $active, $flipped) {
           else {
             $c = chr(105 - $col);
           }
-          $cell = '<img height=4 src="' . $path . '/images/spacer.gif"><br /><b class="boardSquare">' . $c . '</b>';
-          $content .= '<td align="center">' . $cell . '</td>' . PHP_EOL;
+//          $cell = '<img height=4 src="' . $path . '/images/spacer.gif"><br /><b class="boardSquare">' . $c . '</b>';
+          $cell = "<img src='" . $path . "/images/spacer.gif'>$c";
+          $content .= '<td align="center" class="fileLetters">' . $cell . '</td>' . PHP_EOL;
         }
         else {
           $table_rows[$row][$col] = "This is col $col";
@@ -418,5 +428,18 @@ function vchess_flip_board_clicked($form, &$form_state) {
  */
 function vchess_move_button_clicked($form, &$form_state) {
   drupal_set_message(t('Move button clicked'));
+}
+
+/**
+ * Render a FEN string as an HTML board
+ */
+function vchess_render_FEN($fen_string) {
+  $game = new Game();
+  
+  $game->setup_position($fen_string);
+  
+  $html = vchess_render_board_squares($game->board(), "w", FALSE, FALSE);
+  
+  return $html;
 }
 

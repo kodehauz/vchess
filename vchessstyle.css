@@ -8,11 +8,20 @@
 
 .boardCoord {
 	color: #666666;
+	width: 20px;
+    height: 20px;
+}
+
+.fileLetters {
+  height: 5px;
+  text-align: center;
+  font-weight: bold;
 }
 
 .boardMain {
 	border-spacing: 0;
 	padding: 0;
+	width: 290px;
 }
 
 .boardSquareWhite {
@@ -20,6 +29,8 @@
   background-color: #F5f8cE;
 /*	background-image: url(images/default/wsquare.jpg); */
 	padding: 2;
+	width: 20px;
+	height: 20px;
 }
 
 .boardSquareBlack {
@@ -27,6 +38,8 @@
     background-color: #DACEA9; 
 /*	background-image: url(images/default/bsquare.jpg); */
 	padding: 2;
+	width: 20px;
+    height: 20px;
 }
 
 .textFrame {
@@ -38,11 +51,11 @@
 }
 
 .boardPageTable {
-	width: 600;
+	width: 500;
 }
 
 .helpPageTable {
-	width: 600;
+	width: 500;
 }
 
 .textBox {

@@ -119,6 +119,7 @@ function generate_vchess_menu() {
   $html .= "Admin:";
   $html .= "<ul>";
   $html .= "<li><a href='" . "?q=admin/config/development/testing'>Run tests</a>";
+  $html .= "<li><a href='" . "?q=vchess/test'>Run single test</a>";
   $html .= "<li><a href='" . "?q=vchess/reset_games'>Reset games</a>";
   $html .= "</ul>";
   
@@ -264,11 +265,48 @@ function vchess_menu() {
       'page arguments' => array('vchess_reset_games_form'),
       'title' => 'Reset ALL games!',
       'type' => MENU_CALLBACK,
+   );
+      
+  $items['vchess/test'] = array(
+      'page callback' => 'vchess_test',
+      'access arguments' => array('reset games'),
+      'title' => 'Perform a test',
+      'type' => MENU_CALLBACK,
   );
 
   return $items;
 }
 
+/**
+ * A basic promotion test
+ */
+function vchess_test() {
+  $game = new Game();
+  
+  $html = "";
+  
+  $expected = "Q3k3/8/8/8/8/8/8/4K3";
 
+  $game->setup_position("r3k3/1P6/8/8/8/8/8/4K3");
+  $game->set_players(1, 1);
+
+  $game->make_move(0, "Pb7xRa8=Q");
+
+  if ($game->position() == $expected) {
+    drupal_set_message("OK, test works!!");
+  }
+  else {
+    drupal_set_message("Problem!!");
+    
+    $html .= "Expected:";
+    $html .= vchess_render_FEN($expected);
+    $html .= "Actual:";
+    $html .= vchess_render_FEN($game->position());
+  }
+  
+
+  
+  return $html;
+}
 
 

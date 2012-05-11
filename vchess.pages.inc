@@ -327,7 +327,6 @@ function vchess_game($gid) {
   global $base_path; // e.g. "/chess_drupal-7.14/"
   global $base_url; // e.g. "http://localhost/chess_drupal-7.14"
 
-  //  $uid = $user->name;
   $module_path = drupal_get_path('module', 'vchess');
 
   drupal_add_css($module_path . '/vchessstyle.css');
@@ -357,7 +356,7 @@ function vchess_game($gid) {
   $out .= '</div>';
   
   $out .= "<div id='board'>";
-  $out .= vchess_render_board($game->board(), $player_color, $player_may_move, $gid);
+  $out .= vchess_render_game($gid, $player_color, $player_may_move);
   $out .= "</div>";
 
   $out .= "<div id='board_commands'>";

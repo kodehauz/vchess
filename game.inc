@@ -54,8 +54,7 @@ class Game {
     // Setup the board
     $this->board = new Board;
     $this->board->setup_as_standard();
-//    $this->board->setup_position("3qk3/8/8/8/2B5/5Q2/8/4K3");
-//    $this->board->setup_position("4k3/R7/3Q5/8/8/8/8/4K3");
+//    $this->board->setup_position("4k3/8/8/2p5/8/8/2P5/4K5");
 
     // Ensure the game has players defined by default
     $this->white_uid = 0;
@@ -908,6 +907,10 @@ class Game {
         }
         elseif ($board->piece($to_square)->color() == $this->turn()) {
           $result .= 'ERROR: You cannot attack own chessman at ' . $to_square->coord() . '!';
+          $move_ok = FALSE;
+        }
+        elseif (!$board->piece_attacks($piece_square, $to_square)) {
+          $result .= 'ERROR: You cannot take the piece on ' . $to_square->coord() . '!';
           $move_ok = FALSE;
         }
         
