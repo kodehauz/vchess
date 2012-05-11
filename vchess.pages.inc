@@ -438,46 +438,6 @@ function vchess_wld_stats($stats_user) {
   return $html;
 }
 
-
-
-/**
- * Resign from a particular game.  This is the form handler for the resignation button.
- */
-function vchess_resign_clicked($form, &$form_state) {
-  global $user;
-
-  $turn = $form_state['values']['turn'];
-  $gid = $form_state['values']['gid'];
-
-  $game = new Game();
-  $game->load($gid);
-  $game->resign($user->uid);
-  $game->save();
-
-  if ($game->status() == STATUS_BLACK_WIN) {
-    $score = GAMER_BLACK_WIN; // white resigned
-  }
-  else {
-    $score = GAMER_WHITE_WIN; // black resigned
-  }
-
-  gamer_update_stats($game->white_uid(), $game->black_uid(), $score);
-
-  drupal_set_message(t('You have now resigned.'));
-}
-
-/**
- * This is the form handler for the flip board button.
- */
-function vchess_flip_board_clicked($form, &$form_state) {
-  global $user;
-
-  $turn = $form_state['values']['turn'];
-  $gid = $form_state['values']['gid'];
-
-  drupal_set_message(t('Flip!'));
-}
-
 /**
  * menu callback to display all active games
  */
