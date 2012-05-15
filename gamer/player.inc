@@ -168,7 +168,6 @@ class Player {
           'current' => $this->current))
           ->condition('uid', $this->uid)
           ->execute();
-  
     }
   }
   
@@ -191,21 +190,38 @@ class Player {
    * Set the number of games won
    */
   function set_won($won) {
-    $this->won = $won;
+    if ($won >= 0) {
+      $this->won = $won;
+    }
+    else {
+      watchdog("VChess", "player.inc set_won() received request to set won to " . $won, array(), WATCHDOG_ERROR);
+    }
   }
   
   /**
    * Set the number of games lost
    */
   function set_lost($lost) {
-    $this->lost = $lost;
+    if ($lost >= 0) {
+      $this->lost = $lost;
+    }
+    else {
+      watchdog("VChess", "player.inc set_lost() received request to set lost to " . 
+          $lost, array(), WATCHDOG_ERROR);
+    }
   }
   
   /**
    * Set the number of games played
    */
   function set_played($played) {
-    $this->played = $played;
+    if ($played >= 0) {
+      $this->played = $played;
+    }
+    else {
+      watchdog("VChess", "player.inc set_played() received request to set played to " .
+          $played, array(), WATCHDOG_ERROR);
+    }
   }
   
   /**
@@ -219,14 +235,26 @@ class Player {
    * Set the rating
    */
   function set_rating($rating) {
-    $this->rating = $rating;
+    if ($rating >= 0) {
+      $this->rating = $rating;
+    }
+    else {
+      watchdog("VChess", "player.inc set_rating() received request to set rating to " .
+          $rating, array(), WATCHDOG_ERROR);
+    }
   }
   
   /**
    * Set the number of current (in progress) games
    */
   function set_current($current) {
-    $this->current = $current;
+    if ($current >= 0) {
+      $this->current = $current;
+    }
+    else {
+      watchdog("VChess", "player.inc set_current() received request to set current to " .
+          $current, array(), WATCHDOG_ERROR);
+    }
   }
 }
 

@@ -17,12 +17,13 @@
  * 
  * - vchess_moves contains the list of moves for each game
  * 
- * N.B. There are a couple of problems with the enum and timestamp not
- * currently being supported in core.  The patch solution is:
+ * N.B. There is a problem with enum not currently being supported in core.  
+ * The patch solution is:
  * - http://drupal.org/node/1464354
  * - http://drupal.org/node/1466122
- * or raise an issue in vchess issue queue and I will try harder to
- * get these things into core for you!!
+ * Note that I originally thought that timestamp was not supported but it
+ * is with the mysql_type key, see:
+ * http://api.drupal.org/api/drupal/includes%21database%21schema.inc/group/schemaapi/7
  */
 function vchess_schema() {
   
@@ -38,14 +39,14 @@ function vchess_schema() {
           ),
           'turn' => array(
               'description' => 'Whose turn it is to play, either "w" (white) or "b" (black)',
-              'type' => 'enum',  // See http://drupal.org/node/1464354 to get this working, or raise an issue on vchess!
+              'type' => 'enum',  // See http://drupal.org/node/1464354 to get this working
               'enum' => array('w', 'b'),
               'not null' => TRUE,
               'default' => 'w',
           ),
           'status' => array(
               'description' => 'Status of the game',
-              'type' => 'enum',  // See http://drupal.org/node/1464354 to get this working, or raise an issue on vchess!
+              'type' => 'enum',  // See http://drupal.org/node/1464354 to get this working
               'enum' => array(
                   STATUS_AWAITING_PLAYERS,
                   STATUS_IN_PROGRESS,
@@ -104,11 +105,12 @@ function vchess_schema() {
           ),
           'time_started' => array(
               'description' => 'Date and time of the start of the game, e.g. 2012-05-03 12:01:29',
-              'type' => 'timestamp',  // See http://drupal.org/node/1466122 or raise an issue on vchess!
+              'type' => 'datetime',  
+              'mysql_type' => 'datetime',
               'not null' => TRUE,
           ),
           ),
-              'primary key' => array('gid'),
+          'primary key' => array('gid'),
       );
 
   // Table of the moves of each game, one row per move
@@ -147,7 +149,8 @@ function vchess_schema() {
           ),
           'timestamp' => array(
               'description' => 'Exact date and time of the move',
-              'type' => 'timestamp',  // See http://drupal.org/node/1466122 or raise an issue on vchess!
+              'type' => 'timestamp',
+              'mysql_type' => 'timestamp',
               'not null' => TRUE,
           ),
       ),

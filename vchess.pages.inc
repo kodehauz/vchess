@@ -29,14 +29,39 @@ function vchess_main_page() {
     $out .= vchess_challenges();
     $out .= vchess_new_game_links();
 
-//    $out .= vchess_wld_stats($user);
-    $out .= gamer_player_stats($user->uid);
+    $out .= vchess_player_stats_table($user->uid);
   }
   else {
     $out = "Please log in to access this page";
   }
 
   return $out;
+}
+
+/**
+ * Get the stats for a particular player
+ */
+function vchess_player_stats_table($uid) {
+  $gamer_stats = gamer_player_stats_array($uid);
+  
+  if ($gamer_stats['current'] <> vchess_stats_games_current($uid)) {
+    watchdog("vchess", "Stats for current games from gamer was :gamer_current but vchess calculates :vchess",
+        array(
+          ':gamer_current' => $gamer_stats['current'], 
+          ':vchess' => vchess_stats_games_current($uid)
+        )
+    );
+    
+    $player = new Player($uid);
+    
+    $player->set_current(vchess_stats_games_current($uid));
+    $player->save_stats();
+  }
+  
+  //    $out .= vchess_wld_stats($user);
+  $html = gamer_player_stats_table($uid);
+
+  return $html;
 }
 
 /**
@@ -176,6 +201,8 @@ function vchess_create_challenge_form_submit($form, &$form_state) {
 
 /**
  * Menu callback to create new default challenge
+ * 
+ * @todo use drupal_form_submit() to make this function call the vchess_create_challenge_form_submit() function
  */
 function vchess_create_default_challenge() {
   global $user;
@@ -200,7 +227,7 @@ function vchess_create_default_challenge() {
     drupal_goto("vchess/game/$gid");
   }
   else {
-    drupal_set_message(t('You already have") . PENDING_LIMIT . t("challenges pending.'));
+    drupal_set_message(t("You already have the maximum of") . VCHESS_PENDING_LIMIT . t("challenges pending."));
     
     drupal_goto("vchess/challenges");
   }
@@ -307,6 +334,8 @@ function vchess_opponent_game_form_validate($form, &$form_state) {
 function vchess_accept_challenge($gid) {
   global $user;
   
+  watchdog("vchess_accept_challenge", "Player uid=" . $user->uid . " has accepted challenge for game $gid");
+  
   $game = new Game();
   $game->load($gid);
   
@@ -396,7 +425,7 @@ function vchess_player($name) {
   $html = "";
 
 //  $html .= vchess_wld_stats($player);
-  $html .= gamer_player_stats($player->uid);
+  $html .= gamer_player_stats_table($player->uid);
   $html .= vchess_users_current_games($name);
 
   return $html;
@@ -761,5 +790,29 @@ function vchess_random_game_form_submit($form, &$form_state) {
 
   drupal_set_message(t('Game has been created.'));
   $form_state['redirect'] = 'vchess/game/' . $gid;
+}
+
+/**
+ * A single test
+ * 
+ * This function is for running individual tests normally found
+ * within the vchess.test file, but without all the heavy setup
+ * and teardown time which those functions need. 
+ */
+function vchess_test() {
+  $html = "";
+  
+  $player = new Player(1);
+  $player->set_current(-1);
+  $player->set_lost(-1);
+  $player->set_played(-1);
+  $player->set_rating(-1);
+  $player->set_won(-1);
+
+  $html .= "time() is: " . date("Y-m-d H:i:s", time()) . "<br />";
+  $html .= "SERVER REQUEST_TIME is: " . date("Y-m-d H:i:s", $_SERVER['REQUEST_TIME']) . "<br />";
+  $html .= "gmdate() is: " . gmdate("Y-m-d H:i:s");
+  
+  return $html;
 }
 

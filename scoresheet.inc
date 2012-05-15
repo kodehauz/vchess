@@ -26,14 +26,14 @@ class Scoresheet {
    * Load the moves for a scoresheet
    */
   function load($gid) {
-    $sql = "SELECT move_no, color, long_move, algebraic, timestamp FROM {vchess_moves} WHERE gid = :gid";
+    $sql = "SELECT move_no, color, long_move, algebraic, datetime FROM {vchess_moves} WHERE gid = :gid";
     $result = db_query($sql, array('gid' => $gid));
     
     foreach ($result as $row) {
       $move = new Move;
       $move->set_long_format($row->long_move);
       $move->set_algebraic($row->algebraic);
-      $move->set_timestamp($row->timestamp);
+      $move->set_timestamp($row->datetime);
     
       $this->scoresheet[$row->move_no][$row->color] = $move;
     }

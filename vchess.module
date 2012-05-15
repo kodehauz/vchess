@@ -15,6 +15,7 @@ require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/player.i
 // VChess module files
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/vchess.pages.inc';
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/vchess.utils.inc';
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/stats.inc';
 
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/io.inc';
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/render.inc';
@@ -277,36 +278,6 @@ function vchess_menu() {
   return $items;
 }
 
-/**
- * A basic promotion test
- */
-function vchess_test() {
-  $game = new Game();
-  
-  $html = "";
-  
-  $expected = "Q3k3/8/8/8/8/8/8/4K3";
 
-  $game->setup_position("r3k3/1P6/8/8/8/8/8/4K3");
-  $game->set_players(1, 1);
-
-  $game->make_move(0, "Pb7xRa8=Q");
-
-  if ($game->position() == $expected) {
-    drupal_set_message("OK, test works!!");
-  }
-  else {
-    drupal_set_message("Problem!!");
-    
-    $html .= "Expected:";
-    $html .= vchess_render_FEN($expected);
-    $html .= "Actual:";
-    $html .= vchess_render_FEN($game->position());
-  }
-  
-
-  
-  return $html;
-}
 
 

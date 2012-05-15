@@ -97,10 +97,10 @@ function gamer_players() {
  * @return $html
  *   A themed table of the statistics
  */
-function gamer_player_stats($uid) {
+function gamer_player_stats_table($uid) {
   $player = new Player($uid);
 
-  $header = array('Played', 'Won', 'Drawn', 'Lost', 'Rating', 'Rating change', 'Current');
+  $header = array('Played', 'Won', 'Drawn', 'Lost', 'Rating', 'Rating change', 'Current games');
   $rows = array(array($player->played(), $player->won(), $player->drawn(),
       $player->lost(), $player->rating(), $player->rchange(), $player->current()));
 
@@ -119,6 +119,31 @@ function gamer_player_stats($uid) {
   ));
 
   return $html;
+}
+
+/**
+ * Get the stats array for a single player
+ *
+ * @param $uid
+ *   User id of player for whom stats are wanted
+ *
+ * @return
+ *   An associative array of the statistics
+ */
+function gamer_player_stats_array($uid) {
+  $player = new Player($uid);
+
+  $stats = array(
+      'played' => $player->played(), 
+      'won'    => $player->won(), 
+      'drawn'  => $player->drawn(),
+      'lost'   => $player->lost(),
+      'rating' => $player->rating(), 
+      'rchange'=> $player->rchange(),
+      'current'=> $player->current(),
+    );
+
+  return $stats;
 }
 
 /**

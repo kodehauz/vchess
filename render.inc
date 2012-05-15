@@ -159,16 +159,12 @@ function vchess_render_board_squares($board, $player, $active, $flipped) {
   $content .= '<table class="boardMain">';
   
   if (($player == 'w' && !$flipped) || ($player == 'b' && $flipped)) {
-//  if (!$flipped) {
-//  if ($player == 'w') {
-    drupal_set_message("showing from index 56, with flipped = " . $flipped);
     $orientation = 'w';
     $index = 56;
     $pos_change = 1;
     $line_change = -16;
   }
   else {
-    drupal_set_message("showing from index 7, with flipped = " . $flipped);
     $orientation = 'b';
     $index = 7;
     $pos_change = -1;
@@ -427,7 +423,9 @@ function vchess_flip_board_clicked($form, &$form_state) {
  * Form handler for the move button
  */
 function vchess_move_button_clicked($form, &$form_state) {
-  drupal_set_message(t('Move button clicked'));
+  // This is called artifically to avoid the Flip or Resign
+  // buttons being called as submit buttons.  So, even though
+  // it is empty it still needs to exist
 }
 
 /**

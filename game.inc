@@ -104,7 +104,12 @@ class Game {
     $secs_per_move = $this->time_per_move * $secs_per_unit;
 
     if ($this->status == STATUS_IN_PROGRESS) {
-      $current_time = time();
+      $current_time = gmmktime();  // All dates are kept as GMT
+//        $other_time = gmdate("Y-m-d H:i:s");
+//        $just_time = time();
+//        drupal_set_message("current time:" . date("Y-m-d H:i:s", $current_time));
+//        drupal_set_message("other time:" . $other_time);
+//        drupal_set_message("time: " . date("Y-m-d H:i:s", $just_time));
       if ($this->is_move_made()) {
         $move_time = strtotime($this->last_move()->timestamp());
       }
@@ -1136,8 +1141,11 @@ class Game {
         'move_no' => $move_no,
         'color' => $turn,
         'long_move' => $move->long_format(),
-        'algebraic' => $move->algebraic())
-        )
+        'algebraic' => $move->algebraic(),
+        // In order to avoid timestamp problems, we always store
+        // the timestamp as GMT, which does not change for summer time 
+        'datetime' => gmdate("Y-m-d H:i:s"),
+        ))
         ->execute();
   }
   
@@ -1145,6 +1153,7 @@ class Game {
    * Save an open game
    */
   function save() {
+
     if (!isset($this->gid)) {
       $this->gid = db_insert('vchess_games')
       ->fields(array(
@@ -1157,6 +1166,9 @@ class Game {
           'en_passant_target' => $this->en_passant_target(),
           'time_per_move' => $this->time_per_move,
           'time_units' => $this->time_units,
+          // In order to avoid timestamp problems, we always store
+          // the timestamp as GMT, which does not change for summer time
+          'time_started' => gmdate("Y-m-d H:i:s"),
           )
       )
       ->execute();
