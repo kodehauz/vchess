@@ -11,7 +11,7 @@
  * @param $gid
  *   Game id
  *   
- * @param char $player
+ * @param $player
  *   This indicates the color of the player who is playing, and thus the 
  *   viewing perspective of the board.  It is either 'w' (white) or 'b' (black).  
  *   If it is empty then the game is being observed
@@ -62,6 +62,14 @@ function vchess_render_game($gid, $player, $active) {
     
       // Save game
       $game->save();
+      
+      // Ensure that the other player is informed
+//      rules_invoke_event('vchess_move_made', $game->white_player(), $game->black_player());
+      $opponent = $game->opponent($uid);
+      $opponent_user = user_load($opponent->uid());
+      
+      rules_invoke_event('vchess_move_made', $opponent_user, 
+          $gid, $game->last_move()->algebraic());
       
       if ($game->status() <> STATUS_IN_PROGRESS) {
         switch ($game->status()) {
@@ -426,6 +434,8 @@ function vchess_move_button_clicked($form, &$form_state) {
   // This is called artifically to avoid the Flip or Resign
   // buttons being called as submit buttons.  So, even though
   // it is empty it still needs to exist
+  
+  // The real move is handled in vchess_render_game()
 }
 
 /**

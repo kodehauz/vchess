@@ -153,6 +153,18 @@ function gamer_start_game($white_uid, $black_uid) {
   $white = new Player($white_uid);
   $black = new Player($black_uid);
   
+  watchdog("VChess", "In gamer_start_game(), recording start of new game for game between " .
+    "@white_name (uid=@white_uid, current=@white_current) and " .
+    "@black_name (uid=@black_uid, current=@black_current)",
+    array(
+      '@white_name' => $white->name(),
+      '@black_name' => $black->name(),
+      '@white_uid' => $white_uid,
+      '@black_uid' => $black_uid,
+      '@white_current' => $white->current(),
+      '@black_current' => $black->current()
+    )
+  );
   $white->set_current($white->current() + 1);
   $black->set_current($black->current() + 1);
   

@@ -15,6 +15,7 @@ require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/player.i
 // VChess module files
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/vchess.pages.inc';
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/vchess.utils.inc';
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/vchess.rules.inc';
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/stats.inc';
 
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/io.inc';
@@ -148,14 +149,28 @@ function vchess_permission() {
       'basic access' => array(
           'title' => t('Basic access'),
           'description' => t('Access basic VChess functions such as ability to create a game')),
+      'game view' => array(
+          'title' => t('View a particular game'),
+          'description' => t('Ability to see a particular game.')),
+      'challenges' => array(
+          'title' => t('View the table of open challenges'),
+          'description' => t('Ability to see the table of open challenges.')),
+      'accept challenge' => array(
+          'title' => t('Accept a challenge'),
+          'description' => t('Ability to accept a challenge.')),
+      'my current games' => array(
+          'title' => t('My current games'),
+          'description' => t('Ability for a user to see a list of their own games.  This should be only for authenticated users.')),
+      'all current games' => array(
+          'title' => t('All current games'),
+          'description' => t('Ability to see a list of all current games.')),
       'view players table' => array(
           'title' => t('View players table'),
           'description' => t('View the list of all players with their statistics')),
       'reset games' => array(
           'title' => t('Reset games'),
           'description' => t('This enables someone to completely reset the games database.'),
-          'restrict access' => TRUE
-          )
+          'restrict access' => TRUE),
   );
 }
 
@@ -206,7 +221,7 @@ function vchess_menu() {
   
   $items['vchess/challenges'] = array(
       'page callback' => 'vchess_challenges',
-      'access arguments' => array('basic access'),
+      'access arguments' => array('challenges'),
       'title' => 'Challenges',
       'type' => MENU_NORMAL_ITEM,
   );
@@ -214,13 +229,13 @@ function vchess_menu() {
   $items['vchess/accept_challenge/%'] = array(
       'page callback' => 'vchess_accept_challenge',
       'page arguments' => array(2),
-      'access arguments' => array('basic access'),
+      'access arguments' => array('accept challenge'),
       'type' => MENU_CALLBACK,
   );
   
   $items['vchess/my_current_games'] = array(
       'page callback' => 'vchess_my_current_games',
-      'access arguments' => array('basic access'),
+      'access arguments' => array('my current games'),
       'title' => 'My current games',
       'type' => MENU_NORMAL_ITEM,
   );
@@ -235,7 +250,7 @@ function vchess_menu() {
   
   $items['vchess/all_current_games'] = array(
       'page callback' => 'vchess_all_current_games_page',
-      'access arguments' => array('basic access'),
+      'access arguments' => array('all current games'),
       'title' => 'All current games',
       'type' => MENU_NORMAL_ITEM,
   );
@@ -249,7 +264,7 @@ function vchess_menu() {
   $items['vchess/game/%'] = array(
       'page callback' => 'vchess_game',
       'page arguments' => array(2),
-      'access arguments' => array('basic access'),
+      'access arguments' => array('game view'),
       'type' => MENU_CALLBACK,
   );
 

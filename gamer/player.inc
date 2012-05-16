@@ -252,8 +252,13 @@ class Player {
       $this->current = $current;
     }
     else {
-      watchdog("VChess", "player.inc set_current() received request to set current to " .
-          $current, array(), WATCHDOG_ERROR);
+      watchdog("VChess", "player.inc set_current() received request to set current " . 
+          "for @name to @current.  (Old value is @this_current).", 
+        array(
+          '@name' => $this->name,
+          '@current' => $current,
+          '@this_current' => $this->current,
+        ), WATCHDOG_ERROR);
     }
   }
 }

@@ -356,60 +356,65 @@ function vchess_game($gid) {
   global $base_path; // e.g. "/chess_drupal-7.14/"
   global $base_url; // e.g. "http://localhost/chess_drupal-7.14"
 
-  $module_path = drupal_get_path('module', 'vchess');
-
-  drupal_add_css($module_path . '/vchessstyle.css');
-  drupal_add_js($module_path . '/board.js');
-
-  $game = new Game();
-  $game->load($gid);
-
-  // Find the player color
-  $player_color = $game->player_color($user->uid);
-  
   $out = "";
-
-  // Find out if the player has the move or not
-  if ($game->turn() == $player_color  && $game->status() == STATUS_IN_PROGRESS) {
-    $player_may_move = TRUE;
+  
+  if (user_is_logged_in()) {
+    $module_path = drupal_get_path('module', 'vchess');
+  
+    drupal_add_css($module_path . '/vchessstyle.css');
+    drupal_add_js($module_path . '/board.js');
+  
+    $game = new Game();
+    $game->load($gid);
+  
+    // Find the player color
+    $player_color = $game->player_color($user->uid);
+    
+    // Find out if the player has the move or not
+    if ($game->turn() == $player_color  && $game->status() == STATUS_IN_PROGRESS) {
+      $player_may_move = TRUE;
+    }
+    else {
+      $player_may_move = FALSE;
+    }
+  
+    $out .= "<div id='container'>";
+    
+    // Display game heading, e.g. "white: admin - black: hugh"
+    $out .= '<div style="text-align:center;">white: <b>' .
+        $game->white_player()->name() . '</b> -   black: <b>' . $game->black_player()->name() . '</b>';
+    $out .= '</div>';
+    
+    $out .= "<div id='board'>";
+    $out .= vchess_render_game($gid, $player_color, $player_may_move);
+    $out .= "</div>";
+  
+    $out .= "<div id='board_commands'>";
+    $out .= vchess_render_command_form($game);
+    $out .= "</div>";
+    
+    // Prepare the scoresheet
+    $out .= "<div id='scoresheet'>";
+    $scoresheet = new Scoresheet();
+    $scoresheet->load($gid);
+    $out .= $scoresheet->get_table();
+    $out .= "</div>";
+    
+    $out .= "</div>";
+  
+   
+    $out .= '';
+    $out .= '<script language="Javascript">module_path=\'' . $module_path . '\';';
+    $out .= "sub_path='" . $base_path . "/" . drupal_get_path('module', 'vchess') . "';";
+    $out .= "full_path='" . $base_url . "/" . drupal_get_path('module', 'vchess') . '\';';
+    $out .= 'checkMoveButton();';
+    $out .= 'highlightMove(window.document.getElementById("vchess-command-form").move.value);';
+    //      $out .= '<input type=\'button\' onclick=\'confirm_resign()\' value=\'Show alert box\' />;';
+    $out .= '</script>';
   }
   else {
-    $player_may_move = FALSE;
+    $out = t("Please log in to access this page");
   }
-
-  $out .= "<div id='container'>";
-  
-  // Display game heading, e.g. "white: admin - black: hugh"
-  $out .= '<div style="text-align:center;">white: <b>' .
-      $game->white_player()->name() . '</b> -   black: <b>' . $game->black_player()->name() . '</b>';
-  $out .= '</div>';
-  
-  $out .= "<div id='board'>";
-  $out .= vchess_render_game($gid, $player_color, $player_may_move);
-  $out .= "</div>";
-
-  $out .= "<div id='board_commands'>";
-  $out .= vchess_render_command_form($game);
-  $out .= "</div>";
-  
-  // Prepare the scoresheet
-  $out .= "<div id='scoresheet'>";
-  $scoresheet = new Scoresheet();
-  $scoresheet->load($gid);
-  $out .= $scoresheet->get_table();
-  $out .= "</div>";
-  
-  $out .= "</div>";
-
- 
-  $out .= '';
-  $out .= '<script language="Javascript">module_path=\'' . $module_path . '\';';
-  $out .= "sub_path='" . $base_path . "/" . drupal_get_path('module', 'vchess') . "';";
-  $out .= "full_path='" . $base_url . "/" . drupal_get_path('module', 'vchess') . '\';';
-  $out .= 'checkMoveButton();';
-  $out .= 'highlightMove(window.document.getElementById("vchess-command-form").move.value);';
-  //      $out .= '<input type=\'button\' onclick=\'confirm_resign()\' value=\'Show alert box\' />;';
-  $out .= '</script>';
 
   return $out;
 }
@@ -802,17 +807,14 @@ function vchess_random_game_form_submit($form, &$form_state) {
 function vchess_test() {
   $html = "";
   
-  $player = new Player(1);
-  $player->set_current(-1);
-  $player->set_lost(-1);
-  $player->set_played(-1);
-  $player->set_rating(-1);
-  $player->set_won(-1);
+  gamer_start_game(1, 1);
 
+  $player = new Player(1);
+  $player->set_current(-25);
+  
   $html .= "time() is: " . date("Y-m-d H:i:s", time()) . "<br />";
   $html .= "SERVER REQUEST_TIME is: " . date("Y-m-d H:i:s", $_SERVER['REQUEST_TIME']) . "<br />";
   $html .= "gmdate() is: " . gmdate("Y-m-d H:i:s");
   
   return $html;
 }
-

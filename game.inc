@@ -303,7 +303,7 @@ class Game {
     $this->time_units = $row['time_units'];
     $this->time_started = $row['time_started'];
   
-    $this->board->set_en_passant_target_value = $row['en_passant_target'];
+    $this->board->set_en_passant_target_value($row['en_passant_target']);
   
     // Handle castling availability
     $this->initialise_castling($row['castling_availability']);
