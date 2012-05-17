@@ -231,9 +231,19 @@ class Game {
   }
   
   /**
-   * Set a single player 
+   * Set a single player
+   * 
+   * Note that it is an error to set a player when there are already 2 players
+   * assigned to the game
    */
   function set_player($uid) {
+    watchdog("VChess", "In game.inc for game %gid, at start of set_player() setting player uid=%uid." .  
+        " Currently white_uid=%white_uid and black_uid=%black_uid", 
+        array('%gid' => $this->gid(), 
+            '%uid' => $uid, 
+            '%white_uid' => $this->white_uid, 
+            '%black_uid' => $this->black_uid));
+    
     if ($this->white_uid == 0 && $this->black_uid == 0) {
       if (rand(1,100) < 50) {
         $this->white_uid = $uid;
@@ -245,13 +255,24 @@ class Game {
     else {
       if ($this->white_uid == 0) {
         $this->white_uid = $uid;
+        $this->status = STATUS_IN_PROGRESS;
+      }
+      elseif ($this->black_uid == 0) {
+        $this->black_uid = $uid;
+        $this->status = STATUS_IN_PROGRESS;
       }
       else {
-        $this->black_uid = $uid;
+        watchdog("VChess", "Attempt to set a player when both players are already assigned", 
+            array(), WATCHDOG_ERROR);
       }
-      
-      $this->status = STATUS_IN_PROGRESS;
     }
+    
+    watchdog("VChess", "in game.inc for game %gid, at end of set_player() setting " . 
+        " player uid=%uid.  Now white_uid=%white_uid and black_uid=%black_uid", 
+        array('%gid' => $this->gid(), 
+            '%uid' => $uid, 
+            '%white_uid' => $this->white_uid, 
+            '%black_uid' => $this->black_uid));
     
     $this->save();
   }

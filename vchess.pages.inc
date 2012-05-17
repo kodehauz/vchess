@@ -27,7 +27,6 @@ function vchess_main_page() {
         
     $out .= vchess_users_current_games($user->name);
     $out .= vchess_challenges();
-    $out .= vchess_new_game_links();
 
     $out .= vchess_player_stats_table($user->uid);
   }
@@ -49,7 +48,8 @@ function vchess_player_stats_table($uid) {
         array(
           ':gamer_current' => $gamer_stats['current'], 
           ':vchess' => vchess_stats_games_current($uid)
-        )
+        ),
+        WATCHDOG_ERROR
     );
     
     $player = new Player($uid);
@@ -189,14 +189,14 @@ function vchess_create_challenge_form_submit($form, &$form_state) {
   
     drupal_set_message(t('Challenge has been created.'));
   
-    drupal_goto("vchess/game/$gid");
+//     drupal_goto("vchess/game/$gid");
   }
   else {
     drupal_set_message(t('You already have the allowed maxiumum of') . " " . VCHESS_PENDING_LIMIT . 
         " " . t('challenges pending.'));
-  
-    drupal_goto("vchess/challenges");
   }
+  
+  drupal_goto("vchess/challenges");
 }
 
 /**
@@ -334,14 +334,55 @@ function vchess_opponent_game_form_validate($form, &$form_state) {
 function vchess_accept_challenge($gid) {
   global $user;
   
-  watchdog("vchess_accept_challenge", "Player uid=" . $user->uid . " has accepted challenge for game $gid");
-  
   $game = new Game();
   $game->load($gid);
   
-  $game->set_player($user->uid);
+  watchdog(__FUNCTION__, "Player uid=%uid (%uname) has accepted challenge for game %gid. " .
+      "white_uid=%white_uid, black_uid=%black_uid. ",
+      array('%uid' => $user->uid,
+          '%uname' => $user->name,
+          '%gid' => $gid,
+          '%white_uid' => $game->white_uid(),
+          '%black_uid' => $game->black_uid()));
+
+  // Check that the game has not already got players (should never happen!)
+  if ($game->white_uid() <> 0 || $game->black_uid() <> 0) {
+    $game->set_player($user->uid);
   
-  gamer_start_game($game->white_uid(), $game->black_uid());
+    gamer_start_game($game->white_uid(), $game->black_uid());
+    
+    $extra = "";
+    $its_your_move = "";
+    if ($game->player_color($user->uid) == 'w') {
+      $opponent = $game->black_player()->name();
+      $its_your_move = "Now, it's your move!";
+    }
+    else {
+      $opponent = $game->white_player()->name();
+      $extra = "Since you are playing black, you will have to wait for $opponent to move.<br />";
+    }
+    $msg = "Congratulations, you have started a game against <b>" . $opponent . "</b>.<br />";
+    $msg .= $extra;
+    $msg .= "You can keep an eye on the status of this game and all your games on your <a href='" . url("vchess/my_current_games") .
+    "'>current games page</a>.<br />";
+    $msg .= $its_your_move;
+    
+    drupal_set_message($msg);
+    
+    drupal_goto("vchess/game/" . $gid);
+  }
+  else {
+    watchdog(__FUNCTION__, "Players are already assigned so challenge cannot be fulfilled. " . 
+        "Player uid=%uid (%uname) accepted challenge for game %gid. " .
+        "white_uid=%white_uid, black_uid=%black_uid. ",
+        array('%uid' => $user->uid,
+            '%uname' => $user->name,
+            '%gid' => $gid,
+            '%white_uid' => $game->white_uid(),
+            '%black_uid' => $game->black_uid()
+            ),
+        WATCHDOG_ERROR);
+  }
   
   return vchess_game($gid);
 }
@@ -497,7 +538,7 @@ function vchess_all_current_games_page() {
 }
 
 /**
- * Get the "[ New random game ][ New opponent game ]" links
+ * Get the link to the page for creating a new game
  */
 function vchess_new_game_links() {
   $links = "";
@@ -532,7 +573,7 @@ function vchess_all_current_games() {
 }
 
 /**
- * Get table of all current games
+ * Get page of all current challenges
  */
 function vchess_challenges() {
   global $user;
@@ -545,12 +586,13 @@ function vchess_challenges() {
   $games = vchess_load_challenges();
 
   $html = vchess_build_challenges_table($games, $user);
+  $html .= vchess_new_game_links();
 
   return $html;
 }
 
 /**
- * Get table of current games for a given player
+ * Get table of current games for the current player
  *
  * @param $name
  *   Name of player for whom list of games is required
@@ -601,7 +643,8 @@ function vchess_build_challenges_table($games, $named_user) {
     }
   }
   else {
-    $table['empty'] = t("There are currently no waiting challenges");
+    $table['empty'] = "There are currently no waiting challenges. You can " . "<a href='" .
+        url("vchess/create_challenge") . "'>create a new challenge here.</a>";
   }
 
   $header = array(
@@ -677,6 +720,13 @@ function vchess_build_current_games_table($games, $named_user) {
           $alt = '3.grey';
         }
 
+        if ($game->turn() == 'w') {
+          $player_to_move = $game->white_player();
+        }
+        else {
+          $player_to_move = $game->black_player();
+        }
+        
         $long_time = sprintf("%07d", $game->time_left());
         $rows[] = array(
             'move' => "<img alt='$alt' src='" . $base_url . "/" . drupal_get_path('module', 'vchess') . '/images/' . $theme . '/' . $mark . "'>",
@@ -687,6 +737,7 @@ function vchess_build_current_games_table($games, $named_user) {
              'time_left' => "<div id='" . $long_time . "'>" . 
                  vchess_user_friendly_time($game->time_left()) . "</div>",
             'speed' => $game->speed(),
+            'turn' => "<a href='" . url("/vchess/player/" . $player_to_move->name()) . "'>" . $player_to_move->name() . "</a>",
             'gid' => "<a href='" . url("vchess/game/" . $game->gid()) . "'>" . t('View') . "</a>",
         );
       }
@@ -694,7 +745,10 @@ function vchess_build_current_games_table($games, $named_user) {
   }
   else {
     if ($user->uid == $named_user->uid) {
-      $table['empty'] = t("You currently do not have any games.");
+      $table['empty'] = t("You currently do not have any games.<br />" . 
+          "<br />" .
+          "You can find a <a href='" . url("vchess/challenges") . "'>list of open challenges here</a>, and you can " . 
+          "<a href='" . url("vchess/create_challenge") . "'>create a new challenge here.</a>");
     }
     else {
       $table['empty'] = $named_user->name . " " . t("does not have any current games.");
@@ -708,6 +762,7 @@ function vchess_build_current_games_table($games, $named_user) {
       array('data' => t('Move #'), 'field' => 'move_no'),
       array('data' => t('Time left'), 'field' => 'time_left'),
       array('data' => t('Time per move'), 'field' => 'speed'),
+      array('data' => t('Turn'), 'field' => 'turn'),
       t('View'));
 
   // getting the current sort and order parameters from the url
