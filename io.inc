@@ -97,7 +97,8 @@ function vchess_load_all_current_games() {
 function vchess_load_challenges() {
   $game_list = array();
 
-  $sql = "SELECT gid FROM {vchess_games} WHERE status = '" . STATUS_AWAITING_PLAYERS . "'";
+  $sql = "SELECT gid FROM {vchess_games} WHERE status = '" . STATUS_AWAITING_PLAYERS . "'" . 
+    "ORDER BY time_started ASC";
   $result = db_query($sql);
 
   foreach ($result as $data) {

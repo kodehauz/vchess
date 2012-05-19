@@ -127,6 +127,21 @@ class Game {
   }
   
   /**
+   * Get the time_per_move
+   */
+  function time_per_move() {
+    return $this->time_per_move;
+  }
+  
+  /**
+   * Get the time units
+   */
+  function time_units() {
+    return $this->time_units;
+  }
+  
+  
+  /**
    * Get the timestamp of when the game started
    * 
    * @return

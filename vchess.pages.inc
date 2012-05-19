@@ -171,15 +171,21 @@ function vchess_create_challenge_form() {
 function vchess_create_challenge_form_submit($form, &$form_state) {
   global $user;
   
-  // Check that user does not already have a challenge pending
+
   $pending = 0;
   $games = vchess_load_challenges();
   foreach ($games as $game) {
+    // Check if there is a matching challenge
+    if ($game->challenger()->uid() != $user->uid 
+    && $game->time_per_move() == $form_state['values']['time_per_move']) {
+      vchess_accept_challenge($game->gid());
+    }
     if ($game->challenger()->uid() == $user->uid) {
       $pending++;
     }
   }
   
+  // Check that user does not already have too many challenges pending
   if ($pending < VCHESS_PENDING_LIMIT) {
     $game = new Game();
   
@@ -188,8 +194,6 @@ function vchess_create_challenge_form_submit($form, &$form_state) {
     $game->set_time_per_move( $form_state['values']['time_per_move']);
   
     drupal_set_message(t('Challenge has been created.'));
-  
-//     drupal_goto("vchess/game/$gid");
   }
   else {
     drupal_set_message(t('You already have the allowed maxiumum of') . " " . VCHESS_PENDING_LIMIT . 
