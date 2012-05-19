@@ -237,12 +237,12 @@ class Game {
    * assigned to the game
    */
   function set_player($uid) {
-    watchdog("VChess", "In game.inc for game %gid, at start of set_player() setting player uid=%uid." .  
-        " Currently white_uid=%white_uid and black_uid=%black_uid", 
-        array('%gid' => $this->gid(), 
-            '%uid' => $uid, 
-            '%white_uid' => $this->white_uid, 
-            '%black_uid' => $this->black_uid));
+//     watchdog("VChess", "In game.inc for game %gid, at start of set_player() setting player uid=%uid." .  
+//         " Currently white_uid=%white_uid and black_uid=%black_uid", 
+//         array('%gid' => $this->gid(), 
+//             '%uid' => $uid, 
+//             '%white_uid' => $this->white_uid, 
+//             '%black_uid' => $this->black_uid));
     
     if ($this->white_uid == 0 && $this->black_uid == 0) {
       if (rand(1,100) < 50) {
@@ -267,12 +267,12 @@ class Game {
       }
     }
     
-    watchdog("VChess", "in game.inc for game %gid, at end of set_player() setting " . 
-        " player uid=%uid.  Now white_uid=%white_uid and black_uid=%black_uid", 
-        array('%gid' => $this->gid(), 
-            '%uid' => $uid, 
-            '%white_uid' => $this->white_uid, 
-            '%black_uid' => $this->black_uid));
+//     watchdog("VChess", "in game.inc for game %gid, at end of set_player() setting " . 
+//         " player uid=%uid.  Now white_uid=%white_uid and black_uid=%black_uid", 
+//         array('%gid' => $this->gid(), 
+//             '%uid' => $uid, 
+//             '%white_uid' => $this->white_uid, 
+//             '%black_uid' => $this->black_uid));
     
     $this->save();
   }

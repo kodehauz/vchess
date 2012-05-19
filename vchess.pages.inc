@@ -354,18 +354,22 @@ function vchess_accept_challenge($gid) {
     $extra = "";
     $its_your_move = "";
     if ($game->player_color($user->uid) == 'w') {
-      $opponent = $game->black_player()->name();
+      $opponent_name = $game->black_player()->name();
+      $opponent_user = user_load($game->black_uid());
       $its_your_move = "Now, it's your move!";
     }
     else {
-      $opponent = $game->white_player()->name();
-      $extra = "Since you are playing black, you will have to wait for $opponent to move.<br />";
+      $opponent_name = $game->white_player()->name();
+      $opponent_user = user_load($game->white_uid());
+      $extra = "Since you are playing black, you will have to wait for $opponent_name to move.<br />";
     }
-    $msg = "Congratulations, you have started a game against <b>" . $opponent . "</b>.<br />";
+    $msg = "Congratulations, you have started a game against <b>" . $opponent_name . "</b>.<br />";
     $msg .= $extra;
     $msg .= "You can keep an eye on the status of this game and all your games on your <a href='" . url("vchess/my_current_games") .
     "'>current games page</a>.<br />";
     $msg .= $its_your_move;
+    
+    rules_invoke_event('vchess_challenge_accepted', $opponent_user, $gid);
     
     drupal_set_message($msg);
     

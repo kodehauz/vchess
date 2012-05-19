@@ -9,12 +9,20 @@ function vchess_rules_event_info() {
   $events['vchess_move_made'] = array (
       'group' => 'vchess',
       'label' => t('Move has been made in a particular game'),
-//       'module' => 'VChess',
        'variables' => array(
            'opponent' => array('type' => 'user', 'label' => t('Opponent')),
            'gid' => array('type' => 'integer', 'label' => t('Game id')),
            'move' => array('type' => 'text', 'label' => t('Last move')),
        ),
+  );
+  
+  $events['vchess_challenge_accepted'] = array (
+      'group' => 'vchess',
+      'label' => t('Player has accepted a challenge'),
+      'variables' => array(
+          'opponent' => array('type' => 'user', 'label' => t('Opponent')),
+          'gid' => array('type' => 'integer', 'label' => t('Game id')),
+      ),
   );
    
   return $events;
