@@ -152,6 +152,17 @@ function vchess_create_challenge_form() {
     '#default_value' => "3", // added default value.
   );
   
+  $form['position'] = array(
+      '#type' => 'select',
+      '#title' => t('Starting position'),
+      '#options' => array(
+          0 => t('No'),
+          1 => t('Yes'),
+      ),
+//      '#default_value' => 0,
+      '#description' => t('Select the game starting position.'),
+  );
+  
   $form['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Create Challenge'),

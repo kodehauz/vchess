@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * @file
+ *
+ */
+
+/**
+ * hook_menu() implementation
+ */
+function pos_menu() {
+  $items = array();
+
+  $items['pos/show/%'] = array(
+      'page callback' => 'pos_show',
+      'page arguments' => array(2),
+//       'access arguments' => array('basic access'),
+      'title' => "Show position",
+      'type' => MENU_CALLBACK,
+  );
+  
+  return $items;
+}
+

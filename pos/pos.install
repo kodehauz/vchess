@@ -1,0 +1,48 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions
+ *
+ */
+
+/**
+ * Define the database tables required for this module
+ */
+function pos_schema() {
+  $schema['pos'] = array(
+      'fields' => array(
+          'board' => array(
+              'type' => 'varchar',
+              'length' => 60,
+              'not null' => TRUE,
+              'default' => '',
+              'description' => 'Board position in FEN format',
+          ),
+          'castling' => array(
+              'type' => 'char',
+              'length' => 4,
+              'not null' => TRUE,
+              'default' => 'KQkq',
+          ),
+          'en_passant' => array(
+              'type' => 'char',
+              'length' => 2,
+              'not null' => TRUE,
+              'description' => 'ep (en passant) target square. If there is no ep target square, ' . '
+                  this is "-". If a pawn has just made a 2-square move, this is the position "behind" the pawn. This is recorded regardless of whether there is a pawn in position to make an ep capture.'
+          ),
+          'title' => array(
+              'type' => 'varchar',
+              'length' => 32,
+              'not null' => TRUE,
+              'description' => 'A short descriptive title',
+          ),
+          'description' => array(
+              'type' => 'text',
+              'description' => 'A description of the key features of the position',
+          )
+      ),
+  );
+
+  return $schema;
+}
