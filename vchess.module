@@ -145,16 +145,16 @@ function vchess_help($path, $arg) {
  */
 function vchess_permission() {
   return array(
-      'player access' => array(
-          'title' => t('Player access'),
+      'view player' => array(
+          'title' => t('View player'),
           'description' => t('Access to be able to view details of a particular player')),
       'basic access' => array(
           'title' => t('Basic access'),
           'description' => t('Access basic VChess functions such as ability to create a game')),
-      'game view' => array(
+      'view game' => array(
           'title' => t('View a particular game'),
           'description' => t('Ability to see a particular game.')),
-      'challenges' => array(
+      'view challenges' => array(
           'title' => t('View the table of open challenges'),
           'description' => t('Ability to see the table of open challenges.')),
       'accept challenge' => array(
@@ -223,7 +223,7 @@ function vchess_menu() {
   
   $items['vchess/challenges'] = array(
       'page callback' => 'vchess_challenges',
-      'access arguments' => array('challenges'),
+      'access arguments' => array('view challenges'),
       'title' => 'Challenges',
       'type' => MENU_NORMAL_ITEM,
   );
@@ -266,14 +266,14 @@ function vchess_menu() {
   $items['vchess/game/%'] = array(
       'page callback' => 'vchess_game',
       'page arguments' => array(2),
-      'access arguments' => array('game view'),
+      'access arguments' => array('view game'),
       'type' => MENU_CALLBACK,
   );
 
   $items['vchess/player/%'] = array(
       'page callback' => 'vchess_player',
       'page arguments' => array(2),
-      'access arguments' => array('player access'),
+      'access arguments' => array('view player'),
       'type' => MENU_CALLBACK,
   );
   

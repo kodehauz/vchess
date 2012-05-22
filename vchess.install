@@ -6,6 +6,23 @@
  */
 
 /**
+ * Implements hook_install()
+ */
+function vchess_install() {
+  // rid=2 => authenticated user
+  user_role_change_permissions(2, 
+    array(
+      'view player' => TRUE,
+      'basic access' => TRUE,
+      'view game' => TRUE, 
+      'view challenges' => TRUE,
+      'accept challenge' => TRUE, 
+      'my current games' => TRUE,
+     )
+   );
+}
+
+/**
  * Define the database tables required for this module
  * 
  * There are 2 tables:
