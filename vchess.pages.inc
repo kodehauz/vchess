@@ -152,14 +152,12 @@ function vchess_create_challenge_form() {
     '#default_value' => "3", // added default value.
   );
   
+//   pos_initialise_table();
+  $positions = pos_get_positions();
   $form['position'] = array(
       '#type' => 'select',
       '#title' => t('Starting position'),
-      '#options' => array(
-          0 => t('No'),
-          1 => t('Yes'),
-      ),
-//      '#default_value' => 0,
+      '#options' => $positions,
       '#description' => t('Select the game starting position.'),
   );
   
@@ -203,6 +201,7 @@ function vchess_create_challenge_form_submit($form, &$form_state) {
     $gid = $game->gid();
     $game->set_player($user->uid);
     $game->set_time_per_move( $form_state['values']['time_per_move']);
+    $game->setup_position($form_state['values']['position']);
   
     drupal_set_message(t('Challenge has been created.'));
   }

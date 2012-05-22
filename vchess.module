@@ -12,6 +12,8 @@
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/rating.inc';
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/player.inc';
 
+// require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'pos') . '/pos.install';
+
 // VChess module files
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/vchess.pages.inc';
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/vchess.utils.inc';

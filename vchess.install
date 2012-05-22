@@ -147,10 +147,10 @@ function vchess_schema() {
               'length' => '20',
               'not null' => TRUE,
           ),
-          'timestamp' => array(
+          'datetime' => array(
               'description' => 'Exact date and time of the move',
-              'type' => 'timestamp',
-              'mysql_type' => 'timestamp',
+              'type' => 'datetime',
+              'mysql_type' => 'datetime',
               'not null' => TRUE,
           ),
       ),

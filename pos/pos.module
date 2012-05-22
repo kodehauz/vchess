@@ -22,3 +22,23 @@ function pos_menu() {
   return $items;
 }
 
+/**
+ * Get positions
+ * 
+ * Load an array with the positions data, in the format:
+ *   array("Title 1" => "FEN board 1", "Title 2" => "FEN board 2", ...);
+ */
+function pos_get_positions() { 
+  $positions = array();
+
+  $sql = "SELECT title, board FROM {pos} ORDER BY title";
+  $result = db_query($sql);
+  
+  foreach ($result as $data) {
+    $positions[$data->board] = $data->title;
+  }
+  
+  return $positions;
+}
+
+
