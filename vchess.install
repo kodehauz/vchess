@@ -92,14 +92,14 @@ function vchess_schema() {
               'not null' => TRUE,
               'default' => 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR',
           ),
-          'castling_availability' => array(
+          'castling' => array(
               'description' => 'Castling availability. If neither side can castle, this is "-". Otherwise, this has one or more letters: "K" (White can castle kingside), "Q" (White can castle queenside), "k" (Black can castle kingside), and/or "q" (Black can castle queenside).',
               'type' => 'varchar',
               'length' => '4',
               'not null' => TRUE,
               'default' => 'KQkq',
           ),
-          'en_passant_target' => array(
+          'en_passant' => array(
               'description' => 'ep (en passant) target square. If there is no ep target square, this is "-". If a pawn has just made a 2-square move, this is the position "behind" the pawn. This is recorded regardless of whether there is a pawn in position to make an ep capture.',
               'type' => 'char',
               'length' => '2',

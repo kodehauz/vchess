@@ -1,0 +1,6 @@
+; $Id$
+name = FEN
+description = FEN module
+dependencies[] = vchess
+core = 7.x
+php = 5.1

@@ -202,6 +202,7 @@ function vchess_create_challenge_form_submit($form, &$form_state) {
     $game->set_player($user->uid);
     $game->set_time_per_move( $form_state['values']['time_per_move']);
     $game->setup_position($form_state['values']['position']);
+    $game->save();
   
     drupal_set_message(t('Challenge has been created.'));
   }

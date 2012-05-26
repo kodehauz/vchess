@@ -50,6 +50,11 @@ if (strpos($base_url, "localhost") > 0) {
   error_reporting(E_ALL);
 }
 
+
+
+
+
+
 /**
  * Implementation of hook_block_info().
  */

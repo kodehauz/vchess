@@ -65,7 +65,7 @@ class Game {
     
     $this->status = STATUS_AWAITING_PLAYERS;
     
-    $this->reset_en_passant_target();
+    $this->reset_en_passant();
 
     // Castling record.  For example, when white king has moved, white may no
     // longer castle.  When rook has moved, player may only castle on other side.
@@ -319,7 +319,7 @@ class Game {
    */
   function load($gid) {
     $sql = "SELECT gid, turn, white_uid, black_uid, status, board, " . 
-      "castling_availability, en_passant_target, time_per_move, time_units, time_started " .
+      "castling, en_passant, time_per_move, time_units, time_started " .
       " FROM {vchess_games} WHERE gid = '" .
       $gid . "'";
     // Converted to the D7 database API syntax.
@@ -339,10 +339,10 @@ class Game {
     $this->time_units = $row['time_units'];
     $this->time_started = $row['time_started'];
   
-    $this->board->set_en_passant_target_value($row['en_passant_target']);
+    $this->board->set_en_passant_value($row['en_passant']);
   
     // Handle castling availability
-    $this->initialise_castling($row['castling_availability']);
+    $this->initialise_castling($row['castling']);
     
     $this->scoresheet->load($gid); 
   }
@@ -367,26 +367,26 @@ class Game {
    * 
    * @see http://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation 
    */
-  function initialise_castling($castling_availability) {
-    if (strpos($castling_availability, "K") !== FALSE) {
+  function initialise_castling($castling) {
+    if (strpos($castling, "K") !== FALSE) {
       $this->white_may_castle_short = TRUE;
     }
     else {
       $this->white_may_castle_short = FALSE;
     }
-    if (strpos($castling_availability, "Q") !== FALSE) {
+    if (strpos($castling, "Q") !== FALSE) {
       $this->white_may_castle_long = TRUE;
     }
     else {
       $this->white_may_castle_long = FALSE;
     }
-    if (strpos($castling_availability, "k") !== FALSE) {
+    if (strpos($castling, "k") !== FALSE) {
       $this->black_may_castle_short = TRUE;
     }
     else {
       $this->black_may_castle_short = FALSE;
     }
-    if (strpos($castling_availability, "q") !== FALSE) {
+    if (strpos($castling, "q") !== FALSE) {
       $this->black_may_castle_long = TRUE;
     }
     else {
@@ -395,7 +395,7 @@ class Game {
   }
   
   /** 
-   * Create $castling_availability string.
+   * Create $castling string.
    * 
    * If neither side can castle, this is "-". 
    * Otherwise, this has one or more letters: 
@@ -407,26 +407,26 @@ class Game {
    * 
    * @see http://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation 
    */
-  function castling_availability() {
-    $castling_availability = "";
+  function castling() {
+    $castling = "";
     
     if ($this->white_may_castle_short) {
-      $castling_availability .= "K";
+      $castling .= "K";
     }
     if ($this->white_may_castle_long) {
-      $castling_availability .= "Q";
+      $castling .= "Q";
     }
     if ($this->black_may_castle_short) {
-      $castling_availability .= "k";
+      $castling .= "k";
     }
     if ($this->black_may_castle_long) {
-      $castling_availability .= "q";
+      $castling .= "q";
     }
-    if ($castling_availability == "") {
-      $castling_availability = "-";
+    if ($castling == "") {
+      $castling = "-";
     }
     
-    return $castling_availability;
+    return $castling;
   }
   
   /**
@@ -573,17 +573,17 @@ class Game {
   }
   
   /**
-   * Get the en_passant_target 
+   * Get the en_passant 
    * 
-   * The en_passant_target is the coordinates of the square
+   * The en_passant is the coordinates of the square
    * behind the pawn in the last move to have moved 2 squares.
    * 
    * @return 
-   *   Returns the en_passant_target coord (e.g. "d3"), if there is one,
+   *   Returns the en_passant coord (e.g. "d3"), if there is one,
    *   otherwise it returns "-" 
    */
-  function en_passant_target() {
-    return $this->board->en_passant_target();
+  function en_passant() {
+    return $this->board->en_passant();
   }
   
   /**
@@ -834,7 +834,7 @@ class Game {
   
     $result = "";
     $pawn_promoted = FALSE;
-    $en_passant_target_set = FALSE;
+    $en_passant_set = FALSE;
     $move_ok = TRUE;
     
     $piece_square = $move->from_square();
@@ -910,20 +910,20 @@ class Game {
         $piece->set_type($move->source_piece_type());
         $piece->set_color($this->turn());
 
-        if ($piece->type() == 'P' && $to_square->coord() == $this->en_passant_target()) {
+        if ($piece->type() == 'P' && $to_square->coord() == $this->en_passant()) {
           // Perform en passant pawn capture
-          $board->en_passant($piece_square, $to_square);
+          $board->en_passant_capture($piece_square, $to_square);
         }
         elseif (!$board->move_is_ok($piece_square, $to_square)) {
           $move_ok = FALSE;
         }
         else {
-          // If pawn moved 2 squares, then record the en_passant_target square
+          // If pawn moved 2 squares, then record the en_passant square
           // (the square behind the pawn which has just moved)
           if ($board->pawn_moved_2_squares($piece_square, $to_square)) {
-            $this->set_en_passant_target($to_square);
+            $this->set_en_passant($to_square);
 
-            $en_passant_target_set = TRUE;
+            $en_passant_set = TRUE;
           } 
           
           // If pawn reached last rank, promote it
@@ -977,9 +977,9 @@ class Game {
         $result .= 'Your last move: ' . $move->algebraic();
         
         // If this wasn't a 2-square pawn move, we need to reset 
-        // the en_passant_target square
-        if (!$en_passant_target_set) {
-          $this->reset_en_passant_target();
+        // the en_passant square
+        if (!$en_passant_set) {
+          $this->reset_en_passant();
         }
         
         // Check checkmate/stalemate
@@ -1039,24 +1039,24 @@ class Game {
   }
   
   /**
-   * Set the en_passant_target square
+   * Set the en_passant square
    */
-  function set_en_passant_target(Square $square_in_front) {
-    $this->board()->set_en_passant_target($square_in_front);
+  function set_en_passant(Square $square_in_front) {
+    $this->board()->set_en_passant($square_in_front);
   }
   
   /**
-   * Reset the en_passant_target square
+   * Reset the en_passant square
    */
-  function reset_en_passant_target() {
-    $this->board->reset_en_passant_target();
+  function reset_en_passant() {
+    $this->board->reset_en_passant();
   }
   
   /**
-   * Test if there is an en_passant_target square
+   * Test if there is an en_passant square
    */
-  function is_en_passant_target() {
-    return $this->board->is_en_passant_target();
+  function is_en_passant() {
+    return $this->board->is_en_passant();
   }
   
   /**
@@ -1198,8 +1198,8 @@ class Game {
           'white_uid' => $this->white_uid,
           'black_uid' => $this->black_uid,
           'board' => $this->board->position(),
-          'castling_availability' => $this->castling_availability(),
-          'en_passant_target' => $this->en_passant_target(),
+          'castling' => $this->castling(),
+          'en_passant' => $this->en_passant(),
           'time_per_move' => $this->time_per_move,
           'time_units' => $this->time_units,
           // In order to avoid timestamp problems, we always store
@@ -1222,8 +1222,8 @@ class Game {
             'white_uid' => $this->white_uid(),
             'black_uid' => $this->black_uid(),
             'board' => $this->board()->position(),
-            'castling_availability' => $this->castling_availability(),
-            'en_passant_target' => $this->en_passant_target(),
+            'castling' => $this->castling(),
+            'en_passant' => $this->en_passant(),
             'time_per_move' => $this->time_per_move,
             'time_units' => $this->time_units,
         ))

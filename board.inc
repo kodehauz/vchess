@@ -51,7 +51,7 @@ class Board {
   //      etc.)
   protected $board = array();
 
-  protected $en_passant_target;
+  protected $en_passant;
 
   /**
    * Initialise the board as empty.  We choose later whether to fill with
@@ -907,7 +907,7 @@ class Board {
   /**
    * Perform en passant pawn capture
    */
-  function en_passant(Square $from_square, Square $to_square) {
+  function en_passant_capture(Square $from_square, Square $to_square) {
     // Calculate the square of the pawn which has just moved 2 squares
     if ($from_square->rank() == 4) {
       // Example: 
@@ -1125,8 +1125,8 @@ class Board {
           $valid_moves[] = $this->long_move($piece_square, $square_2_in_front);
         }
         // See if an en passant capture is possible
-        if ($this->is_en_passant_target()) {
-          if ($this->move_is_ok($piece_square, $en_passant_square = vchess_coord2square($this->en_passant_target()))) {
+        if ($this->is_en_passant()) {
+          if ($this->move_is_ok($piece_square, $en_passant_square = vchess_coord2square($this->en_passant()))) {
             $valid_moves[] = $this->long_move($piece_square, $en_passant_square);
           }
         }
@@ -1240,71 +1240,71 @@ class Board {
   }
   
   /**
-   * Set the en_passant_target square
+   * Set the en_passant square
    * 
    * @param $square_in_front
-   *   The square which is just in front of the en_passant_target.  For
+   *   The square which is just in front of the en_passant.  For
    *   example, if white has moved Pe2-e4, then the square passed will 
-   *   be the e4 square and the en_passant_target will be e3
+   *   be the e4 square and the en_passant will be e3
    */
-  function set_en_passant_target(Square $square_in_front) {
+  function set_en_passant(Square $square_in_front) {
     $file = $square_in_front->file();
     if ($square_in_front->rank() == 4) {
       // White has moved something like "Ph2-h4"
       // so target will be "h3"
-      $this->en_passant_target = $file . "3";
+      $this->en_passant = $file . "3";
     }
     else {
       // Black has moved something like "Ph7-h5"
       // so target will be "h6"
-      $this->en_passant_target = $file . "6";
+      $this->en_passant = $file . "6";
     }
   }
   
   /**
-   * Set en_passant_target value
+   * Set en_passant value
    * 
    * @param $value
    *   Either a coord, e.g. "d3" or "-" 
    */
-  function set_en_passant_target_value($value) {
-    $this->en_passant_target = $value;
+  function set_en_passant_value($value) {
+    $this->en_passant = $value;
   }
   
   /**
-   * Reset the en_passant_target square
+   * Reset the en_passant square
    */
-  function reset_en_passant_target() {
-    $this->en_passant_target = "-";
+  function reset_en_passant() {
+    $this->en_passant = "-";
   }
   
   /**
-   * Test if there is an en_passant_target square
+   * Test if there is an en_passant square
    * 
    * @return bool
-   *   TRUE if an en_passant_target square currently exists
+   *   TRUE if an en_passant square currently exists
    */
-  function is_en_passant_target() {
-    $is_en_passant_target = FALSE;
-    if ($this->en_passant_target() <> "-") {
-      $is_en_passant_target = TRUE;
+  function is_en_passant() {
+    $is_en_passant = FALSE;
+    if ($this->en_passant() <> "-") {
+      $is_en_passant = TRUE;
     }
   
-    return $is_en_passant_target;
+    return $is_en_passant;
   }
   
   /**
-   * Get the en_passant_target
+   * Get the en_passant
    *
-   * The en_passant_target is the coordinates of the square
+   * The en_passant is the coordinates of the square
    * behind the pawn in the last move to have moved 2 squares.
    *
    * @return
-   *   Returns the en_passant_target coord (e.g. "d3"), if there is one,
+   *   Returns the en_passant coord (e.g. "d3"), if there is one,
    *   otherwise it returns "-"
    */
-  function en_passant_target() {
-    return $this->en_passant_target;
+  function en_passant() {
+    return $this->en_passant;
   }
 }
   
