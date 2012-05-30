@@ -335,8 +335,12 @@ function vchess_opponent_game_form_validate($form, &$form_state) {
 
   $form_values = $form_state['values'];
 
-  $sql = "SELECT name FROM {users} WHERE name = '" . $form_values['opponent'] . "'";
-  $res = db_query($sql);
+//   $sql = "SELECT name FROM {users} WHERE name = '" . $form_values['opponent'] . "'";
+  
+  $res = db_select('users')
+    ->fields('users', array('name'))
+    ->condition('name', $form_values['opponent'],'=')
+    ->execute();
 
   if ($res->rowCount() == 0) {
     form_set_error('', t('Opponent does not exist on this site'));
