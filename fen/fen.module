@@ -57,14 +57,14 @@ function _fen_filter_board_prepare($text, $filter) {
  * do the real filtering: replace the fen string with an HTML version.
  */
 function _fen_filter_board_process($text, $filter) {
+  $html = $text;
+  
   $fen = _fen_get_text_between_tags($text, "fen");
   if ($fen <> $text) {
     // looks like we've got a <fen>...</fen> delimited string
     $html = vchess_render_FEN($fen);
   }
-  else {
-    $html = "Invalid FEN string: " . $fen;
-  }
+ 
   return $html;
 }
 
