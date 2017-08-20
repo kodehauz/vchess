@@ -10,7 +10,7 @@
 
 // Gamer module files
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/rating.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/player.inc';
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'gamer') . '/player.php';
 
 // require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'pos') . '/pos.install';
 
@@ -186,116 +186,116 @@ function vchess_permission() {
  */
 function vchess_menu() {
   $items = array();
-
-  $items['vchess/main'] = array(
-      'page callback' => 'vchess_main_page',
-      'access arguments' => array('basic access'),
-      'title' => 'Main',
-      'type' => MENU_NORMAL_ITEM,
-  );
-
-  $items['vchess/opponent_game_form'] = array(
-      'page callback' => 'drupal_get_form',
-      'access arguments' => array('basic access'),
-      'page arguments' => array('vchess_opponent_game_form'),
-      'title' => 'Create chess game against named player',
-      'type' => MENU_CALLBACK,
-  );
-  
-  $items['vchess/random_game_form'] = array(
-      'page callback' => 'drupal_get_form',
-      'access arguments' => array('basic access'),
-      'page arguments' => array('vchess_random_game_form'),
-      'title' => 'Create chess game against random player',
-      'type' => MENU_CALLBACK,
-  );
-  
-  $items['vchess/default_challenge'] = array(
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('vchess_create_default_challenge'),
-      'access arguments' => array('basic access'),
-      'title' => 'Create chess game challenge',
-      'type' => MENU_CALLBACK,
-  );
-  
-  $items['vchess/create_challenge'] = array(
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('vchess_create_challenge_form'),
-      'access arguments' => array('basic access'),
-      'title' => 'Create chess game challenge',
-      'type' => MENU_CALLBACK,
-  );
-  
-  $items['vchess/challenges'] = array(
-      'page callback' => 'vchess_challenges',
-      'access arguments' => array('view challenges'),
-      'title' => 'Challenges',
-      'type' => MENU_NORMAL_ITEM,
-  );
-  
-  $items['vchess/accept_challenge/%'] = array(
-      'page callback' => 'vchess_accept_challenge',
-      'page arguments' => array(2),
-      'access arguments' => array('accept challenge'),
-      'type' => MENU_CALLBACK,
-  );
-  
-  $items['vchess/my_current_games'] = array(
-      'page callback' => 'vchess_my_current_games',
-      'access arguments' => array('my current games'),
-      'title' => 'My current games',
-      'type' => MENU_NORMAL_ITEM,
-  );
-  
-  $items['vchess/current_games/%'] = array(
-      'page callback' => 'vchess_users_current_games',
-      'page arguments' => array(2),
-      'access arguments' => array('basic access'),
-      'title' => "Current games",
-      'type' => MENU_CALLBACK,
-  );
-  
-  $items['vchess/all_current_games'] = array(
-      'page callback' => 'vchess_all_current_games_page',
-      'access arguments' => array('all current games'),
-      'title' => 'All current games',
-      'type' => MENU_NORMAL_ITEM,
-  );
-
-  $items['vchess/players'] = array(
-      'page callback' => 'vchess_players',
-      'access arguments' => array('view players table'),
-      'type' => MENU_NORMAL_ITEM,
-  );
-
-  $items['vchess/game/%'] = array(
-      'page callback' => 'vchess_game',
-      'page arguments' => array(2),
-      'access arguments' => array('view game'),
-      'type' => MENU_CALLBACK,
-  );
-
-  $items['vchess/player/%'] = array(
-      'page callback' => 'vchess_player',
-      'page arguments' => array(2),
-      'access arguments' => array('view player'),
-      'type' => MENU_CALLBACK,
-  );
-  
-  $items['vchess/reset_games'] = array(
-      'page callback' => 'drupal_get_form',
-      'access arguments' => array('reset games'),
-      'page arguments' => array('vchess_reset_games_form'),
-      'title' => 'Reset ALL games!',
-      'type' => MENU_CALLBACK,
-   );
-      
-  $items['vchess/test'] = array(
-      'page callback' => 'vchess_test',
-      'access arguments' => array('reset games'),
-      'title' => 'Perform a test',
-      'type' => MENU_CALLBACK,
-  );
+//
+//  $items['vchess/main'] = array(
+//      'page callback' => 'vchess_main_page',
+//      'access arguments' => array('basic access'),
+//      'title' => 'Main',
+//      'type' => MENU_NORMAL_ITEM,
+//  );
+//
+//  $items['vchess/opponent_game_form'] = array(
+//      'page callback' => 'drupal_get_form',
+//      'access arguments' => array('basic access'),
+//      'page arguments' => array('vchess_opponent_game_form'),
+//      'title' => 'Create chess game against named player',
+//      'type' => MENU_CALLBACK,
+//  );
+//
+//  $items['vchess/random_game_form'] = array(
+//      'page callback' => 'drupal_get_form',
+//      'access arguments' => array('basic access'),
+//      'page arguments' => array('vchess_random_game_form'),
+//      'title' => 'Create chess game against random player',
+//      'type' => MENU_CALLBACK,
+//  );
+////
+//  $items['vchess/default_challenge'] = array(
+//      'page callback' => 'drupal_get_form',
+//      'page arguments' => array('vchess_create_default_challenge'),
+//      'access arguments' => array('basic access'),
+//      'title' => 'Create chess game challenge',
+//      'type' => MENU_CALLBACK,
+//  );
+//
+//  $items['vchess/create_challenge'] = array(
+//      'page callback' => 'drupal_get_form',
+//      'page arguments' => array('vchess_create_challenge_form'),
+//      'access arguments' => array('basic access'),
+//      'title' => 'Create chess game challenge',
+//      'type' => MENU_CALLBACK,
+//  );
+//
+//  $items['vchess/challenges'] = array(
+//      'page callback' => 'vchess_challenges',
+//      'access arguments' => array('view challenges'),
+//      'title' => 'Challenges',
+//      'type' => MENU_NORMAL_ITEM,
+//  );
+//
+//  $items['vchess/accept_challenge/%'] = array(
+//      'page callback' => 'vchess_accept_challenge',
+//      'page arguments' => array(2),
+//      'access arguments' => array('accept challenge'),
+//      'type' => MENU_CALLBACK,
+//  );
+//
+//  $items['vchess/my_current_games'] = array(
+//      'page callback' => 'vchess_my_current_games',
+//      'access arguments' => array('my current games'),
+//      'title' => 'My current games',
+//      'type' => MENU_NORMAL_ITEM,
+//  );
+//
+//  $items['vchess/current_games/%'] = array(
+//      'page callback' => 'vchess_users_current_games',
+//      'page arguments' => array(2),
+//      'access arguments' => array('basic access'),
+//      'title' => "Current games",
+//      'type' => MENU_CALLBACK,
+//  );
+//
+//  $items['vchess/all_current_games'] = array(
+//      'page callback' => 'vchess_all_current_games_page',
+//      'access arguments' => array('all current games'),
+//      'title' => 'All current games',
+//      'type' => MENU_NORMAL_ITEM,
+//  );
+//
+//  $items['vchess/players'] = array(
+//      'page callback' => 'vchess_players',
+//      'access arguments' => array('view players table'),
+//      'type' => MENU_NORMAL_ITEM,
+//  );
+//
+//  $items['vchess/game/%'] = array(
+//      'page callback' => 'vchess_game',
+//      'page arguments' => array(2),
+//      'access arguments' => array('view game'),
+//      'type' => MENU_CALLBACK,
+//  );
+//
+//  $items['vchess/player/%'] = array(
+//      'page callback' => 'vchess_player',
+//      'page arguments' => array(2),
+//      'access arguments' => array('view player'),
+//      'type' => MENU_CALLBACK,
+//  );
+////
+//  $items['vchess/reset_games'] = array(
+//      'page callback' => 'drupal_get_form',
+//      'access arguments' => array('reset games'),
+//      'page arguments' => array('vchess_reset_games_form'),
+//      'title' => 'Reset ALL games!',
+//      'type' => MENU_CALLBACK,
+////   );
+//
+//  $items['vchess/test'] = array(
+//      'page callback' => 'vchess_test',
+//      'access arguments' => array('reset games'),
+//      'title' => 'Perform a test',
+//      'type' => MENU_CALLBACK,
+//  );
 
   return $items;
 }

@@ -1,0 +1,28 @@
+view player:
+  title: 'View player'
+  description: 'Access to be able to view details of a particular player'
+basic access:
+  title: 'Basic access'
+  description: 'Access basic VChess functions such as ability to create a game'
+view game:
+  title: 'View a particular game'
+  description: 'Ability to see a particular game.'
+view challenges:
+  title: 'View the table of open challenges'
+  description: 'Ability to see the table of open challenges.'
+accept challenge:
+  title: 'Accept a challenge'
+  description: 'Ability to accept a challenge.'
+my current games:
+  title: 'My current games'
+  description: 'Ability for a user to see a list of their own games.  This should be only for authenticated users.'
+all current games:
+  title: 'All current games'
+  description: 'Ability to see a list of all current games.'
+view players table:
+  title: 'View players table'
+  description: 'View the list of all players with their statistics'
+reset games:
+  title: 'Reset games'
+  description: 'This enables someone to completely reset the games database.'
+  restrict access: true

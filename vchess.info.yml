@@ -1,0 +1,7 @@
+name : VChess
+type: module
+description : "Chess module"
+core: 8.x
+dependencies:
+  - gamer
+  - pos

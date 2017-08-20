@@ -1,0 +1,24 @@
+vchess.main:
+  route_name: vchess.main
+  title: Main
+  description: 'Vchess Main Page'
+
+vchess.challenges:
+  route_name: vchess.challenges
+  title: Challenges
+  description: 'View chess challenges'
+
+vchess.my_current_games:
+  route_name: vchess.my_current_games
+  title: 'My current games'
+  description: 'My current games'
+
+vchess.all_current_games:
+  route_name: vchess.all_current_games
+  title: 'All current games'
+  description: 'All current games'
+
+vchess.players:
+  route_name: vchess.players
+  title: Players
+  description: 'View all players'

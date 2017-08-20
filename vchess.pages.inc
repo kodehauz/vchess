@@ -5,43 +5,47 @@
  * User page callbacks for the vchess module.
  */
 
-/**
- * page callback vchess_main_page to display main vchess window
- */
-function vchess_main_page() {
-  global $user;
-
-  $out = "";
-
-  if (user_is_logged_in()) {
-    $gamefolder =  variable_get('vchess_game_files_folder', '/vchess-data');
-    $res_games = $gamefolder;
-
-    if (!$user->name) {
-      $txt = t('Please, register to play chess');
-      return $txt;
-    }
-
-    $player = new Player($user->uid);
-    $out .= "<p>My current rating: <b>" . $player->rating() . "</b></p>"; 
-        
-    $out .= vchess_users_current_games($user->name);
-    $out .= vchess_challenges();
-
-    $out .= vchess_player_stats_table($user->uid);
-  }
-  else {
-    $out = "Please log in to access this page";
-  }
-
-  return $out;
-}
+use Drupal\gamer\Entity\GamerStatistics;
+use Drupal\gamer\GamerController;
+use Drupal\pos\Entity\ChessPosition;
+//
+///**
+// * page callback vchess_main_page to display main vchess window
+// */
+//function vchess_main_page() {
+//  global $user;
+//
+//  $out = "";
+//
+//  if (user_is_logged_in()) {
+//    $gamefolder =  variable_get('vchess_game_files_folder', '/vchess-data');
+//    $res_games = $gamefolder;
+//
+//    if (!$user->name) {
+//      $txt = t('Please, register to play chess');
+//      return $txt;
+//    }
+//
+//    $player = new Player($user->uid);
+//    $out .= "<p>My current rating: <b>" . $player->rating() . "</b></p>";
+//
+//    $out .= vchess_users_current_games($user->name);
+//    $out .= vchess_challenges();
+//
+//    $out .= vchess_player_stats_table($user->uid);
+//  }
+//  else {
+//    $out = "Please log in to access this page";
+//  }
+//
+//  return $out;
+//}
 
 /**
  * Get the stats for a particular player
  */
 function vchess_player_stats_table($uid) {
-  $gamer_stats = gamer_player_stats_array($uid);
+  $gamer_stats = \Drupal\gamer\Entity\GamerStatistics::loadForUser($user);
   
   if ($gamer_stats['current'] <> vchess_stats_games_current($uid)) {
     watchdog("vchess", "Stats for current games from gamer was :gamer_current but vchess calculates :vchess",
@@ -80,35 +84,35 @@ function vchess_my_current_games() {
 
 /**
  * menu callback vchess_opponent_game_page to display new game form
- */
-function vchess_opponent_game_form() {
-  $colors = array('w' => t('white'), 'b' => t('black'));
-
-  $form['colorfield'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Choose your color'),
-  );
-
-  $form['colorfield']['color'] = array(
-      '#type' => 'radios',
-      '#default_value' => 'w',
-      '#options' => $colors,
-  );
-
-  $form['opponent'] = array(
-      '#type' => 'textfield',
-      '#title' => t('opponent'),
-      '#description' => t('Type opponent\'s name. Opponent must be registered on this site.'),
-      '#required' => TRUE,
-  );
-
-  $form['submit'] = array(
-      '#type' => 'submit',
-      '#value' => t('Create Game'),
-  );
-
-  return $form;
-}
+// */
+//function vchess_opponent_game_form() {
+//  $colors = array('w' => t('white'), 'b' => t('black'));
+//
+//  $form['colorfield'] = array(
+//      '#type' => 'fieldset',
+//      '#title' => t('Choose your color'),
+//  );
+//
+//  $form['colorfield']['color'] = array(
+//      '#type' => 'radios',
+//      '#default_value' => 'w',
+//      '#options' => $colors,
+//  );
+//
+//  $form['opponent'] = array(
+//      '#type' => 'textfield',
+//      '#title' => t('opponent'),
+//      '#description' => t('Type opponent\'s name. Opponent must be registered on this site.'),
+//      '#required' => TRUE,
+//  );
+//
+//  $form['submit'] = array(
+//      '#type' => 'submit',
+//      '#value' => t('Create Game'),
+//  );
+//
+//  return $form;
+//}
 
 /**
  * menu callback vchess_random_game_form to display new game form
@@ -153,7 +157,7 @@ function vchess_create_challenge_form() {
   );
   
 //   pos_initialise_table();
-  $positions = pos_get_positions();
+  $positions = ChessPosition::getPositionLabels();
   $form['position'] = array(
       '#type' => 'select',
       '#title' => t('Starting position'),
@@ -274,7 +278,7 @@ function vchess_reset_games_form_submit($form, &$form_state) {
   $result = db_truncate('vchess_games')->execute();
   $result = db_truncate('vchess_moves')->execute();
 
-  $result = gamer_reset();
+  $result = \Drupal::entityTypeManager()->getStorage('gamer_stats')->delete(GamerStatistics::loadMultiple());
 
   drupal_set_message(t('ALL games have been reset!'));
 }
@@ -286,42 +290,42 @@ function vchess_reset_games_form_submit($form, &$form_state) {
  * @param unknown_type $form
  * @param unknown_type $form_state
  */
-function vchess_opponent_game_form_submit($form, &$form_state) {
-  global $user;
-
-  $form_values = $form_state['values'];
-
-  // Get the uid and name of the opponent
-  $sql = "SELECT uid, name FROM {users} WHERE name = '" . $form_values['opponent'] . "'";
-  $result = db_query($sql);
-
-  $record = $result->fetchAssoc();
-  $opponent_uid = $record['uid'];
-  $opponent_name = $record['name'];
-  //  $opponent_name = $result->fetchField();  // Hugh - new D7 way
-
-  if ($form_values['color']=='w') {
-    // user plays white
-    $white_uid = $user->uid;
-
-    // opponent plays black
-    $black_uid = $opponent_uid;
-  }
-  else {
-    // user plays black
-    $black_uid = $user->uid;
-
-    // opponent plays white
-    $white_uid = $opponent_uid;
-  }
-
-  $game = new Game();
-  $game->set_players($white_uid, $black_uid);
-  $gid = $game->gid();
-
-  drupal_set_message(t('Game has been created.'));
-  $form_state['redirect'] = 'vchess/game/' . $gid;
-}
+//function vchess_opponent_game_form_submit($form, &$form_state) {
+//  global $user;
+//
+//  $form_values = $form_state['values'];
+//
+//  // Get the uid and name of the opponent
+//  $sql = "SELECT uid, name FROM {users} WHERE name = '" . $form_values['opponent'] . "'";
+//  $result = db_query($sql);
+//
+//  $record = $result->fetchAssoc();
+//  $opponent_uid = $record['uid'];
+//  $opponent_name = $record['name'];
+//  //  $opponent_name = $result->fetchField();  // Hugh - new D7 way
+//
+//  if ($form_values['color']=='w') {
+//    // user plays white
+//    $white_uid = $user->uid;
+//
+//    // opponent plays black
+//    $black_uid = $opponent_uid;
+//  }
+//  else {
+//    // user plays black
+//    $black_uid = $user->uid;
+//
+//    // opponent plays white
+//    $white_uid = $opponent_uid;
+//  }
+//
+//  $game = new Game();
+//  $game->set_players($white_uid, $black_uid);
+//  $gid = $game->gid();
+//
+//  drupal_set_message(t('Game has been created.'));
+//  $form_state['redirect'] = 'vchess/game/' . $gid;
+//}
 
 /**
  * Check the form for a new game.  The only bit of validation is to check
@@ -329,23 +333,23 @@ function vchess_opponent_game_form_submit($form, &$form_state) {
  *
  * @param unknown_type $form
  * @param unknown_type $form_state
- */
-function vchess_opponent_game_form_validate($form, &$form_state) {
-  global $user;
-
-  $form_values = $form_state['values'];
-
-//   $sql = "SELECT name FROM {users} WHERE name = '" . $form_values['opponent'] . "'";
-  
-  $res = db_select('users')
-    ->fields('users', array('name'))
-    ->condition('name', $form_values['opponent'],'=')
-    ->execute();
-
-  if ($res->rowCount() == 0) {
-    form_set_error('', t('Opponent does not exist on this site'));
-  }
-}
+// */
+//function vchess_opponent_game_form_validate($form, &$form_state) {
+//  global $user;
+//
+//  $form_values = $form_state['values'];
+//
+////   $sql = "SELECT name FROM {users} WHERE name = '" . $form_values['opponent'] . "'";
+//
+//  $res = db_select('users')
+//    ->fields('users', array('name'))
+//    ->condition('name', $form_values['opponent'],'=')
+//    ->execute();
+//
+//  if ($res->rowCount() == 0) {
+//    form_set_error('', t('Opponent does not exist on this site'));
+//  }
+//}
 
 /**
  * Accept a challenge to play a particular game
@@ -368,7 +372,7 @@ function vchess_accept_challenge($gid) {
   if ($game->white_uid() <> 0 || $game->black_uid() <> 0) {
     $game->set_player($user->uid);
   
-    gamer_start_game($game->white_uid(), $game->black_uid());
+    GamerController::startGame($game->white_uid(), $game->black_uid());
     
     $extra = "";
     $its_your_move = "";
@@ -819,7 +823,7 @@ function vchess_build_current_games_table($games, $named_user) {
 function vchess_update_player_stats(Game $game) {
   switch ($game->status()) {
     case STATUS_WHITE_WIN:
-      $score = GAMER_WHITE_WIN;
+      $score = GamerStatistics::GAMER_WHITE_WIN;
       break;
     case STATUS_BLACK_WIN:
       $score = GAMER_BLACK_WIN;
@@ -869,7 +873,7 @@ function vchess_random_game_form_submit($form, &$form_state) {
   $game = new Game();
   $game->set_players($white_uid, $black_uid);
   $gid = $game->gid();
-  gamer_start_game($white_uid, $black_uid);
+  GamerController::startGame($white_uid, $black_uid);
 
   drupal_set_message(t('Game has been created.'));
   $form_state['redirect'] = 'vchess/game/' . $gid;
@@ -885,7 +889,7 @@ function vchess_random_game_form_submit($form, &$form_state) {
 function vchess_test() {
   $html = "";
   
-  gamer_start_game(1, 1);
+  GamerController::startGame(1, 1);
 
   $player = new Player(1);
   $player->set_current(-25);

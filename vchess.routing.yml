@@ -1,0 +1,116 @@
+vchess.main:
+  path: /vchess/main
+  defaults:
+    _controller: \Drupal\vchess\VchessController::mainPage
+    _title: Main
+  requirements:
+    _permission: 'basic access'
+
+vchess.opponent_game_form:
+  path: /vchess/opponent_game_form
+  defaults:
+    _form: \Drupal\vchess\Form\OpponentGameForm
+    _title: 'Create chess game against named player'
+  requirements:
+    _permission: 'basic access'
+
+vchess.random_game_form:
+  path: /vchess/random_game_form
+  defaults:
+    _form: 'vchess_random_game_form'
+    _title: 'Create chess game against random player'
+  requirements:
+    _permission: 'basic access'
+
+vchess.default_challenge:
+  path: /vchess/default_challenge
+  defaults:
+    _form: 'vchess_create_default_challenge'
+    _title: 'Create chess game challenge'
+  requirements:
+    _permission: 'basic access'
+
+vchess.create_challenge:
+  path: /vchess/create_challenge
+  defaults:
+    _form: 'vchess_create_challenge_form'
+    _title: 'Create chess game challenge'
+  requirements:
+    _permission: 'basic access'
+
+vchess.challenges:
+  path: /vchess/challenges
+  defaults:
+    _controller: 'vchess_challenges'
+    _title: 'Challenges'
+  requirements:
+    _permission: 'view challenges'
+
+vchess.accept_challenge:
+  path: /vchess/accept_challenge/{challenge}
+  defaults:
+    _controller: 'vchess_accept_challenge'
+    _title: 'Accept Challenge'
+  requirements:
+    _permission: 'accept challenge'
+
+vchess.my_current_games:
+  path: /vchess/my_current_games
+  defaults:
+    _controller: 'vchess_my_current_games'
+    _title: 'My current games'
+  requirements:
+    _permission: 'my current games'
+
+vchess.current_games:
+  path: /vchess/current_games/{user}
+  defaults:
+    _controller: 'vchess_users_current_games'
+    _title: 'Current games'
+  requirements:
+    _permission: 'basic access'
+
+vchess.all_current_games:
+  path: /vchess/all_current_games
+  defaults:
+    _controller: 'vchess_all_current_games_page'
+    _title: 'All current games'
+  requirements:
+    _permission: 'all current games'
+
+vchess.players:
+  path: /vchess/players
+  defaults:
+    _controller: 'vchess_players'
+  requirements:
+    _permission: 'view players table'
+
+vchess.game:
+  path: /vchess/game/{}
+  defaults:
+    _controller: 'vchess_game'
+  requirements:
+    _permission: 'view game'
+
+vchess.player:
+  path: /vchess/player/{}
+  defaults:
+    _controller: 'vchess_player'
+  requirements:
+    _permission: 'view player'
+
+vchess.reset_games:
+  path: /vchess/reset_games
+  defaults:
+    _form: 'vchess_reset_games_form'
+    _title: 'Reset ALL games!'
+  requirements:
+    _permission: 'reset games'
+
+vchess.test:
+  path: /vchess/test
+  defaults:
+    _controller: 'vchess_test'
+    _title: 'Perform a test'
+  requirements:
+    _permission: 'reset games'
