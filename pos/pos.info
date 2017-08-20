@@ -1,4 +1,0 @@
-name = Pos
-description = "Chess positions module"
-core = 7.x
-php = 5.1
