@@ -1,0 +1,6 @@
+gamer.players:
+  path: /gamer/players
+  defaults:
+    _controller: \Drupal\gamer\GamerController::players
+  requirements:
+    _permission: 'view players table'

@@ -1,5 +1,0 @@
-name = "Gamer"
-description = "Gamer module"
-dependencies[] = tsort
-core = 7.x
-php = 5.1
