@@ -8,6 +8,8 @@
 use Drupal\gamer\Entity\GamerStatistics;
 use Drupal\gamer\GamerController;
 use Drupal\pos\Entity\ChessPosition;
+use Drupal\vchess\Entity\Game;
+
 //
 ///**
 // * page callback vchess_main_page to display main vchess window
@@ -63,7 +65,7 @@ function vchess_player_stats_table($uid) {
   }
   
   //    $out .= vchess_wld_stats($user);
-  $html = gamer_player_stats_table($uid);
+  $html = GamerController::playerStatsTable($uid);
 
   return $html;
 }
@@ -498,7 +500,7 @@ function vchess_player($name) {
   $html = "";
 
 //  $html .= vchess_wld_stats($player);
-  $html .= gamer_player_stats_table($player->uid);
+  $html .= GamerController::playerStatsTable($player->uid);
   $html .= vchess_users_current_games($name);
 
   return $html;
@@ -631,7 +633,7 @@ function vchess_users_current_games($name) {
   $named_user = user_load_by_name($name);
 
   // Get the list of possible games to view
-  $games = vchess_load_users_current_games($named_user->uid);
+  $games = Game::loadUsersCurrentGames($named_user->uid);
 
   $html = vchess_build_current_games_table($games, $named_user);
 

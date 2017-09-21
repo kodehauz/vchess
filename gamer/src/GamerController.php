@@ -55,7 +55,7 @@ class GamerController extends ControllerBase {
     ];
   }
 
-  function playerStatsTable(UserInterface $user) {
+  public static function playerStatsTable(UserInterface $user) {
     $stats = GamerStatistics::loadForUser($user);
 
     $header = array('Played', 'Won', 'Drawn', 'Lost', 'Rating', 'Rating change', 'Current games');

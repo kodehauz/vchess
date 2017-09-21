@@ -1,10 +1,13 @@
 <?php
 
+namespace Drupal\vchess\Game;
 /*
  * @file
  *
  * This file contains functions related to individual pieces
  */
+
+use Drupal\Component\Utility\Unicode;
 
 class Piece {
   public $type;  // R, N, B, Q, K or a blank
@@ -15,8 +18,8 @@ class Piece {
    *
    * @param string $type
    */
-  function set_type($type) {
-    $this->type = drupal_strtoupper($type);
+  public function setType($type) {
+    $this->type = Unicode::strtoupper($type);
   }
 
   /**
@@ -24,7 +27,7 @@ class Piece {
    *
    * @return string
    */
-  function type() {
+  public function type() {
     return $this->type;
   }
 
@@ -33,19 +36,19 @@ class Piece {
    *
    * @return string
    */
-  function color() {
+  public function color() {
     return $this->color;
   }
 
   /**
    * Set the piece color.  Color is w or b
    */
-  function set_color($color) {
+  public function setColor($color) {
     $this->color = $color;
   }
 
-  function name() {
-    return $this->_name_from_type($this->type);
+  public function name() {
+    return $this->nameFromType($this->type);
   }
 
   /**
@@ -53,10 +56,10 @@ class Piece {
    * i.e. white pieces are returned as upper case letters
    * and black pieces as lower case letters
    */
-  function get_FEN_type() {
+  public function getFenType() {
     $type = $this->type(); // by default already upper case
     if ($this->color() == 'b') {
-      $type = drupal_strtolower($type);
+      $type = Unicode::strtolower($type);
     }
 
     return $type;
@@ -65,10 +68,10 @@ class Piece {
   /**
    * Get full name of chessman from chessman identifier.
    */
-  function _name_from_type($type) {
+  protected function nameFromType($type) {
     $name = BLANK;
 
-    $type = drupal_strtoupper($type);
+    $type = Unicode::strtoupper($type);
     switch ($type) {
       case 'P':
         $name = 'Pawn';

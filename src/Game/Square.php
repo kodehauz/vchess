@@ -1,7 +1,7 @@
 <?php
 
+namespace Drupal\vchess\Game;
 /**
- * @file
  * Handles a chessboard square
  * 
  * A square is one of the squares on the board, and has a 
@@ -10,40 +10,46 @@
  */
 
 class Square {
-  var $coord = "";
-  
+
   /**
-   * Set up the coord
-   * 
-   * @param string $coord e.g. "d4"
+   * The board coordinate of the square.
+   *
+   * @var string
    */
-  function set_coord($coord) {
-    $this->coord = $coord;
-  }
+  protected $coordinate = '';
   
   /**
    * Get the rank (=row number) as a string, e.g. "4" for "d4"
    * 
    * @return string
    */
-  function rank() {
-    return $this->coord[1];    
+  function getRank() {
+    return $this->coordinate[1];
   }
   
   /** 
    * Get the file (=column letter) e.g. "d" for "d4"
    */
-  function file() {
-    return $this->coord[0];
+  function getFile() {
+    return $this->coordinate[0];
   }
   
   /**
    * Get the coord, e.g. "d4"
    */
-  function coord() {
-    return $this->coord;
+  function getCoordinate() {
+    return $this->coordinate;
   }
-  
+
+  /**
+   * Set up the coord
+   *
+   * @param string $coordinate e.g. "d4"
+   */
+  function setCoordinate($coordinate) {
+    $this->coordinate = $coordinate;
+  }
+
   /**
    * Convert coordinate [a1..h8] to 1dim index [0..63]
    *
@@ -57,9 +63,9 @@ class Square {
    * a1=0,  b1=1,  c1=2,  d1=3,  e1=4,  f1=5,  g1=6,  h1=7
    * 
    */
-  function index() {
-    $row = $this->coord[0];
-    $col = $this->coord[1];
+  function getIndex() {
+    $row = $this->coordinate[0];
+    $col = $this->coordinate[1];
     switch ($row) {
       case 'a':
         $x = 0;

@@ -5,6 +5,8 @@
  * Functions for creating renderable (HTML) versions of different things
  */
 
+use Drupal\gamer\Entity\GamerStatistics;
+
 /**
  * Create a visible view of the game
  *
@@ -74,13 +76,13 @@ function vchess_render_game($gid, $player, $active) {
       if ($game->status() <> STATUS_IN_PROGRESS) {
         switch ($game->status()) {
           case STATUS_WHITE_WIN:
-            $score = GAMER_WHITE_WIN;
+            $score = GamerStatistics::GAMER_WHITE_WIN;
             break;
           case STATUS_BLACK_WIN:
-            $score = GAMER_BLACK_WIN;
+            $score = GamerStatistics::GAMER_BLACK_WIN;
             break;
           case STATUS_DRAW:
-            $score = GAMER_DRAW;
+            $score = GamerStatistics::GAMER_DRAW;
             break;
         }
         
@@ -396,7 +398,7 @@ function vchess_resign_clicked($form, &$form_state) {
     $score = GAMER_BLACK_WIN; // white resigned
   }
   else {
-    $score = GAMER_WHITE_WIN; // black resigned
+    $score = GamerStatistics::GAMER_WHITE_WIN; // black resigned
   }
 
   gamer_update_stats($game->white_uid(), $game->black_uid(), $score);
