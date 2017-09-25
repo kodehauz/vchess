@@ -2,15 +2,12 @@
 
 namespace Drupal\vchess\Entity;
 
-use Drupal\Core\Database\Query\Query;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\user\UserInterface;
 
 /**
- * Defines a Game integers
- *
  * @ContentEntityType(
  *   id = "vchess_game",
  *   label = @Translation("A vChess Game"),
@@ -37,7 +34,7 @@ use Drupal\user\UserInterface;
  */
 class Game extends ContentEntityBase {
 
-  private static $gameStatus = [
+  protected static $gameStatus = [
     GamePlay::STATUS_AWAITING_PLAYERS,
     GamePlay::STATUS_IN_PROGRESS,
     GamePlay::STATUS_DRAW,
@@ -45,7 +42,7 @@ class Game extends ContentEntityBase {
     GamePlay::STATUS_BLACK_WIN,
   ];
 
-  private static $gameTime = [
+  protected static $gameTime = [
     GamePlay::TIME_UNITS_DAYS,
     GamePlay::TIME_UNITS_HOURS,
     GamePlay::TIME_UNITS_MINS,
@@ -117,7 +114,7 @@ class Game extends ContentEntityBase {
     if ($this->calculateTimeLeft() <= 0) {
       $lost_on_time = TRUE;
 
-      if ($this->status() == static::STATUS_IN_PROGRESS) {
+      if ($this->getStatus() === static::STATUS_IN_PROGRESS) {
         $this->handleLostOnTime();
       }
     }
@@ -208,12 +205,12 @@ class Game extends ContentEntityBase {
     return $this;
   }
 
-  public function getEnPassant() {
-    return $this->get('en_passant')->value;
+  public function getEnPassantSquare() {
+    return $this->get('en_passant_square')->value;
   }
 
-  public function setEnPassant($value) {
-    $this->set('en_passant', $value);
+  public function setEnPassantSquare($value) {
+    $this->set('en_passant_square', $value);
     return $this;
   }
 
@@ -221,6 +218,15 @@ class Game extends ContentEntityBase {
     return $this->get('time_per_move')->value;
   }
 
+  /**
+   * Sets the time per move
+   *
+   * This just sets the value of the time per move (e.g. 1 or 3).  The units of time
+   * would be set in set_time_units(), which isn't currently needed so does not exist.
+   *
+   * @parm $time_per_move
+   *   Time per move, e.g. "3".
+   */
   public function setTimePerMove($value) {
     $this->set('time_per_move', $value);
     return $this;
@@ -277,8 +283,8 @@ class Game extends ContentEntityBase {
       ->setDescription(t('Castling availability. If neither side can castle, this is "-". Otherwise, this has one or more letters: "K" (White can castle kingside), "Q" (White can castle queenside), "k" (Black can castle kingside), and/or "q" (Black can castle queenside).'))
       ->setDefaultValue('KQkq') ;
 
-    $fields['en_passant'] = BaseFieldDefinition::create('string')
-      ->setDescription(t('ep (en passant) target square. If there is no ep target square, this is "-". If a pawn has just made a 2-square move, this is the position "behind" the pawn. This is recorded regardless of whether there is a pawn in position to make an ep capture.'))
+    $fields['en_passant_square'] = BaseFieldDefinition::create('string')
+      ->setDescription(t('En passant target square. If there is no en passant target square, this is "-". If a pawn has just made a 2-square move, this is the position "behind" the pawn. This is recorded regardless of whether there is a pawn in position to make an en-passant capture.'))
       ->setDefaultValue('-');
 
     $fields['time_per_move'] = BaseFieldDefinition::create('integer')

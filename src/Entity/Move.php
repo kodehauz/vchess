@@ -254,7 +254,7 @@ class Move extends ContentEntityBase {
     // All other moves
     else {
       // First find out where all possible pieces of this type are
-      $pieces_squares = $board->pieceTypeSquares($source_piece_type, $player);
+      $pieces_squares = $board->getSquaresOfPieceType($source_piece_type, $player);
 
       // If there is only 1 piece of this type, then move is unambiguous
       if (count($pieces_squares) == 1) {
@@ -354,8 +354,8 @@ class Move extends ContentEntityBase {
     $clone_board = clone $board;
 
     $clone_board->movePiece($from_square, $to_square);
-    if ($clone_board->isCheck($opponent)) {
-      if ($clone_board->isCheckmate($opponent)) {
+    if ($clone_board->isInCheck($opponent)) {
+      if ($clone_board->isInCheckmate($opponent)) {
         $this->setAlgebraic($this->getAlgebraic() . "#") ;
         if ($player == 'w') {
           $this->setAlgebraic($this->getAlgebraic() . " 1-0");

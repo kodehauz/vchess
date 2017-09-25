@@ -9,24 +9,15 @@
  */
 
 // VChess module files
+use Drupal\vchess\Game\Piece;
+
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/vchess.pages.inc';
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/vchess.utils.inc';
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/vchess.rules.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/stats.inc';
 
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/io.inc';
 require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/render.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/game.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/scoresheet.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/piece.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/board.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/move.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/square.inc';
 
 global $base_url; // e.g. http://localhost/chess_drupal-7.14
-
-// The name of a blank piece
-define("BLANK", " ");
 
 // Define the default time per move
 define("DEFAULT_TIME_PER_MOVE", 3);

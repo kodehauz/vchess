@@ -1,65 +1,97 @@
 <?php
 
 namespace Drupal\vchess\Game;
+
 /*
- * @file
- *
- * This file contains functions related to individual pieces
+ * Contains functionality for individual chess pieces.
  */
-
-use Drupal\Component\Utility\Unicode;
-
 class Piece {
-  public $type;  // R, N, B, Q, K or a blank
-  public $color; // w or b
 
   /**
-   * Set the type, one of R, N, B, Q, K or a blank
-   *
-   * @param string $type
+   * Represents a blank piece.
    */
-  public function setType($type) {
-    $this->type = Unicode::strtoupper($type);
-  }
+  const BLANK = " ";
 
   /**
-   * Get the type one of R, N, B, Q, K or a blank
+   * The type of a piece (P, R, N, B, Q, K or a blank).
+   *
+   * @var string
+   */
+  public $type;
+
+  /**
+   * The color of the piece (w or b).
+   *
+   * @var string
+   */
+  public $color;
+
+  /**
+   * Gets the type one of P, R, N, B, Q, K or a blank
    *
    * @return string
    */
-  public function type() {
+  public function getType() {
     return $this->type;
   }
 
   /**
-   * Get the piece color.  Color is w or b
+   * Sets the type, one of P, R, N, B, Q, K or a blank
+   *
+   * @param string $type
+   *   The piece type - always in uppercase.
+   *
+   * @return $this
+   *   For method chaining.
+   */
+  public function setType($type) {
+    $this->type = strtoupper($type);
+    return $this;
+  }
+
+  /**
+   * Get the piece color.  Color is w or b.
    *
    * @return string
    */
-  public function color() {
+  public function getColor() {
     return $this->color;
   }
 
   /**
-   * Set the piece color.  Color is w or b
+   * Sets the piece color.
+   *
+   * @param string $color
+   *   The piece color - either w or b.
+   *
+   * @return $this
+   *   For method chaining.
    */
   public function setColor($color) {
     $this->color = $color;
+    return $this;
   }
 
-  public function name() {
+  /**
+   * Gets the name for this piece.
+   *
+   * @return string
+   */
+  public function getName() {
     return $this->nameFromType($this->type);
   }
 
   /**
-   * Get the FEN (case-sensitive) type for the piece
-   * i.e. white pieces are returned as upper case letters
-   * and black pieces as lower case letters
+   * Gets the FEN (case-sensitive) type for the piece.
+   *
+   * White pieces are returned as uppercase letters and black pieces as
+   * lowercase letters
    */
   public function getFenType() {
-    $type = $this->type(); // by default already upper case
-    if ($this->color() == 'b') {
-      $type = Unicode::strtolower($type);
+    // By default, $type is already upper case.
+    $type = $this->getType();
+    if ($this->getColor() === 'b') {
+      $type = strtolower($type);
     }
 
     return $type;
@@ -69,9 +101,9 @@ class Piece {
    * Get full name of chessman from chessman identifier.
    */
   protected function nameFromType($type) {
-    $name = BLANK;
+    $name = static::BLANK;
 
-    $type = Unicode::strtoupper($type);
+    $type = strtoupper($type);
     switch ($type) {
       case 'P':
         $name = 'Pawn';
@@ -94,6 +126,5 @@ class Piece {
     }
     return $name;
   }
+
 }
-
-

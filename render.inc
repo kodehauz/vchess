@@ -224,12 +224,16 @@ function vchess_render_board_squares($board, $player, $active, $flipped) {
       }
       else {
         // normal square
-        $coord = new Square();
+        $coord = new \Drupal\vchess\Game\Square();
         if ($orientation == 'w') {
-          $coord->set_coord(vchess_col2file($col) . $row);
+          $coord
+            ->setColumn($col)
+            ->setRow($row);
         }
         else {
-          $coord->set_coord(vchess_col2file(9 - $col) . (9 - $row));
+          $coord
+            ->setColumn(9 - $col)
+            ->setRow(9 - $row);
         }
         $piece = $board->piece($coord);
         $piece_name = strtolower($piece->name());
@@ -242,7 +246,7 @@ function vchess_render_board_squares($board, $player, $active, $flipped) {
           $class = 'boardSquareBlack';
         }
   
-        if ($piece_name != BLANK) {
+        if ($piece_name != \Drupal\vchess\Game\Piece::BLANK) {
           // square with a piece and player has the ability to move
           if ($active) {
             // Build the first part of the move e.g. "Nb1"

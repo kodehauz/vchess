@@ -2,15 +2,13 @@
 
 namespace Drupal\vchess\Game;
 
-use Drupal\Component\Utility\Unicode;
-
 /**
- * The Board is designed to take some of the complexity away from the $board array
- * by adding useful functions rather than having the rest of the program need to understand
- * and handle issues like whether a square is blank or not.
+ * The Board is designed to take some of the complexity away from the $board
+ * array by adding useful functions rather than having the rest of the program
+ * need to understand and handle issues like whether a square is blank or not.
  *
- * The Board is basically the static view of what a board looks like (i.e. what pieces are
- * where) and but also includes the following game information:
+ * The Board is basically the static view of what a board looks like (i.e. what
+ * pieces are where) and but also includes the following game information:
  * - whether or not a player may castle (queenside and/or kingside)
  * - what the en passant target square is, if any
  *
@@ -18,20 +16,16 @@ use Drupal\Component\Utility\Unicode;
  */
 class Board {
 
-  // Define as a FEN string the standard board starting position
-  // For FEN, we start with the black side of the board (a8-h8), and finish with the white pieces (a1-h1).
-  // For FEN, white pieces are stored in UPPER CASE, black pieces in lower case and blank squares as space.
+  // Define as a FEN string the standard board starting position.
+  // For FEN, we start with the black side of the board (a8-h8), and finish with
+  // the white pieces (a1-h1).
+  // For FEN, white pieces are stored in UPPER CASE, black pieces in lower case
+  // and blank squares as space.
   //
   // e.g. after 1.e4 the FEN string will be:
   // rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR
   const BOARD_DEFAULT = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
   const BOARD_PROMOTION = "k7/4P3/8/8/8/8/8/K7";
-
-    // Constants for diagonal calculation
-  const DIAGONAL_UP_RIGHT = 9;
-  const DIAGONAL_UP_LEFT = 7;
-  const DIAGONAL_DOWN_LEFT = -9;
-  const DIAGONAL_DOWN_RIGHT = -7;
 
     // Define the column letters
   const COL_a = 1;
@@ -42,32 +36,47 @@ class Board {
   const COL_f = 6;
   const COL_g = 7;
   const COL_h = 8;
-  // The board is stored as an array where the key is the coord and the elements
-  // are items of type Piece
-  // e.g. array(
-  //      "a1"->Piece /* white rook */,
-  //      "a2"->Piece /* white knight */,
-  //      etc.)
-  protected $board = array();
-
-  protected $en_passant;
 
   /**
-   * Setup with the standard position
+   * The entire chess game board.
+   *
+   * The board is stored as an array of \Drupal\vchess\Game\Piece objects keyed
+   * by the board coordinate in "a1" notation.
+   *
+   * @var \Drupal\vchess\Game\Piece[]
+   */
+  protected $board = [];
+
+  /**
+   * Whether the board is in en-passant mode.
+   *
+   * @var boolean
+   */
+  protected $enPassantSquare;
+
+  /**
+   * Setup with the standard position.
+   *
+   * @return $this
    */
   public function setupAsStandard() {
-    $this->setupPosition(static::BOARD_DEFAULT);
+    return $this->setupPosition(static::BOARD_DEFAULT);
   }
 
   /**
    * Setup the board using a FEN (Forsyth�Edwards Notation) string, e.g.
    * rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
    *
+   * @param string $fen_string
+   *   The FEN string representing the board position.
+   *
+   * @return $this
+   *
    * See http://en.wikipedia.org/wiki/Forsyth-Edwards_Notation
    */
   public function setupPosition($fen_string) {
     // Ensure any previous position is cleared
-    unset($this->board);
+    $this->board = [];
 
     $chars = str_split($fen_string, 1);
 
@@ -84,54 +93,59 @@ class Board {
       }
       else {
         $piece = new Piece();
-        if (Unicode::strtoupper($char) == $char) {
-           // White piece
-          $piece->setType($char);
-          $piece->setColor("w");
+        if (strtoupper($char) == $char) {
+           // White piece.
+          $piece
+            ->setType($char)
+            ->setColor("w");
         }
         else {
-          // Black piece
-          $piece->setType($char);
-          $piece->setColor("b");
+          // Black piece.
+          $piece
+            ->setType($char)
+            ->setColor("b");
         }
 
-        $coord = static::colRow2coord($col, $row);
-        $this->board[$coord] = $piece;
+        $coordinate = chr($col + 96) . $row;
+        $this->board[$coordinate] = $piece;
         $col++;
       }
     }
+
+    return $this;
   }
 
   /**
    * Set the piece at a given coordinate
    *
-   * @param Piece $piece
-   * @param string $coord e.g. "a1"
+   * @param \Drupal\vchess\Game\Piece $piece
+   *   The piece to set.
+   * @param string $coordinate
+   *   The coordinate position to place the piece, e.g. "a1".
    */
-  public function setPiece(Piece $piece, $coord) {
-    $this->board[$coord] = $piece;
+  public function setPiece(Piece $piece, $coordinate) {
+    $this->board[$coordinate] = $piece;
   }
 
   /**
    * Get an array of squares for a given color and piece type.
-   * e.g. array("a1", "h1") for white rooks
    *
-   * @param $search_type 
-   *   The type of being searched for, one of 'K', 'Q', 'R', 'B', 'N' or 'P'
-   * @param $color 
-   *   The color of the pieces being searched for, either 'w' or 'b'
+   * e.g. array("a1", "h1") for white rooks.
+   *
+   * @param string $type
+   *   The type of piece being searched, one of 'K', 'Q', 'R', 'B', 'N' or 'P'.
+   * @param string $color
+   *   The color of the pieces being searched for, either 'w' or 'b'.
    *   
-   * @return
-   *   Returns an array of squares for pieces of a given color and piece type
+   * @return \Drupal\vchess\Game\Square[]
+   *   Returns an array of squares holding pieces of a given color and piece type.
    */
-  public function pieceTypeSquares($search_type, $color) {
+  public function getSquaresOfPieceType($type, $color) {
     $squares = [];
     
-    foreach ($this->board as $cordinate => $piece) {
-      if ($piece->type() == $search_type && $piece->color() == $color) {
-        $square = new Square();
-        $square->setCoordinate($cordinate);
-        $squares[] = $square;
+    foreach ($this->board as $coordinate => $piece) {
+      if ($piece->getType() === $type && $piece->getColor() === $color) {
+        $squares[] = (new Square())->setCoordinate($coordinate);
       }
     }
     
@@ -139,20 +153,23 @@ class Board {
   }
   
   /**
-   * Get an array of squares for a given piece color
-   * e.g. array("a1", "a2", ..., "h2") for white at the start of the game
+   * Gets an array of squares for a given piece color.
    *
-   * @param $color
-   *   Player color whose pieces we would like an array of their locations
+   * For example, at the start of the game for color white "w", this will return
+   * array("a1", "a2", ..., "h2").
+   *
+   * @param string $color
+   *   Player color "w" or "b" for which piece locations are required.
+   *
+   * @return \Drupal\vchess\Game\Square[]
+   *   Returns an array of squares for pieces of a given color.
    */
-  public function piecesSquares($color) {
+  public function getSquaresOfPieceColor($color) {
     $squares = [];
 
-    foreach ($this->board as $cordinate => $piece) {
-      if ($piece->color() == $color) {
-        $square = new Square;
-        $square->setCoordinate($cordinate);
-        $squares[] = $square;
+    foreach ($this->board as $coordinate => $piece) {
+      if ($piece->getColor() === $color) {
+        $squares[] = (new Square())->setCoordinate($coordinate);
       }
     }
 
@@ -160,242 +177,239 @@ class Board {
   }
 
   /**
-   * Get the squares on the diagonals from a given square
+   * Gets the squares on the diagonals from a given square.
    *
-   * @param Square $from_square
-   *   The square which we are starting from
+   * @param \Drupal\vchess\Game\Square $from_square
+   *   The square from which the search for diagonal squares starts.
+   *
+   * @return \Drupal\vchess\Game\Square[]
    */
-  public function diagonalSquares(Square $from_square) {
-    $squares = array();
+  public static function getDiagonalSquares(Square $from_square) {
+    $squares = [];
 
-    $squares = array_merge($squares, $this->singleDiagonalSquares($from_square, static::DIAGONAL_UP_LEFT));
-    $squares = array_merge($squares, $this->singleDiagonalSquares($from_square, static::DIAGONAL_DOWN_LEFT));
-    $squares = array_merge($squares, $this->singleDiagonalSquares($from_square, static::DIAGONAL_UP_RIGHT));
-    $squares = array_merge($squares, $this->singleDiagonalSquares($from_square, static::DIAGONAL_DOWN_RIGHT));
+    $squares = array_merge($squares, static::singleDiagonalSquares($from_square, Direction::UP_LEFT));
+    $squares = array_merge($squares, static::singleDiagonalSquares($from_square, Direction::DOWN_LEFT));
+    $squares = array_merge($squares, static::singleDiagonalSquares($from_square, Direction::UP_RIGHT));
+    $squares = array_merge($squares, static::singleDiagonalSquares($from_square, Direction::DOWN_RIGHT));
 
     return $squares;
   }
   
   /**
-   * Get the knight moves from a given square
+   * Gets the squares from a given start square based on an index increment
    *
-   * @from_square
-   *   The square which we are starting from
+   * @param \Drupal\vchess\Game\Square $from_square
+   *   Square where diagonal is starting.
+   * @param integer $direction
+   *   Increment of the diagonal, one of:
+   *   - \Drupal\vchess\Game\Direction::UP_LEFT (7)
+   *   - \Drupal\vchess\Game\Direction::UP_RIGHT (9)
+   *   - \Drupal\vchess\Game\Direction::DOWN_LEFT (-9)
+   *   - \Drupal\vchess\Game\Direction::DOWN_RIGHT (-7)
+   *  
+   * @return \Drupal\vchess\Game\Square[]
+   *   An array of squares
    */
-  public function knightSquares(Square $from_square) {
+  protected static function singleDiagonalSquares(Square $from_square, $direction) {
     $squares = [];
 
+    /** @var \Drupal\vchess\Game\Square $last_square */
+    $last_square = null;
+    do {
+      $squares[] = $from_square;
+      $last_square = $from_square;
+      $from_square = $from_square->nextSquare($direction);
+    }
+    while ($last_square->getCoordinate() !== $from_square->getCoordinate());
+    
+    return $squares;
+  }
+  
+  /**
+   * Gets the squares on a given rank.
+   * 
+   * For instance, given a rank like "8" it will return the squares "a8" to "h8".
+   * 
+   * @param string $rank
+   *    The number of the rank (1..8)
+   *
+   * @return \Drupal\vchess\Game\Square[]
+   */
+  public static function getSquaresOnRank($rank) {
+    $squares = [];
+    
+    for ($col = 1; $col <= 8; $col++) {
+      $squares[] = (new Square)
+        ->setColumn($col)
+        ->setRow($rank);
+    }
+    
+    return $squares;
+  }
+
+  /**
+   * Gets the squares on a given file.
+   *
+   * For instance, given a file like "a" it will return the squares "a1" to "a8".
+   *
+   * @param string $file
+   *   The letter of the file, e.g. "a".
+   *
+   * @return \Drupal\vchess\Game\Square[]
+   */
+  public static function getSquaresOnFile($file) {
+    $squares = [];
+
+    for ($rank = 1; $rank <= 8; $rank++) {
+      $squares[] = (new Square())->setCoordinate($file . $rank);
+    }
+
+    return $squares;
+  }
+
+  /**
+   * Gets the squares on the rank and file from a given square
+   * 
+   * @param \Drupal\vchess\Game\Square $square
+   *   Square to start from
+   *   
+   * @return \Drupal\vchess\Game\Square[]
+   *   An array of squares
+   */
+  public static function getSquaresOnRankFile(Square $square) {
+    $squares = array_merge(static::getSquaresOnRank($square->getRank()),
+      static::getSquaresOnFile($square->getFile()));
+
+    // The pivot square will always be duplicated, so remove one of them.
+    $index = array_search($square, $squares);
+    unset($squares[$index]);
+    return array_values($squares);
+  }
+
+  /**
+   * Gets the knight moves from a given square.
+   *
+   * @param \Drupal\vchess\Game\Square $from_square
+   *   The square which we are starting from.
+   *
+   * @return \Drupal\vchess\Game\Square[]
+   *   An array of squares
+   */
+  public static function getKnightMoveSquares(Square $from_square) {
+    $squares = [];
     $from_rank = $from_square->getRank();  // e.g. "7" in "d7"
+    $from_col = $from_square->getColumn(); // e.g. "4" for the "d" in "d7"
 
-    $from_file = $from_square->getFile();  // e.g. "d" in "d7"
-    $from_col = static::file2col($from_file); // e.g. "4" for the "d" in "d7"
-
-    $deltas = array(
-        array(-2, -1),
-        array(-2, 1),
-        array(-1, -2),
-        array(-1, 2),
-        array(1, -2),
-        array(1, 2),
-        array(2, -1),
-        array(2, 1)
-        );
+    $deltas = [
+      [-2, -1],
+      [-2, 1],
+      [-1, -2],
+      [-1, 2],
+      [1, -2],
+      [1, 2],
+      [2, -1],
+      [2, 1],
+    ];
     foreach ($deltas as $delta_pair) {
       $delta_rank = $delta_pair[0];
       $delta_col = $delta_pair[1];
       if ($from_col + $delta_col >= 1 && $from_col + $delta_col <= 8
-      && $from_rank + $delta_rank >= 1 && $from_rank + $delta_rank <= 8) {
-        $square = new Square;
-        $coord = static::col2file($from_col + $delta_col) . ($from_rank + $delta_rank);
-        $square->setCoordinate($coord);
-        $squares[] = $square;
+        && $from_rank + $delta_rank >= 1 && $from_rank + $delta_rank <= 8) {
+        $squares[] = (new Square())
+          ->setColumn($from_col + $delta_col)
+          ->setRow($from_rank + $delta_rank);
       }
     }
 
     return $squares;
   }
-  
+
   /**
-   * Get the squares from a given start square based on an index increment
+   * Gets the square that the king is on.
    *
-   * @param Square $from_square
-   *   Square where diagnonal is starting
-   * @param integer $direction
-   *   Increment of the diagonal, one of:
-   *   - DIAGONAL_UP_LEFT (7)
-   *   - DIAGONAL_UP_RIGHT (9)
-   *   - DIAGONAL_DOWN_LEFT (-9)
-   *   - DIAGONAL_DOWN_RIGHT (-7)
-   *  
-   * @return
-   *   An array of squares
-   */
-  protected function singleDiagonalSquares(Square $from_square, $direction) {
-    $squares = [];
-
-    $finished = FALSE;
-
-    $new_index = $from_square->getIndex();
-    while (!$finished) {
-      $square = static::i2square($new_index);
-
-      if ($square->getFile() == 'a' && ($direction == static::DIAGONAL_UP_LEFT || $direction == static::DIAGONAL_DOWN_LEFT)) {
-        $finished = TRUE;
-      }
-      if ($square->getFile() == 'h' && ($direction == static::DIAGONAL_UP_RIGHT || $direction == static::DIAGONAL_DOWN_RIGHT)) {
-        $finished = TRUE;
-      }
-      if ($square->getRank() == '1' && ($direction == static::DIAGONAL_DOWN_LEFT || $direction == static::DIAGONAL_DOWN_RIGHT)) {
-        $finished = TRUE;
-      }
-      if ($square->getRank() == '8' && ($direction == static::DIAGONAL_UP_LEFT || $direction == static::DIAGONAL_UP_RIGHT)) {
-        $finished = TRUE;
-      }
-      
-      if (!$finished) {
-        $new_index += $direction;
-        $squares[] = static::i2square($new_index);
-      }
-    }
-    
-    return $squares;
-  }
-  
-  /**
-   * Get the squares on a given rank
-   * 
-   * e.g. given a rank like "8" it will return the 
-   * squares "a8" to "h8"
-   * 
-   * @param $rank The number of the rank (1..8)
-   */
-  public function rankSquares($rank) {
-    $squares = [];
-    
-    for ($col = 1; $col < 8; $col++) {
-      $square = new Square;
-      $square->setCoordinate(static::col2file($col) . $rank);
-      
-      $squares[] = $square;
-    }
-    
-    return $squares;
-  }
-  
-  /**
-   * Get the squares on the rank and file from a given square
-   * 
-   * @param $square
-   *   Square to start from
-   *   
-   * @return
-   *   An array of squares
-   */
-  public function rankAndFileSquares(Square $square) {
-    $squares = [];
-    
-    $squares = array_merge($squares, $this->rankSquares($square->getRank()));
-    $squares = array_merge($squares, $this->fileSquares($square->getFile()));
-    
-    return $squares;
-  }
-  
-  /**
-   * Get the squares on a given file
+   * @param string $color
+   *   The color of the king.
    *
-   * e.g. given a file like "a" it will return the
-   * squares "a1" to "a8"
-   *
-   * @param $file The letter of the file, e.g. "a"
+   * @return \Drupal\vchess\Game\Square
+   *   The king square.
    */
-  public function fileSquares($file) {
-    $squares = [];
-  
-    for ($rank = 1; $rank < 8; $rank++) {
-      $square = new Square;
-      $square->setCoordinate($file . $rank);
-  
-      $squares[] = $square;
-    }
-  
-    return $squares;
-  }
-  
-  /**
-   * Get the square that the king is on
-   */
-  public function kingSquare($color) {
-    $squares = $this->pieceTypeSquares("K", $color);
-    
-    // There should be only 1 square returned 
+  public function getKingSquare($color) {
+    $squares = $this->getSquaresOfPieceType("K", $color);
+    // There should be only 1 square returned
     return $squares[0]; 
   }
 
   /**
    * Returns TRUE if the given square is empty
    * 
-   * @param coord $coord coordinate, e.g. "a1" 
+   * @param \Drupal\vchess\Game\Square $square
+   *   The square to test.
+   *
+   * @return boolean
    */
   public function squareIsEmpty(Square $square) {
-    $empty = TRUE;
-    if (array_key_exists($square->getCoordinate(), $this->board)) {
-      $empty = FALSE;
-    }
-
-    return $empty;
+    return !array_key_exists($square->getCoordinate(), $this->board);
   }
   
   /**
-   * Returns TRUE if the square at the given coord is empty
+   * Returns TRUE if the square at the given coordinate is empty.
+   *
+   * @param string $coordinate
+   *   The board coordinate to test.
+   *
+   * @return boolean
    */
-  public function squareAtCoordIsEmpty($coord) {
-    $square = new Square;
-    $square->setCoordinate($coord);
-    
-    return $this->squareIsEmpty($square);
+  public function squareAtCoordinateIsEmpty($coordinate) {
+    return $this->squareIsEmpty((new Square)->setCoordinate($coordinate));
   }
 
   /**
-   * Get the player color whose piece is on a given square
+   * Gets the player color whose piece is on a given square
    * 
-   * @param $square e.g. "a1"
+   * @param \Drupal\vchess\Game\Square $square
+   *   The square position e.g. "a1".
    *
-   * @return 'w', 'b' or ''
+   * @return string
+   *   'w', 'b' or ''
    */
-  public function playerOnSquare(Square $square) {
-    $player = "";
+  public function getColorOnSquare(Square $square) {
+    $color = "";
     if (!$this->squareIsEmpty($square)) {
-      $player = $this->piece($square)->color();
+      $color = $this->board[$square->getCoordinate()]->getColor();
     }
 
-    return $player;
+    return $color;
   }
 
   /**
-   * Convert board in array format (for use in the program) into
-   * FEN string (for saving in the database).
-   * 
-   * e.g. after 1.e4 the FEN string will be:
-   * rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR
+   * Convert board in array format (for use in the program) into FEN string.
    *
-   * The board is kept internally with one piece per square, starting with a1, a2, ..., b1, b2, ... h8.
-   * For FEN, we start with the black side of the board (a8-h8), and finish with the white pieces (a1-h1).
-   * For FEN, white pieces are stored in UPPER CASE, black pieces in lower case and blank squares as space.
+   * It is the FEN string that is saved in the database. E.g. after 1.e4 the FEN
+   * string will be:
+   *   rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR
    *
+   * The board is kept internally with one piece per square, starting with:
+   * a1, a2, ..., b1, b2, ... h8.
+   * For FEN, we start with the black side of the board (a8-h8), and finish with
+   * the white pieces (a1-h1).
+   * For FEN, white pieces are stored in UPPER CASE, black pieces in lower case
+   * and blank squares as space.
+   *
+   * @return string
    */
-  public function position() {
+  public function getFenString() {
     $FEN_string = "";
     
-    $coord = new Square;
+    $square = new Square();
     for ($row = 8; $row >= 1; $row--) {
       $empty_squares = 0;
       for ($col = 1; $col <= 8; $col++) {
-        $coord->setCoordinate(static::col2file($col) . $row);
-        if ($this->squareIsEmpty($coord)) {
+        $square->setColumn($col)->setRow($row);
+        if ($this->squareIsEmpty($square)) {
           $empty_squares++;
         }
         else {
-          $piece = $this->piece($coord);
+          $piece = $this->getPiece($square);
           if ($empty_squares > 0) {
             $FEN_string .= $empty_squares;
             $empty_squares = 0;
@@ -406,7 +420,6 @@ class Board {
       // The row may end with empty squares
       if ($empty_squares > 0) {
         $FEN_string .= $empty_squares;
-        $empty_squares = 0;
       }
       // All rows except the row 1 with a / 
       if ($row > 1) {
@@ -418,26 +431,26 @@ class Board {
   }
   
   /**
-   * Check a number of squares given a start, an end square
-   * (which is not included to the check) and a position
-   * change for each iteration. Return TRUE if not blocked.
-   * All values are given for 1dim board.
+   * Checks that the path from a start square to an end square is not blocked.
    *
-   * @param 
-   *   $start index of square, 0..63
-   *   
-   * @param 
-   *   $end   index of square, 0..63
-   * 
-   * @param $change
-   *   Number of index change
+   * Checks a number of squares given a start and end square (which is not
+   * included to the check) and a position change for each iteration. Returns
+   * TRUE if not blocked. All values are given for 1dim board.
+   *
+   * @param Square $start
+   *   Start index of square, 0..63.
+   * @param Square $end
+   *   End index of square, 0..63.
+   * @param int $change
+   *   Steps to make for each check.
+   *
+   * @return boolean
    */
   public function pathIsNotBlocked($start, $end, $change) {
     $blocked = FALSE;
-  
-    for ($pos = $start; $pos != $end; $pos += $change) {
-      $square = static::i2square($pos);
-      if (!$this->squareIsEmpty($square)) {
+
+    for ($pos = $start->getIndex(); $pos != $end->getIndex(); $pos += $change) {
+      if (!$this->squareIsEmpty(Square::fromIndex($pos))) {
         $blocked = TRUE;
       }
     }
@@ -446,272 +459,233 @@ class Board {
   }
   
   /**
-   * Check all pieces of player whether they attack the given position.
+   * Gets an array of all the squares with pieces attacking a particular square.
    *
-   * @param $to_square
-   *   The square which is being checked to see if it is under attack e.g. "d4"
+   * @param \Drupal\vchess\Game\Square $attacked
+   *   The square which is being checked to see if it is under attack e.g. "d4".
    *   
    * @param string $attacker
-   *   Color of player who is doing the attacking, either 'w' or 'b'
+   *   Color of player who is doing the attacking, either 'w' or 'b'.
    *
+   * @return \Drupal\vchess\Game\Square[]
    */
-  public function squareIsUnderAttack(Square $to_square, $attacker) {
-    $under_attack = FALSE;
+  public function getSquaresAttackingSquare(Square $attacked, $attacker) {
+    $attacking_squares = [];
   
-    $pieces_squares = $this->piecesSquares($attacker);
-    foreach ($pieces_squares as $from_square) {
-      if ($this->pieceAttacks($from_square, $to_square)) {
-        $under_attack = TRUE;
+    $pieces_squares = $this->getSquaresOfPieceColor($attacker);
+    foreach ($pieces_squares as $attacking_square) {
+      if ($this->pieceAttacks($attacking_square, $attacked)) {
+        $attacking_squares[] = $attacking_square;
       }
     }
   
-    return $under_attack;
+    return $attacking_squares;
   }
   
   /**
-   * Check if given piece attacks the given square
+   * Checks if a given piece attacks the specified square.
    * 
-   * @param $attack_square
-   *   Square of piece trying to attack
+   * @param \Drupal\vchess\Game\Square $attacking
+   *   Square of the piece trying to attack.
    * 
-   * @param $to_square
-   *   Square which is being tested to see if it is attacked or not
+   * @param \Drupal\vchess\Game\Square $attacked
+   *   Square which is being tested to see if it is attacked or not.
+   *
+   * @return boolean
    */
-  public function pieceAttacks($attack_square, $to_square) {
-    $attacks = FALSE;
-    
-    $piece = $this->piece($attack_square);
-    if ($piece->type() == "P") {
-      // For a pawn, we have to check whether it actually attacks
-      $attacks = $this->pawnAttacks($attack_square, $to_square);
+  public function pieceAttacks(Square $attacking, Square $attacked) {
+    if ($piece = $this->getPiece($attacking)) {
+      if ($piece->getType() == "P") {
+        // For a pawn, we have to check whether it actually attacks
+        return $this->pawnAttacks($attacking, $attacked);
+      }
+      else {
+        return $this->squareIsReachable($attacking, $attacked);
+      }
+    }
+    return FALSE;
+  }
+  
+  /**
+   * Checks whether a player's king is in check.
+   *
+   * @param string $player
+   *   The color of the player to be checked.
+   *
+   * @return boolean
+   */
+  public function isInCheck($player) {
+    $king_square = $this->getKingSquare($player);
+  
+    if ($player === 'w') {
+      return !empty($this->getSquaresAttackingSquare($king_square, 'b'));
     }
     else {
-      $attacks = $this->squareIsReachable($attack_square, $to_square); 
+      return !empty($this->getSquaresAttackingSquare($king_square, 'w'));
     }
-    
-    return $attacks;
   }
   
   /**
-   * Check whether player's king is in check.
+   * Gets the square in front of another square.
+   *
+   * This only applies to squares with pawns on, since only they have the
+   * concept of in front or behind.
+   * 
+   * @param \Drupal\vchess\Game\Square $square
+   *   The original square for which we want to find the square in front.
+   * @param int $steps
+   *   The number of steps to lookahead. Defaults to 1.
+   *
+   * @return \Drupal\vchess\Game\Square
    */
-  public function isCheck($player) {
-    $king_square = $this->kingSquare($player);
-  
-    if ($player == 'w') {
-      $in_check = $this->squareIsUnderAttack($king_square, 'b');
+  public function getSquareInFront(Square $square, $steps = 1) {
+    if ($this->getPiece($square)->getType() === 'P') {
+      if ($this->getPiece($square)->getColor() === 'w') {
+        return $square->nextSquare(Direction::UP, $steps);
+      }
+      else {
+        return $square->nextSquare(Direction::DOWN, $steps);
+      }
     }
     else {
-      $in_check = $this->squareIsUnderAttack($king_square, 'w');
+      // Only pawns have the concept of square in front.
+      return NULL;
     }
-  
-    return $in_check;
   }
   
   /**
-   * Get the square in front of another square.  This only applies to squares
-   * with pawns on, since only they have the concept of in front or behind. 
+   * Returns the array of adjacent squares (<=8).
+   *
+   * @param \Drupal\vchess\Game\Square $square
+   *   The square around which to check.
    * 
-   * @param Square $square
-   *   The original square for which we want to find the square in front of it
-   * 
-   */
-  public function squareInFront(Square $square) {
-    if ($this->piece($square)->color() == 'w') {
-      $new_square = static::i2square($square->getIndex() + 8);
-    }
-    else {
-      $new_square = static::i2square($square->getIndex() - 8);
-    }
-    
-    return $new_square;
-  }
-  
-  /**
-   * Get the square 2 in front of another square. This only applies to squares
-   * with pawns on, since only they have the concept of in front or behind. 
-   * 
-   * @param Square $square
-   *   The original square for which we want to find the square in front of it
-   */
-  public function square2InFront(Square $square) {
-    if ($this->piece($square)->color() == 'w') {
-      $new_square = static::i2square($square->getIndex() + 16);
-    }
-    else {
-      $new_square = static::i2square($square->getIndex() - 16);
-    }
-  
-    return $new_square;
-  }
-  
-  /**
-   * Return the array of adjacent squares (<=8).  
-   * 
-   * @return 
+   * @return \Drupal\vchess\Game\Square[]
    *   Returns an array of Squares.
    */
   public function getAdjacentSquares(Square $square) {
-    $adj_squares = array();
-    
-    $square_index = $square->getIndex();
-    $i = 0;
-    $x = $square_index % 8;
-    $y = floor($square_index / 8);
-  
-    if ($x > 0 && $y > 0) {
-      $adj_squares[$i++] = static::i2square($square_index - 9);
+    $adjacent_squares = [];
+    $directions = [
+      Direction::UP, Direction::UP_RIGHT, Direction::RIGHT, Direction::DOWN_RIGHT,
+      Direction::DOWN, Direction::DOWN_LEFT, Direction::LEFT, Direction::UP_LEFT,
+    ];
+    foreach ($directions as $direction) {
+      $adjacent_square = $square->nextSquare($direction);
+      if ($adjacent_square->getIndex() !== $square->getIndex()) {
+        $adjacent_squares[] = $adjacent_square;
+      }
     }
-    if ($y > 0) {
-      $adj_squares[$i++] = static::i2square($square_index - 8);
-    }
-    if ($x < 7 && $y > 0) {
-      $adj_squares[$i++] = static::i2square($square_index - 7);
-    }
-    if ($x < 7) {
-      $adj_squares[$i++] = static::i2square($square_index + 1);
-    }
-    if ($x < 7 && $y < 7) {
-      $adj_squares[$i++] = static::i2square($square_index + 9);
-    }
-    if ($y < 7) {
-      $adj_squares[$i++] = static::i2square($square_index + 8);
-    }
-    if ($x > 0 && $y < 7) {
-      $adj_squares[$i++] = static::i2square($square_index + 7);
-    }
-    if ($x > 0) {
-      $adj_squares[$i++] = static::i2square($square_index - 1);
-    }
-  
-    return $adj_squares;
+    return $adjacent_squares;
   }
   
-  
   /**
-   * Check whether player's king is in checkmate
+   * Check whether a player's king is in checkmate.
    * 
-   * @param $defender
-   *   Player, either 'w' or 'b'
+   * @param string $defender
+   *   The player that is under attack, either 'w' or 'b'.
+   *
+   * @return boolean
    */
-  public function isCheckmate($defender) {
-    $in_checkmate = TRUE;  // we will look to find a counter-example
-    
-    if ($defender == 'w') {
+  public function isInCheckmate($defender) {
+    // Determine color of the opponent.
+    if ($defender === 'w') {
       $opponent = 'b';
     }
     else {
       $opponent = 'w';
     }
   
-    // Find the position of the player's king
-    $king_square = $this->kingSquare($defender);
+    // Find the position of the player's king.
+    $king_square = $this->getKingSquare($defender);
   
-    // Test adjacent squares
-    $adj_squares = $this->getAdjacentSquares($king_square);
-    //  $contents = $board[$king_pos];
-    //  $board[$king_pos] = '';
-    foreach ($adj_squares as $adj_square) {
+    // Test adjacent squares and confirm they are not available for the king.
+    $adjacent_squares = $this->getAdjacentSquares($king_square);
+    foreach ($adjacent_squares as $adjacent_square) {
       // If this adjacent square has a piece of the same color, then
       // we cannot move the king there
-      if ($this->piece($adj_square)->color() == $defender) {
+      if ($this->getPiece($adjacent_square)->getColor() === $defender) {
         continue;
       }
       // If this adjacent square is under attack, then we cannot
       // move the king there
-      if ($this->squareIsUnderAttack($adj_square, $opponent)) {
+      if ($this->getSquaresAttackingSquare($adjacent_square, $opponent)) {
         continue;
       }
-      //    $board[$king_pos] = $contents;
       // Since this square is neither occupied by one of our own pieces
-      // or is under attack then we can move the king there and so it
+      // nor is under attack then we can move the king there and so it
       // isn't checkmate
-      $in_checkmate = FALSE;
+      return FALSE;
     }
   
-    // Get all pieces that attack the king
-    $attacker_squares = $this->piecesAttackingSquare($king_square, $opponent);
+    // Get all pieces that are attacking the king.
+    $attacker_squares = $this->getSquaresAttackingSquare($king_square, $opponent);
   
     // If there is only one attacker, then it might be possible to capture the piece to escape checkmate
-    if (count($attacker_squares) == 1) {
+    if (count($attacker_squares) < 2) {
       // There is only 1 attacker.  Check whether this attacker can be captured by own defending piece.
-      $defender_pieces_squares = $this->piecesSquares($defender);
-      foreach ($defender_pieces_squares as $defender_piece_square) {
+      foreach ($this->getSquaresOfPieceColor($defender) as $defender_piece_square) {
         if ($this->pieceAttacks($defender_piece_square, $attacker_squares[0])) {
-          $piece = $this->piece($defender_piece_square);
-          if ($piece->type() == 'K') {
-            // If the piece which could capture is the king, then we need to check if 
-            // the piece it wants to take is defended.  If so, this is not valid
-            $defender_squares = $this->piecesAttackingSquare($attacker_squares[0], $opponent);
-            if (count($defender_squares) == 0) {
-              // There is nothing defending the attacking piece, so the king can take it
-              $in_checkmate = FALSE;
+          $piece = $this->getPiece($defender_piece_square);
+          if ($piece->getType() === 'K') {
+            // If the piece which could capture is the king, then we need to
+            // check if the piece it wants to take is defended.  If so, this is
+            // not valid.
+            $defender_squares = $this->getSquaresAttackingSquare($attacker_squares[0], $opponent);
+            if (count($defender_squares) === 0) {
+              // There is nothing defending the attacking piece, so the king can
+              // take it.
+              return FALSE;
             }
           }
           else {
-            // Attacker is not the king, so OK to use it
-            $in_checkmate = FALSE;            
+            // Attacker is not the king, so OK to use it to capture the piece.
+            return FALSE;
           }
         }
       }
       
-      if ($in_checkmate) {
-        // Check whether a defending piece can move in the way to block
-        $inbetween_squares = static::getInbetweenSquares($this->piece($attacker_squares[0])->type(), $attacker_squares[0], $king_square);
-        foreach ($inbetween_squares as $inbetween_square) {
-          $defending_squares = $this->piecesSquares($defender);
-          foreach ($defending_squares as $defending_square) {
-            $piece = $this->piece($defending_square);
-            $piece_type = $piece->type();
-            if ($this->moveIsOk($defending_square, $inbetween_square)) {
-              $in_checkmate = FALSE;
-            }
+      // Still danger of checkmate at this point.
+      // Next is to check whether a defending piece can move in the way to block.
+      $inbetween_squares = static::getInbetweenSquares(
+        $this->getPiece($attacker_squares[0])->getType(), $attacker_squares[0], $king_square);
+      foreach ($inbetween_squares as $inbetween_square) {
+        $defending_squares = $this->getSquaresOfPieceColor($defender);
+        foreach ($defending_squares as $defending_square) {
+          $piece = $this->getPiece($defending_square);
+          $piece_type = $piece->getType();
+          if ($this->moveIsOk($defending_square, $inbetween_square)) {
+            return FALSE;
           }
         }
       }
     }
     
-    return $in_checkmate;
+    return TRUE;
   }
 
   /**
-   * Get an array of all the pieces attacking a particular square
+   * Checks whether a square is reachable by a piece from another square.
+   *
+   * Checks whether $to_square is reachable for piece on the $piece_square. It
+   * is not checked whether the square itself is occupied but only the squares
+   * in between.
    * 
-   * @param Square $square The square which may be attacked
-   * @param $attacker The color of the attacker, 'w' or 'b'
-   */
-  public function piecesAttackingSquare(Square $square, $attacker) {
-    $attacker_squares = array();
-    $opponent_pieces_squares = $this->piecesSquares($attacker);
-    foreach ($opponent_pieces_squares as $opponent_piece_square) {
-      $piece = $this->piece($opponent_piece_square);
-      if ($this->pieceAttacks($opponent_piece_square, $square)) {
-        $attacker_squares[] = $opponent_piece_square;
-      }
-    }
-    
-    return $attacker_squares;
-  }
-  
-  /**
-   * Check whether $to_square is in reach for piece on the
-   * $piece_square. It is not checked whether the square
-   * itself is occupied but only the squares in between.
-   * 
-   * @param $from_square
-   *   Square on which piece starts from
-   * @param $to_square
-   *   Square where piece would like to go to if possible
-   * 
+   * @param \Drupal\vchess\Game\Square $from_square
+   *   Square on which piece starts from.
+   * @param \Drupal\vchess\Game\Square $to_square
+   *   Square where piece would like to go to if possible.
+   *
+   * @return bool
    */
   public function squareIsReachable(Square $from_square, Square $to_square) {
     $reachable = FALSE;
   
-    $piece_type = $this->piece($from_square)->type();
-    if ($from_square != $to_square) {
+    $piece_type = $this->getPiece($from_square)->getType();
+    if ($from_square !== $to_square) {
       $piece_pos = $from_square->getIndex();
       $dest_pos = $to_square->getIndex();
-  
+
+      // @todo Refactor using Piece::getRank() and Piece::getColumn() after tests
+      // are added.
       $piece_y = floor($piece_pos / 8) + 1;
       $piece_x = $piece_pos % 8;
       $dest_y = floor($dest_pos / 8) + 1;
@@ -722,7 +696,7 @@ class Board {
         case 'P':
           // For a pawn we need to take into account the colour since a pawn is the one
           // piece which cannot go backwards
-          $piece_color = $this->piece($from_square)->color();
+          $piece_color = $this->getPiece($from_square)->getColor();
           if ($piece_color == "w") {
             if (($dest_y - $piece_y) == 1) { // Normal 1-square move
               $reachable = TRUE;
@@ -855,7 +829,7 @@ class Board {
           $kings = 0;
           $adj_squares = $this->getAdjacentSquares($from_square);
           foreach ($adj_squares as $adj_square) {
-            if ($this->piece($adj_square)->type() == 'K') {
+            if ($this->getPiece($adj_square)->getType() == 'K') {
               $kings++;
             }
           }
@@ -874,22 +848,25 @@ class Board {
   /**
    * Get the piece on a given square.
    *
-   * @param Square $square
-   *   e.g. "a1"
+   * @param \Drupal\vchess\Game\Square $square
+   *   The square e.g. "a1".
+   *
+   * @return \Drupal\vchess\Game\Piece|null
+   *
+   * @todo Determine the appropriate behaviour of this method.
    */
-  public function piece(Square $square) {
-      $piece = new Piece;
-      if (array_key_exists($square->getCoordinate(), $this->board)) {
-        $piece = $this->board[$square->getCoordinate()];
-      }
-  
-      return $piece;
+  public function getPiece(Square $square) {
+    if (array_key_exists($square->getCoordinate(), $this->board)) {
+      return $this->board[$square->getCoordinate()];
     }
+    // Return empty piece.
+    return new Piece();
+  }
 
   /**
-   * Move a piece from one square to another
+   * Move a piece from one square to another.
    * 
-   * No checking is done here as to the validity of the move
+   * No checking is done here as to the validity of the move.
    */
   public function movePiece(Square $from_square, Square $to_square) {
     $this->board[$to_square->getCoordinate()] = $this->board[$from_square->getCoordinate()];
@@ -897,23 +874,23 @@ class Board {
   }
   
   /**
-   * Perform en passant pawn capture
+   * Perform en passant pawn capture.
    */
   public function enPassantCapture(Square $from_square, Square $to_square) {
     // Calculate the square of the pawn which has just moved 2 squares
     if ($from_square->getRank() == 4) {
       // Example: 
-      // black pawn on e4 ($from_square->coord())
+      // black pawn on e4 ($from_square->getCoordinate())
       // white pawn moves d2-d4,
-      // black pawn captures with long move Pe4-d3 ($to_square->coord() is d3)
+      // black pawn captures with long move Pe4-d3 ($to_square->getCoordinate() is d3)
       // algebraic move is exd3
       $enemy_pawn_coord = $to_square->getFile() . "4";
     }
     elseif ($from_square->getRank() == 5) {
       // Example:
-      // white pawn on b5 ($from_square->coord())
+      // white pawn on b5 ($from_square->getCoordinate())
       // black pawn moves c7-c5,
-      // white pawn captures with long move Pb5-c6 ($to_square->coord() is c6)
+      // white pawn captures with long move Pb5-c6 ($to_square->getCoordinate() is c6)
       // algebraic move is bxc6
       $enemy_pawn_coord = $to_square->getFile() . "5";
     }
@@ -933,7 +910,7 @@ class Board {
     $this->movePiece($from_square, $to_square);
     
     $coord = $to_square->getCoordinate();
-    $this->board[$coord]->set_type($new_piece->type());
+    $this->board[$coord]->setType($new_piece->getType());
   }
   
   /**
@@ -954,17 +931,17 @@ class Board {
   public function pawnAttacks(Square $pawn_square, Square $to_square) {
     $attacks = FALSE;
   
-    $piece_color = $this->piece($pawn_square)->color();
+    $piece_color = $this->getPiece($pawn_square)->getColor();
   
     // Convert coord like "d4" into col=4 rank=4
-    $piece_col = static::file2col($pawn_square->getFile()); // e.g. d -> 4
-    $piece_rank = $pawn_square->getRank();
+    $piece_col = $pawn_square->getColumn(); // e.g. d -> 4
+    $piece_rank = (int) $pawn_square->getRank();
   
-    $dest_col = static::file2col($to_square->getFile());  // e.g. e -> 5
-    $dest_rank = $to_square->getRank();
+    $dest_col = $to_square->getColumn();  // e.g. e -> 5
+    $dest_rank = (int) $to_square->getRank();
   
     if ($piece_color == 'w') {
-      if ($dest_rank == $piece_rank + 1
+      if ($dest_rank === $piece_rank + 1
           && ($piece_col == ($dest_col - 1) || $piece_col == ($dest_col + 1))) {
         $attacks = TRUE;
       }
@@ -989,16 +966,12 @@ class Board {
    * 
    */
   public function moveIsOk(Square $from_square, Square $to_square) {
-    $move_ok = FALSE;
-    
-    if ($this->piece($from_square)->type() == 'P') {
-      $move_ok = $this->pawnMayMoveToSquare($from_square, $to_square);
+    if ($this->getPiece($from_square)->getType() == 'P') {
+      return $this->pawnMayMoveToSquare($from_square, $to_square);
     }
     else {
-      $move_ok = $this->nonPawnMayMoveToSquare($from_square, $to_square);
+      return $this->nonPawnMayMoveToSquare($from_square, $to_square);
     }
-    
-    return $move_ok;
   }
   
   /**
@@ -1012,13 +985,13 @@ class Board {
   public function pawnMoved2Squares(Square $from_square, Square $to_square) {
     $pawn_moved_2_squares = FALSE;
     
-    $piece = $this->piece($from_square);
-    if ($piece->type() == 'P') {
-      if ($piece->color() == 'w' 
+    $piece = $this->getPiece($from_square);
+    if ($piece->getType() == 'P') {
+      if ($piece->getColor() == 'w'
       && ($from_square->getRank() == 1 && $to_square->getRank() == 3)) {
         $pawn_moved_2_squares = TRUE;
       }
-      elseif ($piece->color() == 'b' 
+      elseif ($piece->getColor() == 'b'
       && ($from_square->getRank() == 7 && $to_square->getRank() == 5)) {
         $pawn_moved_2_squares = TRUE;
       }
@@ -1044,7 +1017,7 @@ class Board {
     }
   
     // Look at each square to find each of the opponent pieces
-    $pieces_squares = $this->piecesSquares($player);
+    $pieces_squares = $this->getSquaresOfPieceColor($player);
     foreach ($pieces_squares as $piece_square) {
       // Can the piece move theoretically thus is there
       // at least one square free for one piece?
@@ -1066,7 +1039,7 @@ class Board {
   public function validMoves(Square $piece_square) {
     $valid_moves = array();
   
-    $piece_type = $this->piece($piece_square)->type();
+    $piece_type = $this->getPiece($piece_square)->getType();
     switch ($piece_type) {
       case 'K':
         $adj_squares = $this->getAdjacentSquares($piece_square);
@@ -1078,8 +1051,8 @@ class Board {
         break;
       case 'Q':
         $squares = array_merge(
-        $this->rankAndFileSquares($piece_square),
-        $this->diagonalSquares($piece_square));
+        $this->getSquaresOnRankFile($piece_square),
+        $this->getDiagonalSquares($piece_square));
         foreach ($squares as $to_square) {
           if ($this->moveIsOk($piece_square, $to_square)) {
             $valid_moves[] = $this->longMove($piece_square, $to_square);
@@ -1087,7 +1060,7 @@ class Board {
         }
         break;
       case 'R':
-        $squares = $this->rankAndFileSquares($piece_square);
+        $squares = $this->getSquaresOnRankFile($piece_square);
         foreach ($squares as $to_square) {
           if ($this->moveIsOk($piece_square, $to_square)) {
             $valid_moves[] = $this->longMove($piece_square, $to_square);
@@ -1095,14 +1068,14 @@ class Board {
         }
         break;
       case 'B':
-        $squares = $this->diagonalSquares($piece_square);
+        $squares = $this->getDiagonalSquares($piece_square);
         foreach ($squares as $to_square) {
           if ($this->moveIsOk($piece_square, $to_square)) {
             $valid_moves[] = $this->longMove($piece_square, $to_square);
           }
         }
       case 'N':
-        $squares = $this->diagonalSquares($piece_square);
+        $squares = $this->getDiagonalSquares($piece_square);
         foreach ($squares as $to_square) {
           if ($this->moveIsOk($piece_square, $to_square)) {
             $valid_moves[] = $this->longMove($piece_square, $to_square);
@@ -1110,17 +1083,17 @@ class Board {
         }
         break;
       case 'P':
-        // See if the move 1 square in front is possible
-        if ($this->moveIsOk($piece_square, $square_in_front = $this->squareInFront($piece_square))) {
+        // See if the move 1 square in front is possible.
+        if ($this->moveIsOk($piece_square, $square_in_front = $this->getSquareInFront($piece_square))) {
           $valid_moves[] = $this->longMove($piece_square, $square_in_front);
         }
-        // See if the move 2 squares in front is possible
-        if ($this->moveIsOk($piece_square, $square_2_in_front = $this->square2InFront($piece_square))) {
+        // See if the move 2 squares in front is possible.
+        if ($this->moveIsOk($piece_square, $square_2_in_front = $this->getSquareInFront($piece_square, 2))) {
           $valid_moves[] = $this->longMove($piece_square, $square_2_in_front);
         }
-        // See if an en passant capture is possible
+        // See if an en passant capture is possible.
         if ($this->isEnPassant()) {
-          if ($this->moveIsOk($piece_square, $en_passant_square = static::coord2Square($this->enPassant()))) {
+          if ($this->moveIsOk($piece_square, $en_passant_square = Square::fromCoordinate($this->getEnPassantSquare()))) {
             $valid_moves[] = $this->longMove($piece_square, $en_passant_square);
           }
         }
@@ -1134,7 +1107,7 @@ class Board {
    * Calculate the long move
    */
   public function longMove(Square $from_square, Square $to_square) {
-    $long_move = $piece_type = $this->piece($from_square)->type .
+    $long_move = $piece_type = $this->getPiece($from_square)->getType() .
       $from_square->getCoordinate() . "-" . $to_square->getCoordinate();
     
     return $long_move;
@@ -1154,7 +1127,7 @@ class Board {
     $move_ok = FALSE;
   
     if ($this->squareIsEmpty($to_square)) {
-      $piece = $this->piece($from_square);
+      $piece = $this->getPiece($from_square);
       $piece_file = $from_square->getFile(); // e.g. e
       $piece_rank = $from_square->getRank(); // e.g. 2
       $dest_file = $to_square->getFile();  // e.g. e
@@ -1165,7 +1138,7 @@ class Board {
       if ($piece_file <> $dest_file) {
         $move_ok = FALSE;
       }
-      elseif ($piece->color() == 'w') {
+      elseif ($piece->getColor() == 'w') {
         // white pawn
         if ($piece_rank == 2 && $dest_rank == 4) {
           // Pawn moving 2 squares, so check if intermediate square is empty
@@ -1208,29 +1181,20 @@ class Board {
   protected function nonPawnMayMoveToSquare(Square $from_square, Square $to_square) {
     $move_ok = FALSE;
   
-    $color = $this->piece($from_square)->color();
+    $color = $this->getPiece($from_square)->getColor();
     if ($this->squareIsEmpty($to_square) && $this->squareIsReachable($from_square, $to_square)) {
       // The only thing which would stop it would be if moving the piece
       // would expose the player to a discovered check.  To test this,
       // make the move and see if they are in check.
       $new_board = new Board();
-      $new_board->setupPosition($this->position());
+      $new_board->setupPosition($this->getFenString());
       $new_board->movePiece($from_square, $to_square);           
-      if (!$new_board->isCheck($color)) {
+      if (!$new_board->isInCheck($color)) {
         $move_ok = TRUE;        
       }
     }
   
     return $move_ok;
-  }
-  
-  
-  
-  /**
-   * Convert $row (1..8), $col (1..8) to 1dim index [0..63]
-   */
-  protected function xy2i($row, $col) {
-    return ($row * 8) + $col;
   }
   
   /**
@@ -1246,137 +1210,56 @@ class Board {
     if ($square_in_front->getRank() == 4) {
       // White has moved something like "Ph2-h4"
       // so target will be "h3"
-      $this->en_passant = $file . "3";
+      $this->enPassantSquare = $file . "3";
     }
     else {
       // Black has moved something like "Ph7-h5"
       // so target will be "h6"
-      $this->en_passant = $file . "6";
+      $this->enPassantSquare = $file . "6";
     }
   }
   
   /**
-   * Set en_passant value
+   * Set en_passant square.
    * 
    * @param $value
    *   Either a coord, e.g. "d3" or "-" 
    */
-  public function setEnPassantValue($value) {
-    $this->en_passant = $value;
+  public function setEnPassantSquare($value) {
+    $this->enPassantSquare = $value;
   }
   
   /**
-   * Reset the en_passant square
+   * Reset the en_passant square.
    */
-  public function resetEnPassant() {
-    $this->en_passant = "-";
+  public function resetEnPassantSquare() {
+    $this->enPassantSquare = "-";
   }
   
   /**
-   * Test if there is an en_passant square
+   * Tests if there is an en_passant square.
    * 
    * @return bool
    *   TRUE if an en_passant square currently exists
    */
   public function isEnPassant() {
-    $is_en_passant = FALSE;
-    if ($this->enPassant() <> "-") {
-      $is_en_passant = TRUE;
-    }
-  
-    return $is_en_passant;
+    return $this->enPassantSquare !== "-";
   }
   
   /**
-   * Get the en_passant
+   * Gets the en_passant square.
    *
    * The en_passant is the coordinates of the square
    * behind the pawn in the last move to have moved 2 squares.
    *
-   * @return
-   *   Returns the en_passant coord (e.g. "d3"), if there is one,
+   * @return string
+   *   Returns the en_passant square's coordinate (e.g. "d3") if there is one,
    *   otherwise it returns "-"
    */
-  public function enPassant() {
-    return $this->en_passant;
+  public function getEnPassantSquare() {
+    return $this->enPassantSquare;
   }
   
-  /**
-   * Convert $row (1..8), $col (1..8) to coordinate [a1..h8]
-   */
-  public function colRow2coord($col, $row) {
-    $coord = "";
-    switch ($col) {
-      case 1:
-        $coord = 'a';
-        break;
-      case 2:
-        $coord = 'b';
-        break;
-      case 3:
-        $coord = 'c';
-        break;
-      case 4:
-        $coord = 'd';
-        break;
-      case 5:
-        $coord = 'e';
-        break;
-      case 6:
-        $coord = 'f';
-        break;
-      case 7:
-        $coord = 'g';
-        break;
-      case 8:
-        $coord = 'h';
-        break;
-    }
-
-    $coord .= $row;
-
-    return $coord;
-  }
-
-  /**
-   * Convert a file (a..h) into a numerical column (1..8)
-   */
-  public function file2col($file) {
-    // "a" = ascii 97
-    $col = ord($file) - 96;
-
-    return $col;
-  }
-
-  /**
-   * Convert index [0..63] to square [a1..h8]
-   */
-  public function i2square($index) {
-    $square = new Square();
-    
-    if ($index < 0 || $index > 63) {
-      $square->setCoordinate('');
-    }
-    else {
-      $y = floor($index / 8) + 1;
-      $x = chr(($index % 8) + 97);
-      $square->setCoordinate($x . $y);
-    }
-    
-    return $square;
-  }
-
-  /**
-   * Convert a coord [a1..h8] into a square
-   */
-  public function coord2Square($coord) {
-    $square = new Square;
-
-    $square->setCoordinate($coord);
-
-    return $square;
-  }
-
   /**
    * Get empty squares between start and end as 1dim array.
    * Whether the path is clear is not checked.
@@ -1390,7 +1273,7 @@ class Board {
    *   not including the $start_square and $end_square themselves.
    *
    */
-  public function getInbetweenSquares($piece_type, Square $start_square, Square $end_square) {
+  public static function getInbetweenSquares($piece_type, Square $start_square, Square $end_square) {
     $change = static::getInbetweenSquaresChange($piece_type, $start_square, $end_square);
 
     $start = $start_square->getIndex();
@@ -1399,19 +1282,9 @@ class Board {
     $inbetween_squares = array();
     $i = 0;
     for ($pos = $start + $change; $pos != $end; $pos += $change) {
-      $inbetween_squares[$i++] = static::i2square($pos);
+      $inbetween_squares[$i++] = Square::fromIndex($pos);
     }
     return $inbetween_squares;
-  }
-
-  /**
-   * Convert column (1..8) as number to a file (a..h)
-   */
-  public function col2file($col) {
-    // "a" = ascii 97
-    $file = chr($col + 96);
-
-    return $file;
   }
 
   /**
@@ -1426,7 +1299,7 @@ class Board {
    * @param $from_square Piece square
    * @param $dest_index Destination square
    */
-  public function getInbetweenSquaresChange($piece_type, Square $from_square, Square $dest_square) {
+  public static function getInbetweenSquaresChange($piece_type, Square $from_square, Square $dest_square) {
 
     $piece_index = $from_square->getIndex();
     $dest_index = $dest_square->getIndex();

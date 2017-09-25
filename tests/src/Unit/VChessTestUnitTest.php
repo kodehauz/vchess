@@ -1,27 +1,17 @@
 <?php
 
+namespace Drupal\Tests\vchess\Unit;
+
+use Drupal\Tests\UnitTestCase;
+
 /**
- * @file
- * Implements automatic tests for the Vchess module.
+ * Ensure that VChess functions properly.
+ *
+ * @group VChess
  */
-
-
-class VChessTestCase extends DrupalWebTestCase {
+class VChessTestUnitTest extends UnitTestCase {
   protected $privileged_user;
   
-  public static function getInfo() {
-    // Note: getInfo() strings are not translated with t().
-    return array(
-        'name' => 'VChess tests',
-        'description' => 'Ensure that VChess functions properly.',
-        'group' => 'VChess',
-    );
-  }
-  
-  function setUp() {
-    parent::setUp('vchess');
-  }
-
   /**
    * All sorts of tests
    * 
