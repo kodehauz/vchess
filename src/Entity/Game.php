@@ -5,7 +5,11 @@ namespace Drupal\vchess\Entity;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\gamer\Entity\GamerStatistics;
+use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
+use Drupal\vchess\Game\Board;
+use Drupal\vchess\Game\GamePlay;
 
 /**
  * @ContentEntityType(
@@ -125,6 +129,70 @@ class Game extends ContentEntityBase {
     return $lost_on_time;
   }
 
+
+  /**
+   * See if the given user is one of the players.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The user to test.
+   *
+   * @return boolean
+   *   TRUE if the given user is one of the players.
+   */
+  public function isUserPlaying(UserInterface $user) {
+    return $this->getBlackUser()->id() == $user->id() || $this->getWhiteUser()->id() == $user->id();
+  }
+
+  /**
+   * See if it's the given players move.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The user to test.
+   *
+   * @return boolean
+   *   TRUE if the given user is one to move.
+   */
+  public function isPlayersMove(UserInterface $user) {
+    return (($this->getTurn() == 'w' && $this->getWhiteUser()->id() == $user->id())
+      || ($this->getTurn() == 'b' && $this->getBlackUser()->id() == $user->id()));
+  }
+
+  /**
+   * Gets the opponent for a particular player.
+   *
+   * @param $uid
+   *   User id of one of the players
+   *
+   * @return \Drupal\gamer\Entity\GamerStatistics $player
+   *   The opposing player
+   */
+  public function getOpponent($uid) {
+    if ($this->game->getWhiteUser()->id() == $uid) {
+      return GamerStatistics::loadForUser($this->getBlackUser());
+    }
+    else {
+      return GamerStatistics::loadForUser($this->getWhiteUser());
+    }
+  }
+
+  /**
+   * Get the player who is the current challenger
+   */
+  public function getChallenger() {
+    $uid = 0;
+
+    if ($this->game->getWhiteUser() != NULL && $this->game->getBlackUser() == NULL) {
+      $uid = $this->game->getWhiteUser()->id();
+    }
+    elseif ($this->game->getBlackUser() != NULL && $this->game->getWhiteUser() == NULL) {
+      $uid = $this->game->getBlackUser()->id();
+    }
+
+    $challenger = GamerStatistics::loadForUser(User::load($uid));
+
+    return $challenger;
+  }
+
   public function getTurn() {
     return $this->get('turn')->value;
   }
@@ -153,6 +221,15 @@ class Game extends ContentEntityBase {
     return $this->get('white_uid')->entity;
   }
 
+  /**
+   * Sets the white user.
+   *
+   * @param \Drupal\user\UserInterface $value
+   *   The white user.
+   *
+   * @return $this
+   *   For method chaining.
+   */
   public function setWhiteUser(UserInterface $value) {
     $this->set('white_uid', $value);
     return $this;
@@ -165,6 +242,14 @@ class Game extends ContentEntityBase {
     return $this->get('black_uid')->entity;
   }
 
+  /**
+   * Sets the black user.
+   *
+   * @param \Drupal\user\UserInterface $value
+   *   The black user.
+   *
+   * @return $this
+   */
   public function setBlackUser(UserInterface $value) {
     $this->set('black_uid', $value);
     return $this;
@@ -174,6 +259,13 @@ class Game extends ContentEntityBase {
     return $this->get('board')->value;
   }
 
+  /**
+   * Sets the game board.
+   *
+   * @param string $value
+   *
+   * @return $this
+   */
   public function setBoard($value) {
     $this->set('board', $value);
     return $this;
@@ -259,7 +351,8 @@ class Game extends ContentEntityBase {
     $fields['turn'] = BaseFieldDefinition::create('string')
       ->setDescription(t('Whose turn it is to play, either "w" (white) or "b" (black)'))
       ->setRequired(TRUE)
-      ->setDefaultValue('w');
+      ->setDefaultValue('w')
+      ->addConstraint('AllowedValues', ['choices' => ['w', 'b']]);
 
     $fields['status'] = BaseFieldDefinition::create('string')
       ->setDescription(t('Status of the game'))
@@ -370,11 +463,11 @@ class Game extends ContentEntityBase {
   /**
    * Calculate the number of games in progress
    */
-  public static function userCurrentGames($uid) {
+  public static function countUsersCurrentGames(UserInterface $user) {
     $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getAggregateQuery('AND');
     $user_condition = $query->orConditionGroup()
-      ->condition('white_uid', $uid)
-      ->condition('black_uid', $uid);
+      ->condition('white_uid', $user->id())
+      ->condition('black_uid', $user->id());
 
     $count = $query
       ->condition($user_condition)
@@ -478,7 +571,7 @@ class Game extends ContentEntityBase {
   /**
    * Load a list of all current games
    *
-   * @return
+   * @return \Drupal\vchess\Entity\Game[]
    *   An array of current (in progress) games
    */
   public static function loadChallenges() {

@@ -7,6 +7,8 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\gamer\Rating;
 use Drupal\user\UserInterface;
+use Drupal\vchess\Entity\Game;
+use Drupal\vchess\Game\GamePlay;
 
 /**
  * Defines the gamer statistics entity.
@@ -299,6 +301,30 @@ class GamerStatistics extends ContentEntityBase {
     //   // Save changes
     //   gamer_save_user_stats($winner->uid, $winner_stats_new);
     //   gamer_save_user_stats($loser->uid, $loser_stats_new);
+  }
+
+  /**
+   * Update the player statistics
+   *
+   * @param $game
+   *   The game which has just finished
+   */
+  public static function updatePlayerStatistics(Game $game) {
+    switch ($game->getStatus()) {
+      case GamePlay::STATUS_WHITE_WIN:
+        $score = GamerStatistics::GAMER_WHITE_WIN;
+        break;
+      case GamePlay::STATUS_BLACK_WIN:
+        $score = GamerStatistics::GAMER_BLACK_WIN;
+        break;
+      case GamePlay::STATUS_DRAW:
+        $score = GamerStatistics::GAMER_DRAW;
+        break;
+      default:
+        $score = '';
+    }
+
+    static::updateUserStatistics($game->getWhiteUser(), $game->getBlackUser(), $score);
   }
 
 }

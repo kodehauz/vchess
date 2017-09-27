@@ -126,6 +126,25 @@ class VChessBoardTest extends UnitTestCase {
     return $squares;
   }
 
+  /**
+   * @dataProvider providerSquareIsEmpty()
+   */
+  public function testSquareIsEmpty($coordinate, $expected) {
+    $board = new Board();
+    $board->setupAsStandard();
+    $this->assertEquals($expected, $board->squareIsEmpty(Square::fromCoordinate($coordinate)));
+  }
+
+  public function providerSquareIsEmpty() {
+    return [
+      ['a1', FALSE],
+      ['a1', FALSE],
+      ['h1', FALSE],
+      ['e5', TRUE],
+      ['f6', TRUE],
+    ];
+  }
+
 }
 
 class TestBoard extends Board {

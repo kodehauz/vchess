@@ -21,31 +21,3 @@ function vchess_install() {
      )
    );
 }
-
-/**
- * Define the database tables required for this module
- * 
- * There are 2 tables:
- * - vchess_games contains summary of each game 
- *   - who is playing who
- *   - whose move it is
- *   - what the current board postion is
- *   - etc.
- * 
- * - vchess_moves contains the list of moves for each game
- * 
- * N.B. There is a problem with enum not currently being supported in core.  
- * The patch solution is:
- * - http://drupal.org/node/1464354
- * - http://drupal.org/node/1466122
- * Note that I originally thought that timestamp was not supported but it
- * is with the mysql_type key, see:
- * http://api.drupal.org/api/drupal/includes%21database%21schema.inc/group/schemaapi/7
- */
-function vchess_schema() {
-  
-
-
-  
-  return $schema;
-}

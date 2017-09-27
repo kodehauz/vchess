@@ -5,6 +5,8 @@ namespace Drupal\vchess\Game;
 use Drupal\gamer\Entity\GamerStatistics;
 use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
+use Drupal\vchess\Entity\Game;
+use Drupal\vchess\Entity\Move;
 
 class GamePlay {
 
@@ -201,24 +203,6 @@ class GamePlay {
   }
    
   /**
-   * Get the player who is the current challenger
-   */
-  public function getChallenger() {
-    $uid = 0;
-
-    if ($this->game->getWhiteUser() != NULL && $this->game->getBlackUser() == NULL) {
-      $uid = $this->game->getWhiteUser()->id();
-    }
-    elseif ($this->game->getBlackUser() != NULL && $this->game->getWhiteUser() == NULL) {
-      $uid = $this->game->getBlackUser()->id();
-    }
-  
-    $challenger = GamerStatistics::loadForUser(User::load($uid));
-    
-    return $challenger;
-  }
-  
-  /**
    * Load an existing game (try active games first, then archived games) and set various
    * user-based variables, too. Return game as array or NULL on error.
    *
@@ -313,14 +297,6 @@ class GamePlay {
   }
   
   /**
-   * See if it's the given players move
-   */
-  public function isPlayersMove($uid) {
-    return (($this->game->getTurn() == 'w' && $this->game->getWhiteUser()->id() == $uid)
-    || ($this->game->getTurn() == 'b' && $this->game->getBlackUser()->id() == $uid));
-  }
-  
-  /**
    * See if the game is started yet
    * 
    * @return
@@ -330,17 +306,7 @@ class GamePlay {
     // @todo: need to check this.
     return !($this->moveNo() == 1 && $this->getTurn() == "w");
   }
-  
-  /**
-   * See if the given user is one of the players
-   * 
-   * @return
-   *   TRUE if the given user is one of the players
-   */
-  public function isUserPlaying($uid) {
-    return $this->game->getBlackUser()->id() == $uid || $this->game->getWhiteUser()->id() == $uid;
-  }
-  
+
   /** 
    * Get the game id
    */
@@ -412,7 +378,7 @@ class GamePlay {
    *   Returns the en_passant coord (e.g. "d3"), if there is one,
    *   otherwise it returns "-" 
    */
-  public function enPassant() {
+  public function getEnPassantSquare() {
     return $this->board->getEnPassantSquare();
   }
   
@@ -492,26 +458,6 @@ class GamePlay {
    */
   public function isCheck($player) {
     return $this->board->isInCheck($player);
-  }
-  
-  /**
-   * Gets the opponent for a particular player.
-   *
-   * @param $uid
-   *   User id of one of the players
-   *
-   * @return \Drupal\gamer\Entity\GamerStatistics $player
-   *   The opposing player
-   */
-  public function getOpponent($uid) {
-    if ($this->game->getWhiteUser()->id() == $uid) {
-      $opponent = $this->blackPlayer();
-    }
-    else {
-      $opponent = $this->whitePlayer();
-    }
-  
-    return $opponent;
   }
   
   /**
@@ -656,12 +602,10 @@ class GamePlay {
    *   @todo Please document this parameter
    */
   public function makeMove($uid, $move_string) {
-    $mate_type = "";
-
     /** @var \Drupal\vchess\Entity\Move $move */
     $move = Move::create()->setLongMove($move_string);
     
-    // We will use this board at the end to get the algebraic move
+    // We will use this board at the end to get the algebraic move.
     $board_clone = clone $this->board;
   
     $result = "";
@@ -674,7 +618,7 @@ class GamePlay {
     
 //    $result .= "move_string = $move_string. ";
   
-    if (!$this->isPlayersMove($uid)) {
+    if (!$this->game->isPlayersMove($uid)) {
       $result .= 'It is not your turn!';
     }
     else {
@@ -706,7 +650,7 @@ class GamePlay {
         $draw_handled = 1;
         $result .= 'You accepted the draw.';
         $this->lastMove = 'DrawAccepted';
-        if ($this->game->getCurrentPlayer() === 'b') {
+        if ($this->game->getTurn() === 'b') {
           $this->game->setCurrentMove($this->game->getCurrentMove() + 1); // new move as white offered
         }
         $game['mhistory'][count($game['mhistory'])] = 'draw';
@@ -715,6 +659,7 @@ class GamePlay {
       || $move->getLongMove() == 'Ke8-g8'
       || $move->getLongMove() == 'Ke1-c1'
       || $move->getLongMove() == 'Ke8-c8') {
+        $error = "";
         switch ($move->getLongMove()) {
           case 'Ke1-g1':
             $error = $this->castle('w', 'e1', 'g1', 'h1', 'f1', array('f1', 'g1'), $this->board);
@@ -731,20 +676,20 @@ class GamePlay {
           default:
             break;  
         }
-        if ($error <> "") {
+        if ($error !== "") {
           return $error;
         }
       }
-      elseif ($move->type() == "-") {
+      elseif ($move->getType() === "-") {
         // Validate piece and position.
         // Move is e.g. "Nb1-c3"
         $piece = new Piece();
-        $piece->set_type($move->source_piece_type());
-        $piece->set_color($this->getTurn());
+        $piece->setType($move->getSourcePieceType());
+        $piece->setColor($this->getTurn());
 
-        if ($piece->type() == 'P' && $to_square->coord() == $this->enPassant()) {
-          // Perform en passant pawn capture
-          $this->board->enPassantCapture($piece_square, $to_square);
+        if ($piece->getType() === 'P' && $to_square->getCoordinate() === $this->getEnPassantSquare()) {
+          // Perform en passant pawn capture.
+          $this->board->performEnPassantCapture($piece_square, $to_square);
         }
         elseif (!$this->board->moveIsOk($piece_square, $to_square)) {
           $move_ok = FALSE;
@@ -753,7 +698,7 @@ class GamePlay {
           // If pawn moved 2 squares, then record the en_passant square
           // (the square behind the pawn which has just moved)
           if ($this->board->pawnMoved2Squares($piece_square, $to_square)) {
-            $this->setEnPassant($to_square);
+            $this->board->setEnPassant($to_square);
 
             $en_passant_set = TRUE;
           } 
@@ -770,66 +715,65 @@ class GamePlay {
       elseif ($move->getType() === "x") {
         if ($this->board->squareIsEmpty($to_square)) {
           // En passant of pawn?
-          if ($piece_type === 'P') {
+          if ($move->getSourcePieceType() === 'P') {
 
           }
           else {
-            $result .= 'ERROR: ' . $to_square->coord() . ' is empty!';
+            $result .= 'ERROR: ' . $to_square->getCoordinate() . ' is empty!';
             $move_ok = FALSE;
           }
         }
-        elseif ($board->getPiece($to_square)->color() == $this->getTurn()) {
-          $result .= 'ERROR: You cannot attack own chessman at ' . $to_square->coord() . '!';
+        elseif ($this->board->getPiece($to_square)->getColor() === $this->getTurn()) {
+          $result .= 'ERROR: You cannot attack own chessman at ' . $to_square->getCoordinate() . '!';
           $move_ok = FALSE;
         }
-        elseif (!$board->pieceAttacks($piece_square, $to_square)) {
-          $result .= 'ERROR: You cannot take the piece on ' . $to_square->coord() . '!';
+        elseif (!$this->board->pieceAttacks($piece_square, $to_square)) {
+          $result .= 'ERROR: You cannot take the piece on ' . $to_square->getCoordinate() . '!';
           $move_ok = FALSE;
         }
         
         // If pawn reached last rank, promote it
-        $pawn_promoted = $this->handlePawnPromotion($move, $board);
+        $pawn_promoted = $this->handlePawnPromotion($move, $this->board);
         
         if ($move_ok && !$pawn_promoted) {
           // Perform normal capture
-          $board->movePiece($piece_square, $to_square);
+          $this->board->movePiece($piece_square, $to_square);
         }
       }
     
       // If OWN king is still in check, then invalid move
-      if ($board->isInCheck($this->getTurn())) {
+      if ($this->board->isInCheck($this->getTurn())) {
         $result .= 'ERROR: King is in check. ';
         $move_ok = FALSE;        
       }
 
-      $move->calculate_algebraic($this->getTurn(), $board_clone);
+      $move->calculateAlgebraic($this->getTurn(), $board_clone);
       
       // If move was executed update game state.
       if ($move_ok) {
-        $result .= 'Your last move: ' . $move->algebraic();
+        $result .= 'Your last move: ' . $move->getAlgebraic();
         
         // If this wasn't a 2-square pawn move, we need to reset 
         // the en_passant square
         if (!$en_passant_set) {
-          $this->resetEnPassant();
+          $this->board->resetEnPassantSquare();
         }
         
         // Check checkmate/stalemate
-        if ($board->isInCheck($opponent)) {
-          // If this is check mate finish the game otherwise
-          // add '+' to the move.
-          if ($board->isInCheckmate($opponent)) {
-            if ($this->getTurn() == 'w') {
-              $this->setStatus(STATUS_WHITE_WIN);
+        if ($this->board->isInCheck($opponent)) {
+          // If this is checkmate finish the game, otherwise add '+' to the move.
+          if ($this->board->isInCheckmate($opponent)) {
+            if ($this->getTurn() === 'w') {
+              $this->setStatus(static::STATUS_WHITE_WIN);
             }
             else {
-              $this->setStatus(STATUS_BLACK_WIN);
+              $this->setStatus(static::STATUS_BLACK_WIN);
             }
             $result .= '... CHECKMATE!';
           }
         }
-        elseif ($board->isStalemate($opponent)) {
-          $this->setStatus(STATUS_DRAW);
+        elseif ($this->board->isStalemate($opponent)) {
+          $this->setStatus(static::STATUS_DRAW);
           $result .= '... STALEMATE!';
         }
         
@@ -858,47 +802,101 @@ class GamePlay {
         //    $game['chatter'][1] = "Hugh hard coding for now";
         //    $game['chatter'][0] = $comment;
       
-        // Store changed board
-        $this->setBoard($board);
-        
+        // Update scoresheet.
         $this->scoresheet->appendMove($move);
       }
       else {
-        $result .= 'ERROR: ' . $move->algebraic() . ' is not a legal move!  ';
+        $result .= 'ERROR: ' . $move->getAlgebraic() . ' is not a legal move!  ';
       }
     }
     return $result;
   }
-  
-  /**
-   * Set the en_passant square
-   */
-  public function setEnPassant(Square $square_in_front) {
-    $this->board->setEnPassant($square_in_front);
-  }
 
   /**
-   * Test if there is an en_passant square
+   * Handle castling
+   *
+   * @param string $turn
+   *   Whose turn to play, either 'w' or 'b'.
+   * @param string $king_from
+   *   The coordinate of the king, e.g. "e1"
+   * @param array $castling_coords
+   *   Array of the coords of all the squares involved, from
+   * left to right, e.g. array("e1", "f1", "g1", "h1"
+   *
+   * @return string
+   *
    */
-  public function isEnPassant() {
-    return $this->board->isEnPassant();
+  public function castle($turn, $king_from, $king_to, $rook_from, $rook_to, $gap_coords, $board) {
+    $error = "";
+
+    if ($turn == 'w') {
+      $opponent = 'b';
+    }
+    else {
+      $opponent = 'w';
+    }
+
+    if (count($gap_coords) === 2) {
+      if (!$this->mayCastleShort($turn)) {
+        $error = static::ERROR_CANNOT_CASTLE_SHORT;
+      }
+    }
+    else { // count == 3
+      if (!$this->mayCastleLong($turn)) {
+        $error = static::ERROR_CANNOT_CASTLE_LONG;
+      }
+    }
+
+    if ($error === "") {
+      foreach ($gap_coords as $gap_coord) {
+        if (!$this->board->squareAtCoordinateIsEmpty($gap_coord)) {
+          $error = static::ERROR_CASTLING_SQUARES_BLOCKED;
+        }
+      }
+    }
+
+    if ($error == "") {
+      if ($this->board->isInCheck($turn)) {
+        $error = static::ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
+      }
+    }
+    // Ensure the squares between the king's current position and where he will
+    // move to are not under attack.
+    if ($error === "") {
+      foreach ($gap_coords as $gap_coord) {
+        $square = (new Square)->setCoordinate($gap_coord);
+        if ($this->board->squareIsUnderAttack($square, $opponent)) {
+          $error = static::ERROR_CANNOT_CASTLE_ACROSS_CHECK;
+        }
+      }
+    }
+
+    if ($error === "") {
+      $this->board->movePiece(Square::fromCoordinate($king_from), Square::fromCoordinate($king_to));  // White King
+      $this->board->movePiece(Square::fromCoordinate($rook_from), Square::fromCoordinate($rook_to));  // Rook
+
+      $this->mayNotCastle($turn);
+      $this->lastMove = 'Ke1-g1';
+    }
+
+    return $error;
   }
-  
+
   /**
    * Handle pawn promotion
    */
   public function handlePawnPromotion(Move $move, Board $board) {
     $pawn_promoted = FALSE;
     
-    $piece = $board->getPiece($move->from_square());
-    if ($piece->type() == 'P') {
-      if (($this->getTurn() == 'w' && $move->to_square()->rank() == 8) ||
-          ($this->getTurn() == 'b' && $move->to_square()->rank() == 1)) {
+    $piece = $board->getPiece($move->fromSquare());
+    if ($piece->getType() == 'P') {
+      if (($this->getTurn() == 'w' && $move->toSquare()->getRank() == 8) ||
+          ($this->getTurn() == 'b' && $move->toSquare()->getRank() == 1)) {
         $promote_to = new Piece();
-        $promote_to->set_type($move->promotion_piece_type());
-        $promote_to->set_color($this->getTurn());
+        $promote_to->setType($move->getPromotionPieceType());
+        $promote_to->setColor($this->getTurn());
     
-        $board->promotion($move->from_square(), $move->to_square(), $promote_to);
+        $board->promotion($move->fromSquare(), $move->toSquare(), $promote_to);
         
         $pawn_promoted = TRUE;
       }
@@ -1003,12 +1001,12 @@ class GamePlay {
   function abort($uid) {
     //  global $res_games;
   
-    $gamefolder =  variable_get('vchess_game_files_folder', 'vchess-data');
+    $gamefolder =  \Drupal::config('vchess.settings')->get('game_files_folder');
     $res_games = $gamefolder;
   
     //  ioLock();
   
-    $game = new Game($gid);
+//    $game = new Game($gid);
     if ($game == NULL) {
       return 'ERROR: Game "' . $gid . '" does not exist!';
     }
@@ -1053,12 +1051,12 @@ class GamePlay {
    * If games are found which are lost on time, then the game is finished and
    * the player statistics are updated
    */
-  function checkForLostOnTimeGames() {
+  public static function checkForLostOnTimeGames() {
     $games = Game::loadAllCurrentGames();
 
     foreach ($games as $game) {
       if ($game->isLostOnTime()) {
-        vchess_update_player_stats($game);
+        GamerStatistics::updatePlayerStatistics($game);
       }
     }
   }

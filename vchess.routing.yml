@@ -1,13 +1,13 @@
 vchess.main:
   path: /vchess/main
   defaults:
-    _controller: \Drupal\vchess\VchessController::mainPage
+    _controller: \Drupal\vchess\Controller\GameController::mainPage
     _title: Main
   requirements:
     _permission: 'basic access'
 
 vchess.opponent_game_form:
-  path: /vchess/opponent_game_form
+  path: /vchess/opponent-game-form
   defaults:
     _form: \Drupal\vchess\Form\OpponentGameForm
     _title: 'Create chess game against named player'
@@ -15,25 +15,25 @@ vchess.opponent_game_form:
     _permission: 'basic access'
 
 vchess.random_game_form:
-  path: /vchess/random_game_form
+  path: /vchess/random-game-form
   defaults:
-    _form: 'vchess_random_game_form'
+    _form: \Drupal\vchess\Form\RandomGameForm
     _title: 'Create chess game against random player'
   requirements:
     _permission: 'basic access'
 
 vchess.default_challenge:
-  path: /vchess/default_challenge
+  path: /vchess/default-challenge
   defaults:
-    _form: 'vchess_create_default_challenge'
+    _controller: \Drupal\vchess\Controller\GameController::createDefaultChallenge
     _title: 'Create chess game challenge'
   requirements:
     _permission: 'basic access'
 
 vchess.create_challenge:
-  path: /vchess/create_challenge
+  path: /vchess/challenge/create
   defaults:
-    _form: 'vchess_create_challenge_form'
+    _form: \Drupal\vchess\Form\CreateChallengeForm
     _title: 'Create chess game challenge'
   requirements:
     _permission: 'basic access'
@@ -41,23 +41,23 @@ vchess.create_challenge:
 vchess.challenges:
   path: /vchess/challenges
   defaults:
-    _controller: 'vchess_challenges'
+    _controller: \Drupal\vchess\Controller\GameController::allChallenges
     _title: 'Challenges'
   requirements:
     _permission: 'view challenges'
 
 vchess.accept_challenge:
-  path: /vchess/accept_challenge/{challenge}
+  path: /vchess/challenge/{challenge}/accept
   defaults:
-    _controller: 'vchess_accept_challenge'
+    _controller: \Drupal\vchess\Controller\GameController::acceptChallenge
     _title: 'Accept Challenge'
   requirements:
     _permission: 'accept challenge'
 
 vchess.my_current_games:
-  path: /vchess/my_current_games
+  path: /vchess/my-current-games
   defaults:
-    _controller: 'vchess_my_current_games'
+    _controller: \Drupal\vchess\Controller\GameController::myCurrentGames
     _title: 'My current games'
   requirements:
     _permission: 'my current games'
@@ -65,7 +65,7 @@ vchess.my_current_games:
 vchess.current_games:
   path: /vchess/current_games/{user}
   defaults:
-    _controller: 'vchess_users_current_games'
+    _controller: \Drupal\vchess\Controller\GameController::usersCurrentGames
     _title: 'Current games'
   requirements:
     _permission: 'basic access'
@@ -73,44 +73,44 @@ vchess.current_games:
 vchess.all_current_games:
   path: /vchess/all_current_games
   defaults:
-    _controller: 'vchess_all_current_games_page'
+    _controller: \Drupal\vchess\Controller\GameController::allCurrentGames
     _title: 'All current games'
   requirements:
     _permission: 'all current games'
 
-vchess.players:
-  path: /vchess/players
-  defaults:
-    _controller: 'vchess_players'
-  requirements:
-    _permission: 'view players table'
-
 vchess.game:
-  path: /vchess/game/{}
+  path: /vchess/game/{game}
   defaults:
-    _controller: 'vchess_game'
+    _controller: \Drupal\vchess\Controller\GameController::displayGame
   requirements:
     _permission: 'view game'
-
-vchess.player:
-  path: /vchess/player/{}
-  defaults:
-    _controller: 'vchess_player'
-  requirements:
-    _permission: 'view player'
 
 vchess.reset_games:
   path: /vchess/reset_games
   defaults:
-    _form: 'vchess_reset_games_form'
+    _form: \Drupal\vchess\Form\ResetGamesForm
     _title: 'Reset ALL games!'
   requirements:
     _permission: 'reset games'
 
+vchess.players:
+  path: /vchess/players
+  defaults:
+    _controller: \Drupal\vchess\Controller\GameController::displayPlayers
+  requirements:
+    _permission: 'view players table'
+
+vchess.player:
+  path: /vchess/player/{player}
+  defaults:
+    _controller: \Drupal\vchess\Controller\GameController::displayPlayer
+  requirements:
+    _permission: 'view player'
+
 vchess.test:
   path: /vchess/test
   defaults:
-    _controller: 'vchess_test'
+    _controller: \Drupal\vchess\Controller\GameController::testVchess
     _title: 'Perform a test'
   requirements:
     _permission: 'reset games'

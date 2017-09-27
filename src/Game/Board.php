@@ -457,6 +457,15 @@ class Board {
   
     return !$blocked;
   }
+
+  /**
+   * @param \Drupal\vchess\Game\Square $square
+   * @param $attacker
+   * @return bool
+   */
+  public function squareIsUnderAttack(Square $square, $attacker) {
+    return !empty($this->getSquaresAttackingSquare($square, $attacker));
+  }
   
   /**
    * Gets an array of all the squares with pieces attacking a particular square.
@@ -876,7 +885,7 @@ class Board {
   /**
    * Perform en passant pawn capture.
    */
-  public function enPassantCapture(Square $from_square, Square $to_square) {
+  public function performEnPassantCapture(Square $from_square, Square $to_square) {
     // Calculate the square of the pawn which has just moved 2 squares
     if ($from_square->getRank() == 4) {
       // Example: 
