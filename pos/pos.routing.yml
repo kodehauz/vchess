@@ -1,7 +1,0 @@
-pos.show:
-  path: /pos/show/{pos}
-  defaults:
-    _controller: 'pos_show'
-    _title: 'Show position'
-  requirements:
-#    permission: 'basic access'

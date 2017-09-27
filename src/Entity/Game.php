@@ -19,16 +19,16 @@ use Drupal\vchess\Game\GamePlay;
  *     "list_builder" = "\Drupal\vchess\GameListBuilder",
  *     "view_builder" = "\Drupal\vchess\GameViewBuilder",
  *     "form" = {
- *        "add" = "\Drupal\vchess\Form\NewGameForm",
+ *        "add" = "\Drupal\vchess\Form\OpponentGameForm",
  *        "edit" = "\Drupal\vchess\Form\PlayGameForm",
  *     },
- *     "access" = "Drupal\vchess\GameAccessController",
+ *     "access" = "Drupal\vchess\GameAccessControlHandler",
  *     "route_provider" = {
  *       "html" = "Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider"
- *     ),
+ *     },
  *   },
  *   base_table = "vchess_game",
- *   data_table = "vchess_game_field_date",
+ *   data_table = "vchess_game_field_data",
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "label",
@@ -472,9 +472,8 @@ class Game extends ContentEntityBase {
     $count = $query
       ->condition($user_condition)
       ->condition('status', GamePlay::STATUS_IN_PROGRESS)
-      ->aggregate('gid', 'COUNT')
-      ->execute()
-      ->fetchColumn();
+      ->aggregate('id', 'COUNT')
+      ->execute();
 //
 //    $result = db_query("SELECT count(gid) FROM {vchess_games} WHERE status = :status " .
 //      "AND (white_uid = $uid OR black_uid = $uid)" ,
@@ -499,12 +498,12 @@ class Game extends ContentEntityBase {
    * @return
    *   An array of in progress games
    */
-  public static function loadUsersCurrentGames($uid) {
+  public static function loadUsersCurrentGames(UserInterface $user) {
 //    $game_list = array();
     $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getQuery('AND');
     $user_condition = $query->orConditionGroup()
-      ->condition('white_uid', $uid)
-      ->condition('black_uid', $uid);
+      ->condition('white_uid', $user->id())
+      ->condition('black_uid', $user->id());
 
     $ids = $query
       ->condition($user_condition)

@@ -7,15 +7,35 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 
 /**
- *
+ * @ContentEntityType(
+ *   id = "vchess_position",
+ *   label = @Translation("Chess position"),
+ *   handlers = {
+ *     "list_builder" = "\Drupal\Core\Entity\EntityListBuilder",
+ *     "view_builder" = "\Drupal\Core\Entity\EntityViewBuilder",
+ *     "form" = {
+ *        "add" = "\Drupal\pos\Form\ChessPositionForm",
+ *        "edit" = "\Drupal\pos\Form\ChessPositionForm",
+ *     },
+ *     "route_provider" = {
+ *       "html" = "Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider"
+ *     },
+ *   },
+ *   base_table = "vchess_position",
+ *   data_table = "vchess_position_field_data",
+ *   entity_keys = {
+ *     "id" = "id",
+ *     "label" = "label",
+ *     "uuid" = "uuid",
+ *   },
+ * )
  */
-
 class ChessPosition extends ContentEntityBase {
   /**
    * return varchar.
    */
   public function getBoard() {
-    return $this->get('board')->varchar;
+    return $this->get('board')->value;
   }
 
   /*
@@ -29,7 +49,7 @@ class ChessPosition extends ContentEntityBase {
    * return char.
    */
   public function getCastling() {
-    return $this->get('castling')->char;
+    return $this->get('castling')->value;
   }
 
   /**
@@ -44,7 +64,7 @@ class ChessPosition extends ContentEntityBase {
    * return char.
    */
   public function getEnPassant() {
-    return $this->get('en_passant')->char;
+    return $this->get('en_passant')->value;
   }
 
   /**
@@ -59,7 +79,7 @@ class ChessPosition extends ContentEntityBase {
    * return varchar.
    */
   public function getTitle() {
-    return $this->get('title')->varchar;
+    return $this->get('title')->value;
   }
 
   /**
@@ -74,7 +94,7 @@ class ChessPosition extends ContentEntityBase {
    * return text.
    */
   public function getDescription() {
-    return $this->get('description')->text;
+    return $this->get('description')->value;
   }
 
   /**
@@ -95,24 +115,24 @@ class ChessPosition extends ContentEntityBase {
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields = parent::baseFieldDefinitions($entity_type);
 
-    $fields['board'] = BaseFieldDefinition::create('varchar')
+    $fields['board'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Board'))
       ->setDescription(t('Board position in FEN format'))
       ->setRequired(TRUE);
 
-    $fields['castling'] = BaseFieldDefinition::create('char')
+    $fields['castling'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Castling'))
       ->setDefaultValue('KQkq')
       ->setRequired(TRUE);
 
-    $fields['en_passant'] = BaseFieldDefinition::create('char')
+    $fields['en_passant'] = BaseFieldDefinition::create('string')
       ->setLabel(t('En_passant'))
       ->setDescription(t('ep (en passant) target square. If there is no ep target square, \' . \'
 this is "-". If a pawn has just made a 2-square move, this is the position "behind" the pawn. This is recorded regardless of whether there is a pawn in position to make an ep capture.\''))
       ->setDefaultValue(0)
       ->setRequired(TRUE);
 
-    $fields['title'] = BaseFieldDefinition::create('varchar')
+    $fields['title'] = BaseFieldDefinition::create('string')
       ->setLabel(t(''))
       ->setDescription(t('A short descriptive title'))
       ->setDefaultValue(0)

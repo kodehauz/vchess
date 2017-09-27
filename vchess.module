@@ -11,12 +11,6 @@
 // VChess module files
 use Drupal\vchess\Game\Piece;
 
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/vchess.pages.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/vchess.utils.inc';
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/vchess.rules.inc';
-
-require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'vchess') . '/render.inc';
-
 global $base_url; // e.g. http://localhost/chess_drupal-7.14
 
 // Define the default time per move

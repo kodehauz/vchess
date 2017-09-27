@@ -20,7 +20,6 @@ use Drupal\vchess\Game\Square;
  *   },
  * )
  */
-
 class Move extends ContentEntityBase {
 //  protected $long_format; // e.g. "Pd2-d4", "Nb1xBc3", "Ke1-g1"
 //  protected $algebraic; // e.g. "e4"

@@ -14,9 +14,10 @@ use Drupal\vchess\Entity\Game;
 use Drupal\vchess\Game\GamePlay;
 use Drupal\vchess\Entity\Scoresheet;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 // @todo Temporary shim!!!
-include __DIR__ . '../../render.inc';
+include __DIR__ . '/../../render.inc';
 
 class GameController extends ControllerBase {
 
@@ -24,9 +25,7 @@ class GameController extends ControllerBase {
    * page callback vchess_main_page to display main vchess window
    */
   public function mainPage() {
-    $user = User::load($this->currentUser());
-    $out = "";
-
+    $user = User::load($this->currentUser()->id());
     if ($user->isAuthenticated()) {
       $gamefolder =  $this->config('vchess.settings')->get('game_files_folder');
       $res_games = $gamefolder;
@@ -37,21 +36,28 @@ class GameController extends ControllerBase {
 //      }
 
       $player = GamerStatistics::loadForUser($user);
-      $out .= "<p>My current rating: <b>" . $player->getRating() . "</b></p>";
+      $build['title'] = [
+        '#type' => 'markup',
+        '#markup' => new FormattableMarkup('<p>My current rating: <b>@rating</b></p>', ['@rating' => $player->getRating()]),
+      ];
+      $games = Game::loadUsersCurrentGames($user);
+      $build['my_games'] = $this->buildCurrentGamesTable($games, $user);
 
-      $out .= $this->usersCurrentGames($user->getDisplayName());
-      $out .= $this->allChallenges();
+      // Get the list of all challenges.
+      $challenges = Game::loadChallenges();
+      $build['all_challenges'] = $this->buildChallengesTable($challenges, $user);
+      $build['links'] = $this->buildNewGameLinks();
+      $build['stats'] = $this->buildPlayerStatsTable($user);
 
-      $out .= $this->buildPlayerStatsTable($user);
+      return $build;
     }
     else {
-      $out = "Please log in to access this page";
+      return [
+        '#type' => 'markup',
+        '#markup' => $this->t("Please log in to access this page"),
+      ];
     }
 
-    return [
-      '#type' => 'markup',
-      '#markup' => $out,
-    ];
   }
 
   /**
@@ -67,7 +73,7 @@ class GameController extends ControllerBase {
    */
   public function buildCurrentGamesTable(array $games, UserInterface $named_user) {
     global $base_url;
-    $user = User::load(\Drupal::currentUser());
+    $user = User::load($this->currentUser()->id());
     $rows = [];
     $empty = '';
     if (count($games) > 0) {
@@ -133,8 +139,8 @@ class GameController extends ControllerBase {
     }
     else {
       if ($user->id() == $named_user->id()) {
-        $empty = t("You currently do not have any games.<br /><br />You can find a <a href=':challenge-url'>list of open challenges here</a>, and you can <a href=':new-challenge-url'>create a new challenge here.</a>",
-          [':challenge-url' => Url::fromRoute('vchess.challenges'), ':new-challenge-url' => Url::fromRoute('vchess.create_challenge')]);
+        $empty = $this->t("You currently do not have any games.<br /><br />You can find a <a href=':challenge-url'>list of open challenges here</a>, and you can <a href=':new-challenge-url'>create a new challenge here.</a>",
+          [':challenge-url' => Url::fromRoute('vchess.challenges')->toString(), ':new-challenge-url' => Url::fromRoute('vchess.create_challenge')->toString()]);
       }
       else {
         $empty = t("@user does not have any current games.", ['@user' => $named_user->getDisplayName()]);
@@ -198,7 +204,7 @@ class GameController extends ControllerBase {
         }
         $rows[] = [
           'challenger' => new FormattableMarkup('<a href=":challenger-url">@challenger-name</a>', [
-            ':challenger-url' => Url::fromRoute('vchess.player', ['player' => $challenger->getOwner()->getDisplayName()]),
+            ':challenger-url' => Url::fromRoute('vchess.player', ['player' => $challenger->getOwner()->id()])->toString(),
             '@challenger-name' => $challenger->getOwner()->getDisplayName()
           ]),
           'rating' => $challenger->getRating(),
@@ -208,15 +214,15 @@ class GameController extends ControllerBase {
       }
     }
     else {
-      $empty = t('There are currently no waiting challenges. You can <a href=":create-url">create a new challenge here.</a>',
-        [':create-url' => Url::fromRoute('vchess.create_challenge')]);
+      $empty = $this->t('There are currently no waiting challenges. You can <a href=":create-url">create a new challenge here.</a>',
+        [':create-url' => Url::fromRoute('vchess.create_challenge')->toString()]);
     }
 
     $header = [
       ['data' => t('Challenger'), 'field' => 'challenger'],
       ['data' => t('Rating'), 'field' => 'rating'],
       ['data' => t('Time limit per move'), 'field' => 'speed'],
-      t('Accept'),
+      $this->t('Accept'),
     ];
 
     // getting the current sort and order parameters from the url
@@ -230,6 +236,7 @@ class GameController extends ControllerBase {
     }
 
     return [
+      '#type' => 'table',
       '#header' => $header,
       '#caption' => t('Challenges'),
       '#rows' => $rows,
@@ -463,27 +470,22 @@ class GameController extends ControllerBase {
    */
   public function allChallenges() {
     $user = User::load($this->currentUser()->id());
-
     // Get the list of possible games to view
     $games = Game::loadChallenges();
+    $build['challenges'] = $this->buildChallengesTable($games, $user);
+    $build['links'] = $this->buildNewGameLinks();
 
-    $html = $this->buildChallengesTable($games, $user);
-    $html .= $this->buildNewGameLinks();
-
-    return $html;
+    return $build;
   }
 
   /**
-   * menu callback to display current games
+   * Controller callback to display current games for the logged in user.
    */
-  function myCurrentGames() {
+  public function myCurrentGames() {
     $user = User::load($this->currentUser()->id());
-
-    $out = "";
-
-    $out .= $this->usersCurrentGames($user);
-    $out .= $this->buildNewGameLinks();
-
+    $games = Game::loadUsersCurrentGames($user);
+    $out['my_games'] = $this->buildCurrentGamesTable($games, $user);
+    $out['links'] = $this->buildNewGameLinks();
     return $out;
   }
 
@@ -496,9 +498,9 @@ class GameController extends ControllerBase {
    * @return
    *   Table of current games as HTML
    */
-  function usersCurrentGames(UserInterface $user) {
+  public function usersCurrentGames(UserInterface $user) {
     // Get the list of possible games to view
-    $games = Game::loadUsersCurrentGames($user->id());
+    $games = Game::loadUsersCurrentGames($user);
 
     $html = $this->buildCurrentGamesTable($games, $user);
 
@@ -506,17 +508,57 @@ class GameController extends ControllerBase {
   }
 
   /**
+   * Display the page for a given player
+   *
+   * @param $uid
+   */
+  public function displayPlayer($name) {
+    $player = $this->entityTypeManager()->getStorage('user')->loadByProperties(['name' => $name]);
+
+    if ($player = reset($player)) {
+      $html = GamerController::playerStatsTable($player);
+      $html .= $this->usersCurrentGames($player);
+
+      return $html;
+    }
+    else {
+      throw new NotFoundHttpException();
+    }
+  }
+
+  /**
+   * page callback to display the table of players
+   */
+  public function displayPlayers() {
+    GamePlay::checkForLostOnTimeGames();
+
+    return GamerStatistics::players();
+  }
+
+  /**
    * Get the link to the page for creating a new game
    */
   protected function buildNewGameLinks() {
-    $links = "";
+    $links = [
+      '#prefix' => '<p>',
+      '#suffix' => '</p>'
+    ];
 
-    $links .= "<p>";
-    $links .= "[ <a href=" . url("vchess/create_challenge") . ">Create challenge</a> ] ";
-//   $links .= "[ <a href=" . url("vchess/random_game_form") . ">New random game</a> ] ";
-//   $links .= "[ <a href=" . url("vchess/opponent_game_form") . ">New opponent game</a> ]";
-    $links .= "</p>";
-
+    $links['create_challenge'] = [
+      '#type' => 'link',
+      '#title' => $this->t('Create challenge'),
+      '#url' => Url::fromRoute('vchess.create_challenge'),
+    ];
+    $links['create_random_game'] = [
+      '#type' => 'link',
+      '#title' => $this->t('New random game'),
+      '#url' => Url::fromRoute('vchess.random_game_form'),
+    ];
+    $links['create_opponent_game'] = [
+      '#type' => 'link',
+      '#title' => $this->t('New opponent game'),
+      '#url' => Url::fromRoute('vchess.opponent_game_form'),
+    ];
     return $links;
   }
 
@@ -524,7 +566,7 @@ class GameController extends ControllerBase {
   /**
    * Get simple won/lost/drawn stats for a player.
    */
-  function buildPlayerStatistics(UserInterface $stats_user) {
+  protected function buildPlayerStatistics(UserInterface $stats_user) {
     global $user;
 
     $html = "";

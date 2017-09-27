@@ -44,7 +44,7 @@ class ResetGamesForm extends ConfirmFormBase {
     $result = db_truncate('vchess_games')->execute();
     $result = db_truncate('vchess_moves')->execute();
 
-    $result = \Drupal::entityTypeManager()->getStorage('gamer_stats')->delete(GamerStatistics::loadMultiple());
+    $result = \Drupal::entityTypeManager()->getStorage('gamer_statistics')->delete(GamerStatistics::loadMultiple());
 
     drupal_set_message(t('ALL games have been reset!'));
   }

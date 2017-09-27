@@ -21,7 +21,7 @@ class CreateChallengeForm extends FormBase {
    * menu callback vchess_create_challenge_form to display new game form
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $form = array();
+    $form = [];
 
     $form['description'] = array(
       '#type' => 'item',
@@ -66,7 +66,7 @@ class CreateChallengeForm extends FormBase {
     $games = Game::loadChallenges();
     foreach ($games as $game) {
       // Check if there is a matching challenge.
-      if ($game->getChallenger()->id() != $user->id()
+      if ($game->getChallenger()->id() !== $user->id()
         && $game->getTimePerMove() == $form_state->getValue('time_per_move')) {
         vchess_accept_challenge($game->id());
       }

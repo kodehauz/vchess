@@ -1,15 +1,11 @@
 <?php
 
 namespace Drupal\vchess\Entity;
-/**
- * @file
- * Definition of Scoresheet (list of moves).
- * 
- * The scoresheet is the table of moves in the game.
- */
 
 /**
- * Scoresheet class
+ * Definition of Scoresheet (list of moves).
+ *
+ * The scoresheet is the list of moves in the game.
  */
 class Scoresheet {
 

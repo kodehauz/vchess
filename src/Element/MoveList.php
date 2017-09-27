@@ -6,7 +6,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\Table;
 
 /**
- * @RenderElement('vchess_move_list')
+ * @RenderElement("vchess_move_list")
  */
 class MoveList extends Table {
 

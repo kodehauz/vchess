@@ -14,14 +14,15 @@ use Drupal\vchess\Game\GamePlay;
  * Defines the gamer statistics entity.
  *
  * @ContentEntityType(
- *   id = "gamer_stats",
+ *   id = "gamer_statistics",
  *   label = @Translation("Gamer statistics"),
  *   entity_keys = {
  *     "id" = "id",
  *     "uuid" = "uuid",
  *     "langcode" = "langcode"
- *   }
- * );
+ *   },
+ *   base_table = "gamer_statistics",
+ * )
  */
 class GamerStatistics extends ContentEntityBase {
 
@@ -56,7 +57,7 @@ class GamerStatistics extends ContentEntityBase {
    * @todo
    */
   public function setCurrent($value) {
-    $this->set('value', $value);
+    $this->set('current', $value);
     return $this;
   }
 
@@ -160,13 +161,19 @@ class GamerStatistics extends ContentEntityBase {
    */
   public static function loadForUser(UserInterface $user) {
     $stats = \Drupal::entityTypeManager()
-      ->getStorage('gamer_stats')
+      ->getStorage('gamer_statistics')
       ->loadByProperties(['owner' => $user->id()]);
     if ($stats) {
       return reset($stats);
     }
     else {
-      return NULL;
+      $stats = static::create();
+      $stats
+        ->setOwner($user)
+        ->setRating(\Drupal::config('gamer.settings')->get('default_user_rating'))
+        ->save();
+
+      return $stats;
     }
   }
 
