@@ -8,7 +8,6 @@ use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\gamer\Entity\GamerStatistics;
 use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
-use Drupal\vchess\Game\Board;
 use Drupal\vchess\Game\GamePlay;
 
 /**

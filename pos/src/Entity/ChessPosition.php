@@ -138,7 +138,7 @@ this is "-". If a pawn has just made a 2-square move, this is the position "behi
       ->setDefaultValue(0)
       ->setRequired(TRUE);
 
-    $fields['description'] = BaseFieldDefinition::create('text')
+    $fields['description'] = BaseFieldDefinition::create('string')
       ->setLabel(t(''))
       ->setDescription(t('A description of the key features of the position'))
       ->setDefaultValue(0)

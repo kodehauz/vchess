@@ -485,7 +485,7 @@ class Move extends ContentEntityBase {
       ->setDescription(t('Move in algebraic notation (e.g. "e4", "Nc3", "O-O")'))
       ->setRequired(TRUE);
 
-    $fields['datetime'] = BaseFieldDefinition::create('timestamp')
+    $fields['timestamp'] = BaseFieldDefinition::create('timestamp')
       ->setDescription(t('Exact date and time of the move'))
       ->setRequired(TRUE);
 
