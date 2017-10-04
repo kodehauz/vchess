@@ -38,11 +38,12 @@ class ChessPosition extends ContentEntityBase {
     return $this->get('board')->value;
   }
 
-  /*
-   * @todo
+  /**
+   * @return $this
    */
   public function setBoard($value){
-    return $this->set('board', $value);
+    $this->set('board', $value);
+    return $this;
   }
 
   /**

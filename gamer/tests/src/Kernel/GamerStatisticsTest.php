@@ -59,4 +59,16 @@ class GamerStatisticsTest extends KernelTestBase {
     $this->assertEquals($rchanged, $saved_game->getRchanged());
   }
 
+  public function testLoadForUser() {
+    $user = User::create([
+      'name' => $this->randomString()
+    ]);
+    $user->save();
+
+    $loaded_stats = GamerStatistics::loadForUser($user);
+    // User default rating is 1200
+    $this->assertEquals(1200, $loaded_stats->getRating());
+    $this->assertEquals($user->id(), $loaded_stats->getOwner());
+  }
+
 }

@@ -52,7 +52,6 @@ class Game extends ContentEntityBase {
     GamePlay::TIME_UNITS_SECS
   ];
 
-
   /**
    * Calculate time left in seconds till next move must be made
    *
@@ -473,18 +472,13 @@ class Game extends ContentEntityBase {
       ->condition('status', GamePlay::STATUS_IN_PROGRESS)
       ->aggregate('id', 'COUNT')
       ->execute();
-//
-//    $result = db_query("SELECT count(gid) FROM {vchess_games} WHERE status = :status " .
-//      "AND (white_uid = $uid OR black_uid = $uid)" ,
-//      array(
-//        ':status' => STATUS_IN_PROGRESS,
-//        ':white_uid' => $uid,
-//        ':black_uid' => $uid
-//      )
-//    );
-//    $count = $result->fetchColumn();
 
-    return $count;
+    if ($count) {
+      return $count[0]['id_count'];
+    }
+    else {
+      return 0;
+    }
   }
 
 

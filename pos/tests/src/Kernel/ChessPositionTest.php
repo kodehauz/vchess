@@ -22,7 +22,7 @@ class ChessPositionTest extends KernelTestBase {
     $this->installEntitySchema('vchess_position');
   }
 
-  public function testGetterSetters() {
+  public function _testGetterSetters() {
     $board = $this->randomString();
     $castling = $this->randomString();
     $en_passant = $this->randomString();
@@ -47,4 +47,26 @@ class ChessPositionTest extends KernelTestBase {
     $this->assertEquals($description, $saved_game->getDescription());
   }
 
+  public function testGetPositionLabels(){
+    $position1 = ChessPosition::create()
+      ->setBoard('4k3/8/8/2p5/8/8/2P5/4K5')
+      ->setTitle('Pawn promotion position');
+    $position1->save();
+    $position2 = ChessPosition::create()
+      ->setBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
+      ->setTitle('Default Value');
+    $position2->save();
+    $position3 = ChessPosition::create()
+      ->setBoard('k7/4P3/8/8/8/8/8/K7')
+      ->setTitle('New board');
+    $position3->save();
+
+//    $game_position = ChessPosition::getPositionLabels();
+//    $this->assertEquals($position1, $game_position->getBoard());
+//    $this->assertEquals($position1, $game_position->getTitle());
+//    $this->assertEquals($position2, $game_position->getBoard());
+//    $this->assertEquals($position2, $game_position->getTitle());
+//    $this->assertEquals($position3, $game_position->getBoard());
+//    $this->assertEquals($position3, $game_position->getTitle());
+  }
 }
