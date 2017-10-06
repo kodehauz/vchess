@@ -46,6 +46,15 @@ class Scoresheet {
     }
     ksort($this->moves);
   }
+
+  public function saveMoves() {
+    foreach ($this->moves as $moves) {
+      foreach ($moves as $move) {
+        $move->save();
+      }
+    }
+    return $this;
+  }
   
   /**
    * Get the move number
@@ -98,8 +107,8 @@ class Scoresheet {
     else {
       $this->moves[$move_no]['w'] = $move;
     }
+    return $this;
   }
-  
 
   /**
    * Gets the white move of a particular number.
@@ -158,15 +167,13 @@ class Scoresheet {
   }
   
   /** 
-   * Get the scoresheet as a table
+   * Get the moves for this game.
    * 
-   * @return
+   * @return \Drupal\vchess\Entity\Move[][]
    *   Returns a themed table of moves.
    */
-  function get_table() {
-    return [
-      '#type' => 'vchess_moves_list',
-      '#moves' => $this->moves,
-    ];
+  function getMoves() {
+    return $this->moves;
   }
+
 }

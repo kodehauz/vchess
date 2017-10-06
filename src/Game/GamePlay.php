@@ -3,7 +3,6 @@
 namespace Drupal\vchess\Game;
 
 use Drupal\gamer\Entity\GamerStatistics;
-use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
 use Drupal\vchess\Entity\Game;
 use Drupal\vchess\Entity\Move;
@@ -52,14 +51,6 @@ class GamePlay {
    */
   protected $board;
 
-  /**
-   * The game scoresheet.
-   *
-   * @var \Drupal\vchess\Entity\Scoresheet
-   */
-  protected $scoresheet;
-
-  
   protected $time_per_move;  // e.g. 3
   protected $time_units;     // e.g. TIME_UNITS_DAYS
   
@@ -74,25 +65,32 @@ class GamePlay {
   /**
    * Game constructor
    */
-  function __construct() {
-    // Setup the board
-    $this->board = new Board();
-    $this->board->setupAsStandard();
-//    $this->board->setupPosition("4k3/8/8/2p5/8/8/2P5/4K5");
-    $this->board->resetEnPassantSquare();
+  function __construct(Game $game = NULL) {
+    if ($game === NULL) {
+      // Setup the board
+      $this->board = new Board();
+      $this->board
+        ->setupAsStandard()
+//        ->setupPosition("4k3/8/8/2p5/8/8/2P5/4K5")
+        ->resetEnPassantSquare();
 
-    // Initialize the game entity.
-    $this->game = Game::create([
-      'turn' => 'w',
-      'castling' => 'KQkq',
-      'status' => static::STATUS_AWAITING_PLAYERS,
-      'time_per_move' => DEFAULT_TIME_PER_MOVE,
-      'time_units' => DEFAULT_TIME_UNITS,
-      // @todo other stuff
-    ]);
-
-    // Initialize the scoresheet for this game.
-    $this->scoresheet = new Scoresheet($this->game);
+      // Initialize the game entity.
+      $this->game = Game::create([
+        'turn' => 'w',
+        'castling' => 'KQkq',
+        'status' => static::STATUS_AWAITING_PLAYERS,
+        'time_per_move' => DEFAULT_TIME_PER_MOVE,
+        'time_units' => DEFAULT_TIME_UNITS,
+        // @todo other stuff
+      ]);
+    }
+    else {
+      $this->game = $game;
+      $this->board = new Board();
+      $this->board
+        ->setupPosition($game->getBoard())
+        ->setEnPassantSquare($game->getEnPassantSquare());
+    }
   }
   
   /**
@@ -111,17 +109,6 @@ class GamePlay {
     }
   }
 
-  /**
-   * Get the game speed, which is the combination of the time_per_move
-   * and the time_units, e.g. "3 days"
-   *
-   * @return
-   *   Returns the speed per move, e.g. "3 days"
-   */
-  public function getSpeed() {
-    return $this->game->getTimePerMove() . " " . $this->game->getTimeUnits();
-  }
-  
   /**
    * Deal with the case that the player has lost on time
    */
@@ -172,7 +159,7 @@ class GamePlay {
 //             '%black_uid' => $this->black_uid));
     
     if ($this->game->getWhiteUser() == NULL && $this->game->getBlackUser() == NULL) {
-      if (rand(1,100) < 50) {
+      if (rand(1, 100) < 50) {
         $this->game
           ->setWhiteUser($user)
           ->save();
@@ -212,17 +199,8 @@ class GamePlay {
   public function load($gid) {
     $this->game = Game::load($gid);
     $this->board->setEnPassantSquare($this->game->getEnPassantSquare());
-    $this->scoresheet = new Scoresheet($this->game);
   }
-  
-  /**
-   * Get the last move
-   */
-  public function lastMove() {
-    return $this->scoresheet->getLastMove();
-  }
-  
- 
+
   /**
    * This sets up the castling state
    * 
@@ -278,36 +256,6 @@ class GamePlay {
   }
   
   /**
-   * Get the number of the current move.  
-   * 
-   * The move number will be the number of the move which is currently not yet complete.  
-   * Each move has a white move and a black move.
-   * 
-   * i.e.
-   * No moves, i.e.
-   * 1. ... ...
-   * move_no = 1 (i.e. waiting for move 1 of white)
-   * After 1.e4 ... 
-   * move_no = 1 (i.e. waiting for move 1 of black)
-   * After 1. e4 Nf6 
-   * move_no = 2 (i.e. waiting for move 2) 
-   */
-  public function moveNo() {
-    return $this->scoresheet->getMoveNumber();
-  }
-  
-  /**
-   * See if the game is started yet
-   * 
-   * @return
-   *   TRUE if a move has already been made
-   */
-  public function isMoveMade() {
-    // @todo: need to check this.
-    return !($this->moveNo() == 1 && $this->getTurn() == "w");
-  }
-
-  /** 
    * Get the game id
    */
   public function gid() {
@@ -418,22 +366,6 @@ class GamePlay {
    */
   public function setTurnBlack() {
     $this->game->setTurn('b');
-  }
-  
-  /**
-   * Say whether the game is over or not
-   * 
-   * @return TRUE if the game is over
-   */
-  public function isOver() {
-    if ($this->getStatus() == static::STATUS_IN_PROGRESS) {
-      $is_over = FALSE;
-    }
-    else {
-      $is_over = TRUE;
-    }
-    
-    return $is_over;
   }
   
   /**
@@ -601,27 +533,27 @@ class GamePlay {
    * @return object
    *   @todo Please document this parameter
    */
-  public function makeMove($uid, $move_string) {
-    /** @var \Drupal\vchess\Entity\Move $move */
-    $move = Move::create()->setLongMove($move_string);
-    
-    // We will use this board at the end to get the algebraic move.
-    $board_clone = clone $this->board;
-  
-    $result = "";
-    $pawn_promoted = FALSE;
-    $en_passant_set = FALSE;
-    $move_ok = TRUE;
-    
-    $piece_square = $move->fromSquare();
-    $to_square = $move->toSquare();
-    
-//    $result .= "move_string = $move_string. ";
-  
-    if (!$this->game->isPlayersMove($uid)) {
-      $result .= 'It is not your turn!';
+  public function makeMove(UserInterface $user, $move_string) {
+    if (!$this->game->isPlayersMove($user)) {
+      return 'It is not your turn!';
     }
     else {
+      /** @var \Drupal\vchess\Entity\Move $move */
+      $move = Move::create()->setLongMove($move_string);
+
+      // We will use this board at the end to get the algebraic move.
+      $board_clone = clone $this->board;
+
+      $result = "";
+      $pawn_promoted = FALSE;
+      $en_passant_set = FALSE;
+      $move_ok = TRUE;
+
+      $piece_square = $move->fromSquare();
+      $to_square = $move->toSquare();
+
+//    $result .= "move_string = $move_string. ";
+
       if ($this->getTurn() == 'w') {
         $opponent = 'b';
       }
@@ -802,8 +734,8 @@ class GamePlay {
         //    $game['chatter'][1] = "Hugh hard coding for now";
         //    $game['chatter'][0] = $comment;
       
-        // Update scoresheet.
-        $this->scoresheet->appendMove($move);
+        // Update game scoresheet.
+        $this->game->appendMove($move);
       }
       else {
         $result .= 'ERROR: ' . $move->getAlgebraic() . ' is not a legal move!  ';

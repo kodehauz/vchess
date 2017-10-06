@@ -53,6 +53,54 @@ class Game extends ContentEntityBase {
   ];
 
   /**
+   * The game scoresheet which holds history of moves for this game.
+   *
+   * @var \Drupal\vchess\Entity\Scoresheet
+   */
+  protected $scoresheet;
+
+  /**
+   * Gets the last move for this game.
+   */
+  public function getLastMove() {
+    return $this->getScoresheet()->getLastMove();
+  }
+
+  /**
+   * Get the number of the current move.
+   *
+   * The move number will be the number of the move which is currently not yet complete.
+   * Each move has a white move and a black move.
+   *
+   * i.e.
+   * No moves, i.e.
+   * 1. ... ...
+   * move_no = 1 (i.e. waiting for move 1 of white)
+   * After 1.e4 ...
+   * move_no = 1 (i.e. waiting for move 1 of black)
+   * After 1. e4 Nf6
+   * move_no = 2 (i.e. waiting for move 2)
+   */
+  public function getMoveNumber() {
+    return $this->getScoresheet()->getMoveNumber();
+  }
+
+  /**
+   * See if the game is started yet
+   *
+   * @return
+   *   TRUE if a move has already been made
+   */
+  public function isMoveMade() {
+    // @todo: need to check this.
+    return !($this->getMoveNumber() == 1 && $this->getTurn() === "w");
+  }
+
+  public function appendMove(Move $move) {
+    $this->getScoresheet()->appendMove($move);
+  }
+
+  /**
    * Calculate time left in seconds till next move must be made
    *
    * @return
@@ -78,7 +126,7 @@ class Game extends ContentEntityBase {
         break;
     }
 
-    $secs_per_move = $this->time_per_move * $secs_per_unit;
+    $secs_per_move = $this->getTimePerMove() * $secs_per_unit;
 
     if ($this->status == GamePlay::STATUS_IN_PROGRESS) {
       $current_time = gmmktime();  // All dates are kept as GMT
@@ -127,6 +175,35 @@ class Game extends ContentEntityBase {
     return $lost_on_time;
   }
 
+  /**
+   * Say whether the game is over or not
+   *
+   * @return TRUE if the game is over
+   */
+  public function isGameOver() {
+    return $this->getStatus() !== GamePlay::STATUS_IN_PROGRESS;
+  }
+
+  /**
+   * Gets the color for the specified user in the current game.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The user for which the color is being sought.
+   *
+   * @return string
+   *   'w' (white), 'b' (black) or '' (not in the game).
+   */
+  public function getPlayerColor(UserInterface $user) {
+    if ($user->id() === $this->getWhiteUser()->id()) {
+      return 'w';
+    }
+    else if ($user->id() === $this->getBlackUser()->id()) {
+      return 'b';
+    }
+    else {
+      return '';
+    }
+  }
 
   /**
    * See if the given user is one of the players.
@@ -151,8 +228,19 @@ class Game extends ContentEntityBase {
    *   TRUE if the given user is one to move.
    */
   public function isPlayersMove(UserInterface $user) {
-    return (($this->getTurn() == 'w' && $this->getWhiteUser()->id() == $user->id())
-      || ($this->getTurn() == 'b' && $this->getBlackUser()->id() == $user->id()));
+    return (($this->getTurn() === 'w' && $this->getWhiteUser()->id() === $user->id())
+      || ($this->getTurn() === 'b' && $this->getBlackUser()->id() === $user->id()));
+  }
+
+  /**
+   * @return \Drupal\vchess\Entity\Scoresheet
+   *   The scoresheet for this game.
+   */
+  public function getScoresheet() {
+    if (!isset($this->scoresheet)) {
+      $this->scoresheet = new Scoresheet($this);
+    }
+    return $this->scoresheet;
   }
 
   /**
@@ -165,7 +253,7 @@ class Game extends ContentEntityBase {
    *   The opposing player
    */
   public function getOpponent($uid) {
-    if ($this->game->getWhiteUser()->id() == $uid) {
+    if ($this->getWhiteUser()->id() == $uid) {
       return GamerStatistics::loadForUser($this->getBlackUser());
     }
     else {
@@ -179,16 +267,27 @@ class Game extends ContentEntityBase {
   public function getChallenger() {
     $uid = 0;
 
-    if ($this->game->getWhiteUser() != NULL && $this->game->getBlackUser() == NULL) {
-      $uid = $this->game->getWhiteUser()->id();
+    if ($this->getWhiteUser() != NULL && $this->getBlackUser() == NULL) {
+      $uid = $this->getWhiteUser()->id();
     }
-    elseif ($this->game->getBlackUser() != NULL && $this->game->getWhiteUser() == NULL) {
-      $uid = $this->game->getBlackUser()->id();
+    elseif ($this->getBlackUser() != NULL && $this->getWhiteUser() == NULL) {
+      $uid = $this->getBlackUser()->id();
     }
 
     $challenger = GamerStatistics::loadForUser(User::load($uid));
 
     return $challenger;
+  }
+
+  /**
+   * Get the game speed, which is the combination of the time_per_move
+   * and the time_units, e.g. "3 days"
+   *
+   * @return
+   *   Returns the speed per move, e.g. "3 days"
+   */
+  public function getSpeed() {
+    return $this->getTimePerMove() . " " . $this->getTimeUnits();
   }
 
   public function getTurn() {
@@ -253,6 +352,9 @@ class Game extends ContentEntityBase {
     return $this;
   }
 
+  /**
+   * @return string
+   */
   public function getBoard() {
     return $this->get('board')->value;
   }
@@ -314,8 +416,10 @@ class Game extends ContentEntityBase {
    * This just sets the value of the time per move (e.g. 1 or 3).  The units of time
    * would be set in set_time_units(), which isn't currently needed so does not exist.
    *
-   * @parm $time_per_move
+   * @param  $value
    *   Time per move, e.g. "3".
+   *
+   * @return $this
    */
   public function setTimePerMove($value) {
     $this->set('time_per_move', $value);
@@ -459,7 +563,13 @@ class Game extends ContentEntityBase {
   }
 
   /**
-   * Calculate the number of games in progress
+   * Calculate the number of games in progress for a given user.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The user.
+   *
+   * @return int
+   *   The number of games currently being played by a user.
    */
   public static function countUsersCurrentGames(UserInterface $user) {
     $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getAggregateQuery('AND');

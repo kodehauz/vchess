@@ -1,95 +1,95 @@
+(function (document, Drupal, drupalSettings) {
 
-var sourceDest = new Array("",""); // [0] is Src, [1] is Dst
-var square = "";
+Board = {
+  move: {source: "", destination: ""},
+  square: ""
+};
 
 /**
  * Highlight a move square
  * 
  * @param cmd
  */
-function highlightMove(cmd)
-{
-  theme="default";
-    
+Board.highlightMove = function (cmd) {
+  var theme = "default";
+  var obj;
+
   // Clear old highlighting 
-  for (i=0; i<2; i++) {
-	if (sourceDest[i] != "") {
-//	  x = sourceDest[i] % 8;
-//	  y = parseInt(sourceDest[i]/8);
-//	  if ((y+1+x)%2 == 0) {
-//		img = "wsquare.jpg";
-//	  }
-//	  else {
-//		img = "bsquare.jpg";
-//	  }
-      img = "wsquare.jpg";
-	  obj = window.document.getElementById(sourceDest[i]);
-	  if (obj) {
-		obj.style.backgroundImage = "url(/" + module_path + "/images/" + theme + "/" + img + ")";
+  for (var i in this.move) {
+	  if (this.move.hasOwnProperty(i) && this.move[i] !== "") {
+      var img = "wsquare.jpg";
+      if (this.isWhiteSquare(this.move[i])) {
+        img = "wsquare.jpg";
       }
-	  sourceDest[i] = "";
-	}
+      else {
+        img = "bsquare.jpg";
+      }
+      obj = document.getElementById(this.move[i]);
+      if (obj) {
+        obj.style.backgroundImage = "url(" + drupalSettings.vchess.module_path + "/images/" + theme + "/" + img + ")";
+      }
+      this.move[i] = "";
+    }
   }
 	
-  // If command is empty don't highlight again
-  if (cmd == null || cmd == "") {
-	return;
+  // If command is empty don't highlight again.
+  if (cmd === null || cmd === "") {
+	  return;
   }
 		
   // Parse command for source/destination and highlight it 
-//  sourceDest[0] = (cmd.charCodeAt(2)-49)*8 + (cmd.charCodeAt(1)-97);
   // cmd is e.g. "Nb1" or "Nb1-c3"
-  sourceDest[0] = cmd.substr(1,2); // e.g. "b1"
+  this.move.source = cmd.substr(1, 2); // e.g. "b1"
   if (cmd.length >= 6) {
-// 	sourceDest[1] = (cmd.charCodeAt(5)-49)*8+(cmd.charCodeAt(4)-97);
-	sourceDest[1] = cmd.substr(5,6); // e.g. "c3"
+    this.move.destination = cmd.substr(5,6); // e.g. "c3"
   }
   else {
-	sourceDest[1] = "";
+    this.move.destination = "";
   }
 	
-  // Hugh having a go at extracting square location
-  // e.g. cmd = "Na2"
-  square = cmd.substr(1,2);	
-
   // Set new highlighting
-  for (i=0; i<2; i++) {
-	if (sourceDest[i] != "") {
-	  x = sourceDest[i] % 8;
-	  y = parseInt(sourceDest[i]/8);
-	  if ((y+1+x)%2==0) {
-		img = "whsquare.jpg";  // White square highlighted
-	  }
-      else {
-		img = "bhsquare.jpg";  // Black square highlighted
+  for (i in this.move) {
+    if (this.move.hasOwnProperty(i) && this.move[i] !== "") {
+      if (this.isWhiteSquare(this.move[i])) {
+        // White square highlighted.
+        img = "whsquare.jpg";
       }
-//	  obj = window.document.getElementById("btd"+sourceDest[i]);
-	  obj = window.document.getElementById(square);
-	  if (obj) {
-//				obj.style.backgroundImage = "url(/"+module_path+"/images/"+theme+"/"+img+")";
-				obj.style.backgroundImage = "url(/"+sub_path+"/images/"+theme+"/"+img+")";
-	  }
+      else {
+        // Black square highlighted.
+        img = "bhsquare.jpg";
+      }
+      obj = document.getElementById(this.move.source);
+      if (obj) {
+          obj.style.backgroundImage = "url(" + drupalSettings.vchess.module_url
+            + "/images/" + theme + "/" + img + ")";
+      }
     }
   }
-}
+};
+
+Board.isWhiteSquare = function (coordinate) {
+  var file = coordinate.toLowerCase().charCodeAt(0) - 97;
+  var rank = parseInt(coordinate[1]) - 1;
+
+  return (rank + file + 1) % 2 === 0;
+};
 
 /**
  * 
  */
-function checkMoveButton()
-{
-  var cform = window.document.getElementById("vchess-command-form");
+Board.checkMoveButton = function () {
+  var form = this.getBoardForm();
 
   // Move button
-  if (cform && window.document.getElementById("edit-moveButton")) {
-	if (cform.move.value.length >= 6) {
-	  window.document.getElementById("edit-moveButton").disabled=false;		
-	}
-	else {
-	  window.document.getElementById("edit-moveButton").disabled=true;
-	}
+  if (form && document.getElementById("edit-move-button")) {
+    if (form.move.value.length >= 6) {
+      document.getElementById("edit-move-button").disabled = false;
+    }
+    else {
+      document.getElementById("edit-move-button").disabled = true;
+    }
   }
-}
+};
 
 /**
  * Assemble command into commandForm.move and submit move if destination is
@@ -101,40 +101,39 @@ function checkMoveButton()
  *     'Ke1' = King on e1 square
  *     '-b5' = empty b5 square 
  */
-function assembleCmd(part)
-{
-  var cform = window.document.getElementById("vchess-command-form");	
-  var cmd = cform.move.value;
+Board.assembleCmd = function (part) {
+  var form = this.getBoardForm();
+  var cmd = form.move.value;
   var cmd3onwards = cmd.substring(3);
 
   // e.g. cmd might contain something like "Pe2-e4"
-  if (cmd == part) {
-	cform.move.value = "";
+  if (cmd === part) {
+	  form.move.value = "";
   }
-  else if (cmd.length == 0 || cmd.length >= 6) {
-	if (part.charAt(0) != '-' && part.charAt(0) != 'x') {
-	  cform.move.value = part;
-	}
+  else if (cmd.length === 0 || cmd.length >= 6) {
+    if (part.charAt(0) !== '-' && part.charAt(0) !== 'x') {
+      form.move.value = part;
+    }
 //  else if (cmd.length >= 6 && cmd3onwards == part) {
 //  if (confirm("Execute move "+cmd+"?")) {
 //	onClickMove();
 //    }
-  } else if (part.charAt(0) == '-' || part.charAt(0) == 'x') {
-	  cform.move.value = cmd + part;
+  } else if (part.charAt(0) === '-' || part.charAt(0) === 'x') {
+	  form.move.value = cmd + part;
   }
   else {
-	  cform.move.value = part;
+	  form.move.value = part;
   }
 
-  if (cform.move.value.length >= 6) {
-	  onClickMove();
+  if (form.move.value.length >= 6) {
+	  this.onClickMove();
   }
   
-  highlightMove(cform.move.value);
-  checkMoveButton();
+  this.highlightMove(form.move.value);
+  this.checkMoveButton();
 	
   return false;
-}
+};
 
 /**
  * Make a move
@@ -143,17 +142,16 @@ function assembleCmd(part)
  * - "Pe2-e4"
  * - "Qd1xBg4"
  */
-function onClickMove()
-{
-	var cform = window.document.getElementById("vchess-command-form");
+Board.onClickMove = function () {
+	var form = this.getBoardForm();
 	
-	if (cform.move.value != "") {
-		var move = cform.move.value;
+	if (form.move.value !== "") {
+		var move = form.move.value;
 		var move_type = move[3];
 		var to_rank;
 		
 		// Find out the rank of the square we are going to
-		if (move_type == "-") {
+		if (move_type === "-") {
 		  to_rank = move[5];
 		}
 		else { // move_type == "x"
@@ -161,7 +159,7 @@ function onClickMove()
 		}
 		
 		// If pawn enters last line ask for promotion
-		if (move[0]=='P' && (to_rank=='8' || to_rank=='1')) {
+		if (move[0] === 'P' && (to_rank === '8' || to_rank === '1')) {
 			if (confirm('Promote to Queen? (Press Cancel for other options)'))
 				move = move + '=Q';
 			else if (confirm('Promote to Rook? (Press Cancel for other options)'))
@@ -173,36 +171,55 @@ function onClickMove()
 			else
 				return;
 		}
-		cform.cmd.value = move;
-		gatherCommandFormData();
-		cform.submit();
+		form.cmd.value = move;
+		this.gatherCommandFormData();
+		form.submit();
 	}
-}
+};
 
 /**
  * Get the user to confirm resignation
  */
-function confirm_resign()
-{
+Board.confirm_resign = function () {
 	var resign = confirm("Are you sure you want to resign?");
-	if (resign == true) {
+	if (resign === true) {
 	  alert(Drupal.t("You pressed OK!"));
 	}
 	else {
 	  alert(Drupal.t("You pressed Cancel!"));
 	}
-}
+};
 
 /**
  * 
  */
-function gatherCommandFormData() 
-{
-	fm = window.document.getElementById("vchess-command-form");
+Board.gatherCommandFormData = function () {
+	fm = this.getBoardForm();
 //	if (document.commentForm && document.commentForm.comment)
 //		fm.comment.value=document.commentForm.comment.value;
 //	if (document.pnotesForm && document.pnotesForm.privnotes)
 //		fm.privnotes.value=document.pnotesForm.privnotes.value;
 //	else
 //		fm.privnotes.disabled=true;
-}
+};
+
+Board.getBoardForm = function () {
+  return document.getElementById('vchess-game-form')
+};
+
+Drupal.behaviors.vchess = {
+  attach: function (context) {
+    jQuery('.board-main')
+      .on('click', '.board-square', function () {
+        return Board.assembleCmd(this.dataset.chessCommand);
+      });
+
+    jQuery('.board-square.active')
+      .css('cursor', 'pointer');
+
+    Board.checkMoveButton();
+    Board.highlightMove(this.getBoardForm().move.value);
+  }
+};
+
+})(window.document, Drupal, drupalSettings);

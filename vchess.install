@@ -10,14 +10,14 @@
  */
 function vchess_install() {
   // rid=2 => authenticated user
-  user_role_change_permissions(2, 
-    array(
+  user_role_change_permissions('authenticated',
+    [
       'view player' => TRUE,
       'basic access' => TRUE,
       'view game' => TRUE, 
       'view challenges' => TRUE,
       'accept challenge' => TRUE, 
       'my current games' => TRUE,
-     )
+     ]
    );
 }

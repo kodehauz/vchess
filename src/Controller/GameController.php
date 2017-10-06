@@ -11,6 +11,7 @@ use Drupal\gamer\GamerController;
 use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
 use Drupal\vchess\Entity\Game;
+use Drupal\vchess\Form\GamePlayForm;
 use Drupal\vchess\Game\GamePlay;
 use Drupal\vchess\Entity\Scoresheet;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -29,6 +30,7 @@ class GameController extends ControllerBase {
     if ($user->isAuthenticated()) {
       $gamefolder =  $this->config('vchess.settings')->get('game_files_folder');
       $res_games = $gamefolder;
+
 //
 //      if (!$user->getDisplayName()) {
 //        $txt = t('Please, register to play chess');
@@ -102,7 +104,7 @@ class GameController extends ControllerBase {
             $markup_arguments['alt'] = '3.grey';
           }
 
-          if ($game->turn() == 'w') {
+          if ($game->getTurn() === 'w') {
             $player_to_move = $game->getWhiteUser();
           }
           else {
@@ -112,25 +114,24 @@ class GameController extends ControllerBase {
           $time_left = $game->calculateTimeLeft();
           $markup_arguments += [
             ':src' => $base_url . "/" . drupal_get_path('module', 'vchess') . '/images/default/' . $markup_arguments['mark'],
-            ':white-player-url' => Url::fromRoute('vchess.player', ['player' => $game->getWhiteUser()->getAccountName()]),
+            ':white-player-url' => Url::fromRoute('vchess.player', ['player' => $game->getWhiteUser()->getAccountName()])->toString(),
             '@white-player-name' => $game->getWhiteUser()->getDisplayName(),
-            ':black-player-url' => Url::fromRoute('vchess.player', ['player' => $game->getBlackUser()->getAccountName()]),
+            ':black-player-url' => Url::fromRoute('vchess.player', ['player' => $game->getBlackUser()->getAccountName()])->toString(),
             '@black-player-name' => $game->getBlackUser()->getDisplayName(),
-            ':player-to-move-url' => Url::fromRoute('vchess.player', ['player' => $player_to_move->getAccountName()]),
+            ':player-to-move-url' => Url::fromRoute('vchess.player', ['player' => $player_to_move->getAccountName()])->toString(),
             '@player-to-move-name' => $player_to_move->getDisplayName(),
-            ':game-url' => Url::fromRoute('vchess.game', ['game' => $game->gid()]),
+            ':game-url' => Url::fromRoute('vchess.game', ['vchess_game' => $game->id()])->toString(),
             '@long-time' => sprintf("%07d", $time_left),
             '@time' => $this->formatUserFriendlyTime($time_left),
-
           ];
           $rows[] = [
             'move' => new FormattableMarkup('<img alt="@alt" src=":src">', $markup_arguments),
             'white' => new FormattableMarkup('<a href=":white-player-url">@white-player-name</a>', $markup_arguments),
             'black' => new FormattableMarkup('<a href=":black-player-url">@black-player-name</a>', $markup_arguments),
-            'move_no' => $game->move_no(),
+            'move_no' => $game->getMoveNumber(),
             // We use div id in secs to ensure sort works correctly
             'time_left' => new FormattableMarkup('<div id="@long-time">@time</div>', $markup_arguments),
-            'speed' => $game->speed(),
+            'speed' => $game->getSpeed(),
             'turn' => new FormattableMarkup('<a href=":player-to-move-url">@player-to-move-name</a>', $markup_arguments),
             'gid' => new TranslatableMarkup('<a href=":game-url">View</a>', $markup_arguments),
           ];
@@ -148,14 +149,14 @@ class GameController extends ControllerBase {
     }
 
     $header = [
-      ['data' => t('Your move?'), 'field' => 'move'],
-      ['data' => t('White'), 'field' => 'white'],
-      ['data' => t('Black'), 'field' => 'black'],
-      ['data' => t('Move #'), 'field' => 'move_no'],
-      ['data' => t('Time left'), 'field' => 'time_left'],
-      ['data' => t('Time per move'), 'field' => 'speed'],
-      ['data' => t('Turn'), 'field' => 'turn'],
-      t('View'),
+      ['data' => $this->t('Your move?'), 'field' => 'move'],
+      ['data' => $this->t('White'), 'field' => 'white'],
+      ['data' => $this->t('Black'), 'field' => 'black'],
+      ['data' => $this->t('Move #'), 'field' => 'move_no'],
+      ['data' => $this->t('Time left'), 'field' => 'time_left'],
+      ['data' => $this->t('Time per move'), 'field' => 'speed'],
+      ['data' => $this->t('Turn'), 'field' => 'turn'],
+      $this->t('View'),
     ];
 
     // getting the current sort and order parameters from the url
@@ -266,7 +267,6 @@ class GameController extends ControllerBase {
     return GamerController::playerStatsTable($user);
   }
 
-
   /**
    * Menu callback to create new default challenge
    *
@@ -367,75 +367,17 @@ class GameController extends ControllerBase {
   }
 
   /**
-   * Display the game (board, scoresheet) for the given gid
+   * Display the game (board, scoresheet) for the given game entity.
    *
-   * @param $gid: Game id
+   * @param \Drupal\vchess\Entity\Game $vchess_game
+   *   The game to be displayed
+   *
+   * @return array
+   *   The render array for the game display page.
    */
-  public function displayGame(Game $game) {
-    $user = User::load($this->currentUser()->id());
-    global $base_path; // e.g. "/chess_drupal-7.14/"
-    global $base_url; // e.g. "http://localhost/chess_drupal-7.14"
-
-    $out = "";
-
-    if ($user->isAuthenticated()) {
-      $module_path = drupal_get_path('module', 'vchess');
-
-      drupal_add_css($module_path . '/vchessstyle.css');
-      drupal_add_js($module_path . '/board.js');
-
-      // Find the player color
-      $player_color = $game->player_color($user->uid);
-
-      // Find out if the player has the move or not
-      if ($game->turn() == $player_color  && $game->status() == STATUS_IN_PROGRESS) {
-        $player_may_move = TRUE;
-      }
-      else {
-        $player_may_move = FALSE;
-      }
-
-      $out .= "<div id='container'>";
-
-      // Display game heading, e.g. "white: admin - black: hugh"
-      $out .= '<div style="text-align:center;">white: <b>' .
-        $game->white_player()->name() . '</b> -   black: <b>' . $game->black_player()->name() . '</b>';
-      $out .= '</div>';
-
-      $out .= "<div id='board'>";
-      $out .= vchess_render_game($gid, $player_color, $player_may_move);
-      $out .= "</div>";
-
-      $out .= "<div id='board_commands'>";
-      $out .= vchess_render_command_form($game);
-      $out .= "</div>";
-
-      // Prepare the scoresheet
-      $out .= "<div id='scoresheet'>";
-      $scoresheet = new Scoresheet();
-      $scoresheet->load($gid);
-      $out .= $scoresheet->get_table();
-      $out .= "</div>";
-
-      $out .= "</div>";
-
-
-      $out .= '';
-      $out .= '<script language="Javascript">module_path=\'' . $module_path . '\';';
-      $out .= "sub_path='" . $base_path . "/" . drupal_get_path('module', 'vchess') . "';";
-      $out .= "full_path='" . $base_url . "/" . drupal_get_path('module', 'vchess') . '\';';
-      $out .= 'checkMoveButton();';
-      $out .= 'highlightMove(window.document.getElementById("vchess-command-form").move.value);';
-      //      $out .= '<input type=\'button\' onclick=\'confirm_resign()\' value=\'Show alert box\' />;';
-      $out .= '</script>';
-    }
-    else {
-      $out = t("Please log in to access this page");
-    }
-
-    return $out;
+  public function displayGame(Game $vchess_game) {
+    return \Drupal::formBuilder()->getForm(GamePlayForm::class, $vchess_game);
   }
-
 
   /**
    * menu callback to display all active games

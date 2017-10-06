@@ -52,33 +52,30 @@ class RandomGameForm extends FormBase {
     $user = User::load($this->currentUser()->id());
 //    $opponent_uid = $this->randomUid();
 
-    $random_opponent = \Drupal::entityQuery('user')
+    // Get the uid load a random opponent.
+    $possible_opponents = array_keys(\Drupal::entityQuery('user')
       ->condition('uid', 0, '!=')
-      ->sort('RAND()')
-      ->execute();
+      ->condition('uid', $user->id(), '!=')
+      ->execute());
 
-    // Get the uid and name of a random opponent
-    $opponent = User::load(reset($random_opponent));
+    $random_uid = $possible_opponents[rand(0, count($possible_opponents) - 1)];
+    $opponent = User::load($random_uid);
 
     if (rand(0, 1)) {
-      // user plays white
+      // Current user plays white and opponent plays black
       $white_user = $user;
-
-      // opponent plays black
       $black_user = $opponent;
     }
     else {
-      // user plays black
-      $black_user = $user->id();
-
-      // opponent plays white
+      // Current user plays black and opponent plays white
+      $black_user = $user;
       $white_user = $opponent;
     }
 
     $game = Game::create()
       ->setBlackUser($black_user)
-      ->setWhiteUser($white_user)
-      ->save();
+      ->setWhiteUser($white_user);
+    $game->save();
 
     // @todo: Check out this method.
     GamerController::startGame($white_user, $black_user);

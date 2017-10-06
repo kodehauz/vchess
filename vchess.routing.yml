@@ -79,9 +79,9 @@ vchess.all_current_games:
     _permission: 'all current games'
 
 vchess.game:
-  path: /vchess/game/{game}
+  path: /vchess/game/{vchess_game}
   defaults:
-    _controller: \Drupal\vchess\Controller\GameController::displayGame
+    _form: \Drupal\vchess\Form\GamePlayForm
   requirements:
     _permission: 'view game'
 

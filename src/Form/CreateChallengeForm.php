@@ -2,7 +2,6 @@
 
 namespace Drupal\vchess\Form;
 
-
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\pos\Entity\ChessPosition;
@@ -25,7 +24,7 @@ class CreateChallengeForm extends FormBase {
 
     $form['description'] = array(
       '#type' => 'item',
-      '#title' => t('Simply click on the button below and we will create
+      '#title' => $this->t('Simply click on the button below and we will create
       a game for you against a random opponent.'),
     );
 
@@ -33,10 +32,10 @@ class CreateChallengeForm extends FormBase {
       '#type' => 'select',
       '#title' => t('Time per move'),
       '#options' => array(
-        '1' => t('1 day'),
-        '2' => t('2 days'),
-        '3' => t('3 days'),
-        '5' => t('5 days'),
+        '1' => $this->t('1 day'),
+        '2' => $this->t('2 days'),
+        '3' => $this->t('3 days'),
+        '5' => $this->t('5 days'),
       ),
       '#default_value' => "3", // added default value.
     );
@@ -44,14 +43,14 @@ class CreateChallengeForm extends FormBase {
     $positions = ChessPosition::getPositionLabels();
     $form['position'] = [
       '#type' => 'select',
-      '#title' => t('Starting position'),
+      '#title' => $this->t('Starting position'),
       '#options' => $positions,
-      '#description' => t('Select the game starting position.'),
+      '#description' => $this->t('Select the game starting position.'),
     ];
 
     $form['submit'] = array(
       '#type' => 'submit',
-      '#value' => t('Create Challenge'),
+      '#value' => $this->t('Create Challenge'),
     );
 
     return $form;

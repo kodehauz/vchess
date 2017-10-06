@@ -48,4 +48,5 @@ class ResetGamesForm extends ConfirmFormBase {
 
     drupal_set_message(t('ALL games have been reset!'));
   }
+
 }
