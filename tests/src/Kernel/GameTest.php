@@ -54,9 +54,12 @@ class GameTest extends KernelTestBase {
     $this->assertEquals('c3', $saved_game->getEnPassantSquare());
   }
 
-  public function createRandomGame(){
+  /**
+   * Helper method, creates a random game.
+   */
+  protected function createRandomGame($board = NULL){
     $board = $this->randomMachineName();
-    $castling = $this->randomString();
+    $castling = 'KQkq';
     $en_passant = $this->randomString();
     $turn = $this->randomString();
 
@@ -64,32 +67,8 @@ class GameTest extends KernelTestBase {
       ->setBoard($board)
       ->setCastling($castling)
       ->setEnPassantSquare('c3')
-//      ->setWhiteUser($white_user)
-//      ->setBlackUser($black_user)
-      ->setTurn($turn)
-      ->setEnPassantSquare($en_passant);
+      ->setTurn($turn);
     return $game;
-
-//    $game_2 = Game::create()
-//      ->setBoard($board)
-//      ->setCastling($castling)
-//      ->setEnPassantSquare('c3')
-//      ->setWhiteUser($white_user)
-//      ->setBlackUser($black_user)
-//      ->setTurn($turn)
-//      ->setEnPassantSquare($en_passant);
-//    $game_2->save();
-//
-//    $game_3 = Game::create()
-//      ->setBoard($board)
-//      ->setCastling($castling)
-//      ->setEnPassantSquare('c3')
-//      ->setWhiteUser($white_user)
-//      ->setBlackUser($black_user)
-//      ->setTurn($turn)
-//      ->setEnPassantSquare($en_passant);
-//    $game_3->save();
-
   }
 
   public function testCountUsersCurrentGames (){
@@ -117,4 +96,5 @@ class GameTest extends KernelTestBase {
 
     $this->assertEquals(3, Game::countUsersCurrentGames($black_user));
   }
+
 }

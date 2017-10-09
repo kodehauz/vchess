@@ -11,7 +11,7 @@ use Drupal\vchess\Game\Square;
  * @group vchess
  * @coversDefaultClass \Drupal\vchess\Game\Board
  */
-class VChessBoardTest extends UnitTestCase {
+class BoardTest extends UnitTestCase {
 
   /**
    * @covers ::getSquaresOfPieceType
@@ -66,6 +66,7 @@ class VChessBoardTest extends UnitTestCase {
    * @dataProvider providerSingleDiagonalSquares()
    */
   public function testSingleDiagonalSquares($from_a1, $direction, array $expected_squares) {
+    $expected_squares = $this->makeSquares($expected_squares);
     $squares = TestBoard::singleDiagonalSquares((new Square())->setCoordinate($from_a1), $direction);
     $this->assertEquals($expected_squares, $squares);
   }
@@ -75,10 +76,10 @@ class VChessBoardTest extends UnitTestCase {
    */
   public function providerSingleDiagonalSquares() {
     return [
-      ['a1', Direction::UP_RIGHT, $this->makeSquares(['a1','b2','c3','d4','e5','f6','g7','h8'])],
-      ['c6', Direction::UP, $this->makeSquares(['c6','c7','c8'])],
-      ['h2', Direction::UP_LEFT, $this->makeSquares(['h2','g3','f4','e5','d6','c7','b8'])],
-      ['h2', Direction::DOWN_RIGHT, $this->makeSquares(['h2'])],
+      ['a1', Direction::UP_RIGHT, ['a1','b2','c3','d4','e5','f6','g7','h8']],
+      ['c6', Direction::UP, ['c6','c7','c8']],
+      ['h2', Direction::UP_LEFT, ['h2','g3','f4','e5','d6','c7','b8']],
+      ['h2', Direction::DOWN_RIGHT, ['h2']],
     ];
   }
 
@@ -99,6 +100,23 @@ class VChessBoardTest extends UnitTestCase {
     $actual_squares = Board::getSquaresOnRankFile((new Square())->setCoordinate('e5'));
     $expected_squares =$this->makeSquares(['a5','b5','c5','d5','f5','g5','h5','e1','e2','e3','e4','e5','e6','e7','e8']);
     $this->assertEquals($expected_squares, $actual_squares);
+  }
+
+  /**
+   * @covers ::getDiagonalSquares
+   * @dataProvider providerGetDiagonalSquares()
+   */
+  public function testGetDiagonalSquares($from_square, array $expected_squares) {
+    $expected_squares = $this->makeSquares($expected_squares);
+    $squares = TestBoard::getDiagonalSquares((new Square())->setCoordinate($from_square));
+    $this->assertEquals($expected_squares, $squares);
+  }
+  
+  public function providerGetDiagonalSquares() {
+    return [
+      ['e4', ['b1','c2','d3','e4','f5','g6','h7','a8','b7','c6','d5','f3','g2','h1']],
+      ['a1', ['a1','b2','c3','d4','e5','f6','g7','h8']],
+    ];
   }
 
   public function testFenNotation() {

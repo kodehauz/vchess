@@ -3,9 +3,9 @@
 namespace Drupal\vchess\Entity;
 
 /**
- * Definition of Scoresheet (list of moves).
- *
  * The scoresheet is the list of moves in the game.
+ * 
+ * This class maintains track of moves in a game and helps in
  */
 class Scoresheet {
 
@@ -17,36 +17,43 @@ class Scoresheet {
   protected $moves = [];
 
   /**
-   * The game that this scoresheet is tracking.
+   * The ID of the game that this scoresheet is tracking.
    *
-   * @var \Drupal\vchess\Entity\Game
+   * @var int
    */
-  protected $game;
+  protected $gameId;
   
   /**
    * Create a new scoresheet for a given game.
    * 
    * @param Game $game
    */
-  function __construct(Game $game) {
-    $this->game = $game;
+  function __construct($game_id) {
+    $this->gameId = $game_id;
     $this->loadMoves();
   }
   
   /**
-   * Load the moves for a scoresheet
+   * Load the moves for a scoresheet.
    */
   protected function loadMoves() {
-    /** @var \Drupal\vchess\Entity\Move[] $moves */
-    $moves = \Drupal::entityTypeManager()->getStorage('vchess_move')
-      ->loadByProperties(['gid' => $this->game->id()]);
-    
-    foreach ($moves as $move) {
-      $this->moves[$move->getMoveNo()][$move->getColor()] = $move;
+    if ($this->gameId) {
+      /** @var \Drupal\vchess\Entity\Move[] $moves */
+      $moves = \Drupal::entityTypeManager()->getStorage('vchess_move')
+        ->loadByProperties(['gid' => $this->gameId]);
+
+      foreach ($moves as $move) {
+        $this->moves[$move->getMoveNo()][$move->getColor()] = $move;
+      }
+      ksort($this->moves);
     }
-    ksort($this->moves);
   }
 
+  /**
+   * Saves the moves that have been added to the database.
+   * 
+   * @return $this
+   */
   public function saveMoves() {
     foreach ($this->moves as $moves) {
       foreach ($moves as $move) {
@@ -57,50 +64,56 @@ class Scoresheet {
   }
   
   /**
-   * Get the move number
+   * Gets the move number.
+   *
+   * If black has not yet moved, then the move number is the length of the array,
+   * otherwise it is the length plus one.
+   *
+   * For example, if 3. Nc3, then scoresheet has:
+   *   $this->moves[3]['w'] = "Nc3"
+   * and so move number is 3.
+   *
+   * But if 3. Nc3 Nc6, then scoresheet has:
+   *   $this->moves[3]['w'] = "Nc3"
+   *   $this->moves[3]['b'] = "Nc6"
+   * and so move number is 4.
+   *
+   * @return int
    */
-  public function getMoveNumber() {
+  public function getNextMoveNumber() {
     $move_no = count($this->moves);
-    // If the scoresheet is empty then we are on move 1
-    if ($move_no == 0) {
+    // If the scoresheet is empty then we are on move 1.
+    if ($move_no === 0) {
       $move_no = 1;
     }
     else {
-      // if black has not yet moved, then the move number is the length of the array,
-      //  otherwise it is the length plus one
-      //
-      //  e.g. if 3. Nc3
-      //   then scoresheet has:
-      // $scoresheet[3]['w'] = "Nc3"
-      // and so => move number = 3
-      //
-      // e.g. if 3. Nc3 Nc6
-      // then scoresheet has:
-      // $scoresheet[3]['w'] = "Nc3"
-      // $scoresheet[3]['b'] = "Nc6"
-      // and so => move number = 4
-      if (array_key_exists("b", $this->moves[$move_no])) {
+      if (array_key_exists('b', $this->moves[$move_no])) {
         $move_no += 1;
       }
     }
   
     return $move_no;
   }
-  
+
   /**
-   * Write the latest move down.  The move is added to the end
-   * of the scoresheet.
+   * Appends the latest move to the end of the scoresheet.
    *
-   * @param Move $move
-   *   The move to be appended
+   * @param \Drupal\vchess\Entity\Move $move
+   *   The move to be appended.
+   * 
+   * @return $this
    */
   public function appendMove(Move $move) {
-    $move_no = $this->getMoveNumber();
+    $move_no = $this->getNextMoveNumber();
     if (!array_key_exists($move_no, $this->moves)) {
       $this->moves[$move_no] = [];
     }
 
-    // @todo Use the move color $move->getColor() instead of this check.
+    // Ensure the move color and number matches the position.
+    $move->setColor($this->getTurn());
+    $move->setMoveNo($move_no);
+    $move->setGameId($this->gameId);
+    
     if (array_key_exists('w', $this->moves[$move_no])) {
       $this->moves[$move_no]['b'] = $move;
     }
@@ -114,6 +127,8 @@ class Scoresheet {
    * Gets the white move of a particular number.
    * 
    * @param int $move_no
+   *
+   * @return \Drupal\vchess\Entity\Move
    */
   public function getWhiteMove($move_no) {
     return $this->getMove($move_no, "w");
@@ -124,46 +139,45 @@ class Scoresheet {
    * 
    * @param int $move_no
    *
-   * @return Move
+   * @return \Drupal\vchess\Entity\Move
    */
   public function getBlackMove($move_no) {
     return $this->getMove($move_no, "b");
   }
   
   /**
-   * Gets the move of a given color.
+   * Gets the move of a given number and color, or null if it doesn't exist.
    *
-   * @return Move
+   * @return \Drupal\vchess\Entity\Move|null
+   *   Returns null if there is no move of that number and color.
    */
   protected function getMove($move_no, $color) {
     if (array_key_exists($move_no, $this->moves) && array_key_exists($color, $this->moves[$move_no])) {
       return $this->moves[$move_no][$color];
     }
-    
-    return Move::create([
-      'move_no' => $move_no,
-      'color' => $color,
-    ]);
+    return NULL;
   }
   
   /**
-   * Get the last move
+   * Gets the last move.
+   * 
+   * @return \Drupal\vchess\Entity\Move
+   *   The last move that was added.
    */
   function getLastMove() {
-    $move_no = $this->getMoveNumber();
+    $move_no = count($this->moves);
     
-    $move = $this->getBlackMove($move_no);
-    if ($move->getAlgebraic() == "") {
-      // Looks like black hasn't moved yet for this move no
-      $move = $this->getWhiteMove($move_no);
-      
-      if ($move->getAlgebraic() == "" && $move_no > 1) {
-        // Looks like black has just moved, so we need to look at the previous move number
-        $move = $this->getBlackMove($move_no - 1);
-      }
+    if ($move_no < 1) {
+      // No moves have been recorded for this game.
+      return NULL;
     }
-    
-    return $move;
+    else if (array_key_exists('b', $this->moves[$move_no])) {
+      return $this->moves[$move_no]['b'];
+    }
+    else {
+      // Looks like black hasn't moved yet for this move no.
+      return $this->moves[$move_no]['w'];
+    }
   }
   
   /** 
@@ -172,8 +186,24 @@ class Scoresheet {
    * @return \Drupal\vchess\Entity\Move[][]
    *   Returns a themed table of moves.
    */
-  function getMoves() {
+  public function getMoves() {
     return $this->moves;
+  }
+
+  /**
+   * Gets the color whose turn it is to play.
+   */
+  public function getTurn() {
+    $move_no = count($this->moves);
+
+    if ($move_no < 1 || array_key_exists('b', $this->moves[$move_no])) {
+      // No move played yet or last move was a black move.
+      return 'w';
+    }
+    else {
+      // Looks like black hasn't moved yet for this move no.
+      return 'b';
+    }
   }
 
 }

@@ -9,6 +9,19 @@ use Drupal\vchess\Game\Piece;
 use Drupal\vchess\Game\Square;
 
 /**
+ * Creates a visible view of the game.
+ *
+ * Parameters:
+ * - #game: The Game entity representing the game to be rendered.
+ * - #player: Indicates the color of the player who is playing, and thus the
+ *   viewing perspective of the board.  It is either 'w' (white) or 'b' (black).
+ *   If it is empty then the game is being observed by someone who is not the
+ *   player. Note that player is not necessarily the same as the person who is
+ *   to move. It may be the player is white but it is black to move.
+ * - #active: Indicates whether or not the board allows moves or not (i.e.
+ *   whether the board is in a view-only state or not).
+ * - #flipped: Indicates whether the board is flipped or not.
+ *
  * @RenderElement("vchess_game")
  */
 class Game extends Table {

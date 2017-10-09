@@ -62,10 +62,7 @@ class Move extends ContentEntityBase {
    * In a move like "Rh4-d4" return "h4"
    */
   public function fromSquare() {
-    $from_square = new Square();
-    $from_square->setCoordinate(substr($this->getLongMove(), 1, 2));
-  
-    return $from_square;
+    return (new Square())->setCoordinate(substr($this->getLongMove(), 1, 2));
   }
   
   /**
@@ -77,20 +74,6 @@ class Move extends ContentEntityBase {
     return $this->getLongMove()[3];
   }
   
-  /**
-   * Set the $long_format
-   */
-//  public function setLongFormat($long_format) {
-//    $this->long_format = $long_format;
-//  }
-  
-  /**
-   * Set the algebraic format
-   */
-//  public function setAlgebraic($algebraic) {
-//    $this->algebraic = $algebraic;
-//  }
-//
   /**
    * Get the source piece from a given move
    * 
@@ -195,13 +178,13 @@ class Move extends ContentEntityBase {
    *
    * @param string $player
    *   The color of the player making the move, either "b" or "w"
-   * @param \Drupal\vchess\Game\Board $board
-   *   The board on which the move is being made.
+   * @param \Drupal\vchess\Game\Board $clone_board
+   *   A copy of the board on which the move is being made.
    *
    * @return string
    *   Algebraic notation for the move.
    */
-  public function calculateAlgebraic($player, Board $board) {
+  public function calculateAlgebraic($player, Board $clone_board) {
     // If all else fails, just return the long move
     $this->setAlgebraic($this->getLongMove());
 
@@ -253,7 +236,7 @@ class Move extends ContentEntityBase {
     // All other moves
     else {
       // First find out where all possible pieces of this type are
-      $pieces_squares = $board->getSquaresOfPieceType($source_piece_type, $player);
+      $pieces_squares = $clone_board->getSquaresOfPieceType($source_piece_type, $player);
 
       // If there is only 1 piece of this type, then move is unambiguous
       if (count($pieces_squares) == 1) {
@@ -271,8 +254,8 @@ class Move extends ContentEntityBase {
         $trouble_squares = array();
         foreach ($pieces_squares as $piece_square) {
           // Only look at the other pieces
-          if ($piece_square != $from_square) {
-            if ($board->moveIsOk($piece_square, $to_square)) {
+          if ($piece_square->getIndex() !== $from_square->getIndex()) {
+            if ($clone_board->moveIsOk($piece_square, $to_square)) {
               $trouble_squares[] = $piece_square;
             }
           }
@@ -348,10 +331,8 @@ class Move extends ContentEntityBase {
       }
     }
 
-    // Finally we need to see if the move results in check or checkmate.  We make the move on
-    // a copy of the board to not muck up the existing board
-    $clone_board = clone $board;
-
+    // Finally we need to see if the move results in check or checkmate.  We use
+    // a copy of the board to not muck up the existing board.
     $clone_board->movePiece($from_square, $to_square);
     if ($clone_board->isInCheck($opponent)) {
       if ($clone_board->isInCheckmate($opponent)) {
@@ -479,7 +460,6 @@ class Move extends ContentEntityBase {
     $fields['long_move'] = BaseFieldDefinition::create('string')
       ->setDescription(t('The actual move in full detail format, e.g. "Pe2-e4", "Nf6xBg8", "Ke1-g1"'))
       ->setRequired(TRUE);
-
 
     $fields['algebraic'] = BaseFieldDefinition::create('string')
       ->setDescription(t('Move in algebraic notation (e.g. "e4", "Nc3", "O-O")'))

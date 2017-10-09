@@ -68,9 +68,18 @@ class GamePlayForm extends FormBase {
         '#game' => $game,
         '#player' => $player_color,
         '#active' => $player_may_move,
+        '#flipped' => $this->isBoardFlipped(),
       ],
     ];
 
+    /*
+     * Render command form which contains information about players and last
+     * moves and all main buttons (shown when necessary). The final command
+     * is mapped to hidden field 'cmd' on submission. Show previous command
+     * result $cmdres if set or last move if any. Fill move edit with $move
+     * if set (to restore move when notes were saved).
+     */
+    
 //    $form['commands'] = [
 //      '#prefix' => '<div id="board-commands">',
 //      'command_form' => \Drupal::formBuilder()->getForm(GamePlayForm::class, $game),
@@ -172,10 +181,10 @@ class GamePlayForm extends FormBase {
     $user = $this->currentUser();
 
     $gameplay = new GamePlay($this->game);
-    $gameplay->resign($user->id());
+    $gameplay->resign($user);
     $this->game->save();
 
-    if ($gameplay->getStatus() == GamePlay::STATUS_BLACK_WIN) {
+    if ($this->game->getStatus() == GamePlay::STATUS_BLACK_WIN) {
       $score = GamerStatistics::GAMER_BLACK_WIN; // white resigned
     }
     else {
@@ -190,39 +199,44 @@ class GamePlayForm extends FormBase {
   protected function makeMove(array $form, FormStateInterface $form_state) {
     // Command: e.g. Pe2-e4
     if ($cmd = $form_state->getValue('cmd')) {
-      $user = User::load($this->currentUser());
+      $user = User::load($this->currentUser()->id());
       $game = $this->game;
 
-      // Save the values for when we need to save to database
-      $player_with_turn = $game->getTurn();
-      $move_no = $game->getScoresheet()->getMoveNumber();
+      /** @var \Drupal\vchess\Entity\Move $move */
+      $move = Move::create()
+        ->setGameId($this->game->id())
+        ->setColor($game->getTurn())
+        ->setLongMove($cmd);
       $gameplay = new GamePlay($game);
+      $messages = [];
+      $errors = [];
 
       if ($cmd === 'abort') {
-        $cmdres = $gameplay->abort($user->id());
+        $move_made = $gameplay->abort($user, $messages, $errors);
       }
       elseif ($cmd === 'acceptdraw') {
-        $cmdres = $gameplay->makeMove($user, 'accept_draw');
+        $move_made = $gameplay->acceptDraw($user, $messages, $errors);
       }
       elseif ($cmd === 'refusedraw') {
-        $cmdres = $gameplay->makeMove($user, 'refuse_draw');
+        $move_made = $gameplay->rejectDraw($user, $messages, $errors);
       }
       else { // try as chess move
-        $cmdres = $gameplay->makeMove($user, $cmd);
+        $move_made = $gameplay->makeMove($user, $move, $messages, $errors);
       }
 
       // Only save move and game if a move has actually been made
-      if ($player_with_turn !== $game->getTurn()) {
+//      if ($player_with_turn !== $game->getTurn()) {
+      if ($move_made) {
         // Save move.
 //        $game->getScoresheet()->appendMove($move_no, $player_with_turn, $game->last_move());
-        $game->getScoresheet()->appendMove(Move::create()->setLongMove($cmd))->saveMoves();
+        $game->getScoresheet()->appendMove($move)->saveMoves();
 
         // Save game.
         $game->save();
 
         // Ensure that the other player is informed
 //      rules_invoke_event('vchess_move_made', $game->white_player(), $game->black_player());
-        $opponent = $game->getOpponent($user->id());
+        $opponent = $game->getOpponent($user);
 
 //        rules_invoke_event('vchess_move_made', $opponent,
 //          $gid, $game->last_move()->algebraic());
@@ -263,8 +277,14 @@ class GamePlayForm extends FormBase {
         }
       }
 
-      drupal_set_message($this->t($cmdres));
+      drupal_set_message(implode("\n", $messages));
     }
+  }
+
+  protected function isBoardFlipped() {
+    $gid = $this->game->id();
+    $vchess_board = \Drupal::state()->get('vchess_board', []);
+    return isset($vchess_board['flipped'][$gid]) && $vchess_board['flipped'][$gid] === TRUE;
   }
 
 }

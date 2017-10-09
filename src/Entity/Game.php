@@ -3,6 +3,7 @@
 namespace Drupal\vchess\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\gamer\Entity\GamerStatistics;
@@ -59,6 +60,13 @@ class Game extends ContentEntityBase {
    */
   protected $scoresheet;
 
+  public function postSave(EntityStorageInterface $storage, $update = TRUE) {
+    parent::postSave($storage, $update);
+    // Save moves after this game is saved.
+    // @todo Should we do integrity check on the board position?
+    $this->getScoresheet()->saveMoves();
+  }
+
   /**
    * Gets the last move for this game.
    */
@@ -82,7 +90,7 @@ class Game extends ContentEntityBase {
    * move_no = 2 (i.e. waiting for move 2)
    */
   public function getMoveNumber() {
-    return $this->getScoresheet()->getMoveNumber();
+    return $this->getScoresheet()->getNextMoveNumber();
   }
 
   /**
@@ -238,7 +246,7 @@ class Game extends ContentEntityBase {
    */
   public function getScoresheet() {
     if (!isset($this->scoresheet)) {
-      $this->scoresheet = new Scoresheet($this);
+      $this->scoresheet = new Scoresheet($this->id());
     }
     return $this->scoresheet;
   }
@@ -246,14 +254,14 @@ class Game extends ContentEntityBase {
   /**
    * Gets the opponent for a particular player.
    *
-   * @param $uid
-   *   User id of one of the players
+   * @param \Drupal\user\UserInterface $user
+   *   A user object corresponding to one of the players
    *
    * @return \Drupal\gamer\Entity\GamerStatistics $player
-   *   The opposing player
+   *   The opposing player's game statistics.
    */
-  public function getOpponent($uid) {
-    if ($this->getWhiteUser()->id() == $uid) {
+  public function getOpponent(UserInterface $user) {
+    if ($this->getWhiteUser()->id() === $user->id()) {
       return GamerStatistics::loadForUser($this->getBlackUser());
     }
     else {
