@@ -395,6 +395,9 @@ class Move extends ContentEntityBase {
     return $this;
   }
 
+  /**
+   * @return string
+   */
   public function getLongMove() {
     return $this->get('long_move')->value;
   }
@@ -470,6 +473,16 @@ class Move extends ContentEntityBase {
       ->setRequired(TRUE);
 
     return $fields;
+  }
+
+
+  /**
+   * Allows for comparisons.
+   *
+   * @return string
+   */
+  public function __toString() {
+    return $this->getLongMove();
   }
 
 }

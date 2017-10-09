@@ -4,7 +4,6 @@ namespace Drupal\Tests\vchess\Unit;
 
 use Drupal\Tests\UnitTestCase;
 use Drupal\vchess\Game\Board;
-use Drupal\vchess\Game\Piece;
 use Drupal\vchess\Game\Square;
 
 /**
@@ -12,6 +11,8 @@ use Drupal\vchess\Game\Square;
  * @coversDefaultClass \Drupal\vchess\Game\Board
  */
 class BoardValidMoveTest extends UnitTestCase {
+
+  use BoardTestTrait;
 
   /**
    * @dataProvider providerGetValidMoves()
@@ -26,16 +27,16 @@ class BoardValidMoveTest extends UnitTestCase {
     $default_board = (new Board())->setupAsStandard();
     return [
       [$default_board, 'a1', []],
-      [$default_board, 'b1', ['Nb1-a3', 'Nb1-c3']],
+      [$default_board, 'b1', ['Nb1-a3','Nb1-c3']],
       [$default_board, 'c1', []],
-      [$default_board, 'g2', ['Pg2-g3', 'Pg2-g4']],
-      [$default_board, 'g1', ['Ng1-f3', 'Ng1-h3']],
+      [$default_board, 'g2', ['Pg2-g3','Pg2-g4']],
+      [$default_board, 'g1', ['Ng1-f3','Ng1-h3']],
       [$default_board, 'h1', []],
       [$default_board, 'e2', ['Pe2-e3', 'Pe2-e4']],
-      [$this->setUpBoard(['e5' => 'n']), 'e5', ['Ne5-f7', 'Ne5-g6', 'Ne5-g4', 'Ne5-f3', 'Ne5-d7', 'Ne5-c6', 'Ne5-c4', 'Ne5-d3']],
-      [$this->setUpBoard(['e8' => 'n']), 'e8', ['Ne8-f6', 'Ne8-g7', 'Ne8-d6', 'Ne8-c7']],
-      [$this->setUpBoard(['a8' => 'n']), 'a8', ['Ne8-f6', 'Ne8-g7']],
-      [$this->setUpBoard(['c2' => 'P', 'b3' => 'p', 'd3' => 'p']), 'c2', ['Pc2-c3', 'Pc2-c4', 'Pc2xb3', 'Pc2xd3']],
+      [$this->setUpBoard(['e5'=>'n','e1'=>'K','e8'=>'k']), 'e5', ['Ne5-d3','Ne5-f3','Ne5-c4','Ne5-g4','Ne5-c6','Ne5-g6','Ne5-d7','Ne5-f7']],
+      [$this->setUpBoard(['e8'=>'n','e1'=>'K','f8'=>'k']), 'e8', ['Ne8-d6','Ne8-f6','Ne8-c7','Ne8-g7']],
+      [$this->setUpBoard(['a8'=>'n','e1'=>'K','e8'=>'k']), 'a8', ['Na8-b6','Na8-c7']],
+      [$this->setUpBoard(['c2'=>'P','b3'=>'p','d3'=>'p']), 'c2', ['Pc2-c3', 'Pc2-c4', 'Pc2xb3', 'Pc2xd3']],
     ];
   }
 
@@ -67,46 +68,4 @@ class BoardValidMoveTest extends UnitTestCase {
     ];
   }
 
-  /**
-   * Helper method to construct a board FEN string quickly.
-   *
-   * @param array $piece_positions
-   *   Array holding positions of pieces keyed by position. E.g.
-   *   ['a1' => 'R', 'b3' => 'p'] means a board with white rook at a1 and black
-   *   pawn at b3.
-   * 
-   * @return \Drupal\vchess\Game\Board
-   *   The board that is setup.
-   */
-  protected function setUpBoard(array $piece_positions) {
-    $board = new Board();
-    foreach ($piece_positions as $position => $piece_string) {
-      $piece = new Piece();
-      if (strtoupper($piece_string) === $piece_string) {
-        $piece->setColor('w');
-      }
-      else {
-        $piece->setColor('b');
-      }
-      $piece->setType($piece_string);
-      $board->setPiece($piece, $position);
-    }
-    return $board;
-  }
-
-  /**
-   * Returns slightly more open board position for testing purposes. 
-   */
-  protected function getOpenBoard() {
-    return $this->setUpBoard([
-      'a1' => 'R', 'c1' => 'B', 'd1' => 'Q', 'e1' => 'K', 'h1' => 'R',
-      'a2' => 'P', 'e2' => 'P', 'f2' => 'P', 'h2' => 'P',
-      'b3' => 'P', 'c4' => 'P', 'd3' => 'P', 'g3' => 'P',
-      'g2' => 'B', 'c3' => 'N', 'f3' => 'N',
-      'a8' => 'r', 'c8' => 'b', 'd8' => 'q', 'e8' => 'k', 'h8' => 'r',
-      'a7' => 'p', 'e7' => 'p', 'f7' => 'p', 'h7' => 'p',
-      'b6' => 'p', 'c5' => 'p', 'd6' => 'p', 'g6' => 'p',
-      'g7' => 'b', 'c6' => 'n', 'f6' => 'n',
-    ]);
-  }
 }

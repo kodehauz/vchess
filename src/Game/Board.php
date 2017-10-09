@@ -195,7 +195,7 @@ class Board {
     $squares = array_merge($squares, static::singleDiagonalSquares($from_square, Direction::UP_RIGHT));
     $squares = array_merge($squares, static::singleDiagonalSquares($from_square, Direction::DOWN_RIGHT));
 
-    return $squares;
+    return array_values(array_unique($squares));
   }
   
   /**
@@ -300,8 +300,8 @@ class Board {
    */
   public static function getKnightMoveSquares(Square $from_square) {
     $squares = [];
-    $from_rank = $from_square->getRank();  // e.g. "7" in "d7"
-    $from_col = $from_square->getColumn(); // e.g. "4" for the "d" in "d7"
+    $from_rank = (int) $from_square->getRank();  // e.g. "7" in "d7"
+    $from_col = (int) $from_square->getColumn(); // e.g. "4" for the "d" in "d7"
 
     $deltas = [
       [-2, -1],
@@ -339,7 +339,7 @@ class Board {
   public function getKingSquare($color) {
     $squares = $this->getSquaresOfPieceType("K", $color);
     // There should be only 1 square returned
-    return $squares[0]; 
+    return $squares[0];
   }
 
   /**
@@ -1093,7 +1093,7 @@ class Board {
         }
         break;
       case 'N':
-        $squares = $this->getDiagonalSquares($piece_square);
+        $squares = static::getKnightMoveSquares($piece_square);
         foreach ($squares as $to_square) {
           if ($this->moveIsOk($piece_square, $to_square)) {
             $valid_moves[] = $this->getLongMove($piece_square, $to_square);

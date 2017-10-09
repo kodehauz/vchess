@@ -171,4 +171,13 @@ class Square {
     return $square;
   }
 
+  /**
+   * Allows for comparisons.
+   *
+   * @return string
+   */
+  public function __toString() {
+    return $this->getCoordinate();
+  }
+
 }
