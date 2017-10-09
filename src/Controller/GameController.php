@@ -482,8 +482,8 @@ class GameController extends ControllerBase {
    */
   protected function buildNewGameLinks() {
     $links = [
-      '#prefix' => '<p>',
-      '#suffix' => '</p>'
+      '#prefix' => '<div class="vchess-game-links">',
+      '#suffix' => '</div>'
     ];
 
     $links['create_challenge'] = [
