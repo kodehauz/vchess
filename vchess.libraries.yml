@@ -1,6 +1,6 @@
 board:
   css:
     theme:
-      css/vchessstyle.css: { }
+      css/board.css: { }
   js:
     js/board.js: { }

@@ -11,27 +11,17 @@ Board = {
  * @param cmd
  */
 Board.highlightMove = function (cmd) {
-  var theme = "default";
   var obj;
 
-  // Clear old highlighting 
-  for (var i in this.move) {
-	  if (this.move.hasOwnProperty(i) && this.move[i] !== "") {
-      var img = "wsquare.jpg";
-      if (this.isWhiteSquare(this.move[i])) {
-        img = "wsquare.jpg";
-      }
-      else {
-        img = "bsquare.jpg";
-      }
-      obj = document.getElementById(this.move[i]);
-      if (obj) {
-        obj.style.backgroundImage = "url(" + drupalSettings.vchess.module_path + "/images/" + theme + "/" + img + ")";
-      }
-      this.move[i] = "";
-    }
-  }
-	
+  // Clear old highlighting in source and destination.
+  obj = document.getElementById(this.move.source);
+  if (obj) obj.classList.remove('highlighted');
+  this.move.source = "";
+
+  obj = document.getElementById(this.move.destination);
+  if (obj) obj.classList.remove('highlighted');
+  this.move.destination = "";
+
   // If command is empty don't highlight again.
   if (cmd === null || cmd === "") {
 	  return;
@@ -48,30 +38,8 @@ Board.highlightMove = function (cmd) {
   }
 	
   // Set new highlighting
-  for (i in this.move) {
-    if (this.move.hasOwnProperty(i) && this.move[i] !== "") {
-      if (this.isWhiteSquare(this.move[i])) {
-        // White square highlighted.
-        img = "whsquare.jpg";
-      }
-      else {
-        // Black square highlighted.
-        img = "bhsquare.jpg";
-      }
-      obj = document.getElementById(this.move.source);
-      if (obj) {
-          obj.style.backgroundImage = "url(" + drupalSettings.vchess.module_url
-            + "/images/" + theme + "/" + img + ")";
-      }
-    }
-  }
-};
-
-Board.isWhiteSquare = function (coordinate) {
-  var file = coordinate.toLowerCase().charCodeAt(0) - 97;
-  var rank = parseInt(coordinate[1]) - 1;
-
-  return (rank + file + 1) % 2 === 0;
+  obj = document.getElementById(this.move.source);
+  if (obj) obj.classList.add('highlighted');
 };
 
 /**
@@ -131,8 +99,6 @@ Board.assembleCmd = function (part) {
   
   this.highlightMove(form.move.value);
   this.checkMoveButton();
-	
-  return false;
 };
 
 /**
@@ -209,13 +175,11 @@ Board.getBoardForm = function () {
 
 Drupal.behaviors.vchess = {
   attach: function (context) {
-    jQuery('.board-main')
-      .on('click', '.board-square', function () {
-        return Board.assembleCmd(this.dataset.chessCommand);
+    jQuery('table.board-main')
+      .on('click', 'td.board-square', function (event) {
+        Board.assembleCmd(this.dataset.chessCommand);
+        event.stopImmediatePropagation();
       });
-
-    jQuery('.board-square.active')
-      .css('cursor', 'pointer');
 
     Board.checkMoveButton();
     Board.highlightMove(this.getBoardForm().move.value);

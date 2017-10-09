@@ -21,6 +21,7 @@ use Drupal\vchess\Game\Square;
  * - #active: Indicates whether or not the board allows moves or not (i.e.
  *   whether the board is in a view-only state or not).
  * - #flipped: Indicates whether the board is flipped or not.
+ * - #theme: Specifies the theme to be used for the chess pieces and board.
  *
  * @RenderElement("vchess_game")
  */
@@ -37,6 +38,7 @@ class Game extends Table {
       '#player' => 'w',
       '#flipped' => FALSE,
       '#active' => FALSE,
+      '#board_theme' => 'default',
       // Properties for table rendering.
       '#header' => [],
       '#rows' => [],
@@ -82,6 +84,9 @@ class Game extends Table {
     $module_path = drupal_get_path('module', 'vchess');
     $full_module_url = $base_url . '/' . $module_path;
 
+    $board_theme = $element['#board_theme'];
+//  $theme = 'wikipedia';  // does not work because pieces include their own background
+
     $element['#attached']['library'][] = 'vchess/board';
     $element['#attached']['drupalSettings']['vchess'] = [
       'module_path' => '/' . $module_path,
@@ -89,11 +94,7 @@ class Game extends Table {
       'full_url' => $full_module_url,
     ];
 
-
     $element['#attributes']['class'][] = 'board-main';
-
-    $theme = 'default'; // later add global theme
-//  $theme = 'wikipedia';  // does not work because pieces include their own background
 
     if (($player === 'w' && !$flipped) || ($player === 'b' && $flipped)) {
       $orientation = 'w';
@@ -129,16 +130,7 @@ class Game extends Table {
               $c = chr(105 - $col);
             }
             $cell = [
-              'data' => [
-                '#type' => 'html_tag',
-                '#tag' => 'img',
-                '#attributes' => [
-                  'src' => $full_module_url . '/images/spacer.gif',
-                ],
-                'rank_label' => [
-                  '#markup' => $c,
-                ],
-              ],
+              'data' => $c,
               'align' => 'center',
               'class' => 'file-letters',
             ];
@@ -193,10 +185,11 @@ class Game extends Table {
             $cell = [
               'data' => [
                 '#type' => 'html_tag',
-                '#tag' => 'img',
+                '#tag' => 'div',
                 '#attributes' => [
-                  'src' => $full_module_url . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif',
-                  'border' => 0,
+//                  'src' => $full_module_url . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif',
+//                  'border' => 0,
+                  'class' => "$piece_color-$piece_name $board_theme board-piece",
                 ],
               ],
               'class' => $class,
@@ -211,7 +204,7 @@ class Game extends Table {
               }
               $cell['id'] = $square->getCoordinate();
               $cell['data-chess-command'] = $cmdpart;
-              $cell['class'] .= ' active';
+              $cell['class'] .= ' enabled';
             }
           }
           else {
@@ -219,10 +212,11 @@ class Game extends Table {
             $cell = [
               'data' => [
                 '#type' => 'html_tag',
-                '#tag' => 'img',
+                '#tag' => 'div',
                 '#attributes' => [
-                  'src' => $full_module_url . '/images/' . $theme . '/empty.gif',
-                  'border' => 0,
+//                  'src' => $full_module_url . '/images/' . $theme . '/empty.gif',
+//                  'border' => 0,
+                  'class' => 'empty-square ' . $board_theme,
                 ],
               ],
               'class' => $class,
@@ -233,7 +227,7 @@ class Game extends Table {
               $cmdpart = sprintf('-%s', Square::fromIndex($index)->getCoordinate());
               $cell['id'] = $square->getCoordinate();
               $cell['data-chess-command'] = $cmdpart;
-              $cell['class'] .= ' active';
+              $cell['class'] .= ' enabled';
             }
           }
           $index += $pos_change;

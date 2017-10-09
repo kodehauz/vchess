@@ -1,0 +1,128 @@
+.board-frame {
+    margin-left:auto;
+    margin-right:auto;
+    /*    background-color: #DACEA9; */
+    /*	padding: 2; */
+    /*	border-spacing: 2; */
+}
+
+.file-letters {
+    height: 5px;
+    text-align: center;
+    font-weight: bold;
+}
+
+table.board-main,
+.board-main {
+    border-spacing: 0;
+    padding: 0;
+    max-width: 350px;
+}
+
+table.board-main > tbody > tr > td {
+    border: none;
+}
+
+.board-main .board-coordinate {
+    color: #666666;
+    width: 20px;
+    height: 40px;
+    border: none;
+}
+
+.board-main .board-square {
+    padding: 2px;
+    width: 40px;
+    height: 40px;
+    vertical-align: middle;
+    border: none;
+}
+
+.board-main .board-square .board-piece {
+    width: 100%;
+    height: 100%;
+    background-position-x: 0;
+    background-position-y: 0;
+    background-repeat: no-repeat;
+}
+
+.board-square.enabled {
+    cursor: pointer;
+}
+
+.board-square.white {
+    /*	background-color: #ffffff; */
+    background-color: #F5f8cE;
+    /*	background-image: url(images/default/wsquare.jpg); */
+}
+
+.board-square.black {
+    /*	background-color: #cccccc; */
+    background-color: #DACEA9;
+    /*	background-image: url(images/default/bsquare.jpg); */
+}
+
+.board-square.white.highlighted {
+    background-image: url("../images/default/whsquare.jpg");
+}
+
+.board-square.black.highlighted {
+    background-image: url("../images/default/bhsquare.jpg");
+}
+
+/** Pieces for the board */
+.b-rook.default {
+    background-image: url("../images/default/brook.gif");
+}
+
+.b-bishop.default {
+    background-image: url("../images/default/bbishop.gif");
+}
+
+.b-knight.default {
+    background-image: url("../images/default/bknight.gif");
+}
+
+.b-queen.default {
+    background-image: url("../images/default/bqueen.gif");
+}
+
+.b-king.default {
+    background-image: url("../images/default/bking.gif");
+}
+
+.b-pawn.default {
+    background-image: url("../images/default/bpawn.gif");
+}
+
+.w-rook.default {
+    background-image: url("../images/default/wrook.gif");
+}
+
+.w-bishop.default {
+    background-image: url("../images/default/wbishop.gif");
+}
+
+.w-knight.default {
+    background-image: url("../images/default/wknight.gif");
+}
+
+.w-queen.default {
+    background-image: url("../images/default/wqueen.gif");
+}
+
+.w-king.default {
+    background-image: url("../images/default/wking.gif");
+}
+
+.w-pawn.default {
+    background-image: url("../images/default/wpawn.gif");
+}
+
+#board-commands {
+
+}
+
+#board {
+
+}
