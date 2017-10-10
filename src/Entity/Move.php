@@ -29,6 +29,8 @@ class Move extends ContentEntityBase {
    * Get the destination square from a given move
    *
    * e.g. in a move like "Rh4-d4" the destination square is d4
+   *
+   * @return \Drupal\vchess\Game\Square
    */
   public function toSquare() {
     $to_square = new Square();
@@ -60,6 +62,8 @@ class Move extends ContentEntityBase {
    * e.g.
    * In a move like "Bf5xPe4" return "f5"
    * In a move like "Rh4-d4" return "h4"
+   *
+   * @return \Drupal\vchess\Game\Square
    */
   public function fromSquare() {
     return (new Square())->setCoordinate(substr($this->getLongMove(), 1, 2));
@@ -454,21 +458,26 @@ class Move extends ContentEntityBase {
 
     $fields['move_no'] = BaseFieldDefinition::create('integer')
       ->setDescription(t('Move number'))
+      ->setSetting('max_length', 128)
       ->setRequired(TRUE);
 
     $fields['color'] = BaseFieldDefinition::create('string')
       ->setDescription('Move color')
+      ->setSetting('max_length', 1)
+      ->addConstraint('AllowedValues', ['choices' => ['w', 'b']])
       ->setRequired(TRUE);
 
     $fields['long_move'] = BaseFieldDefinition::create('string')
       ->setDescription(t('The actual move in full detail format, e.g. "Pe2-e4", "Nf6xBg8", "Ke1-g1"'))
+      ->setSetting('max_length', 10)
       ->setRequired(TRUE);
 
     $fields['algebraic'] = BaseFieldDefinition::create('string')
       ->setDescription(t('Move in algebraic notation (e.g. "e4", "Nc3", "O-O")'))
+      ->setSetting('max_length', 10)
       ->setRequired(TRUE);
 
-    $fields['timestamp'] = BaseFieldDefinition::create('timestamp')
+    $fields['timestamp'] = BaseFieldDefinition::create('created')
       ->setDescription(t('Exact date and time of the move'))
       ->setRequired(TRUE);
 

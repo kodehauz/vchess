@@ -462,10 +462,12 @@ class Game extends ContentEntityBase {
       ->setDescription(t('Whose turn it is to play, either "w" (white) or "b" (black)'))
       ->setRequired(TRUE)
       ->setDefaultValue('w')
+      ->setSetting('max_length', 1)
       ->addConstraint('AllowedValues', ['choices' => ['w', 'b']]);
 
     $fields['status'] = BaseFieldDefinition::create('string')
       ->setDescription(t('Status of the game'))
+      ->setSetting('max_length', 64)
       ->setDefaultValue('in progress')
       ->setRequired(TRUE);
 
@@ -480,14 +482,17 @@ class Game extends ContentEntityBase {
     $fields['board']  = BaseFieldDefinition::create('string')
       ->setDescription(t('The board position saved as standard Forsyth�Edwards Notation (FEN)'))
       ->setDefaultValue('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
+      ->setSetting('max_length', 128)
       ->setRequired(TRUE);
 
     $fields['castling'] = BaseFieldDefinition::create('string')
       ->setDescription(t('Castling availability. If neither side can castle, this is "-". Otherwise, this has one or more letters: "K" (White can castle kingside), "Q" (White can castle queenside), "k" (Black can castle kingside), and/or "q" (Black can castle queenside).'))
+      ->setSetting('max_length', 5)
       ->setDefaultValue('KQkq') ;
 
     $fields['en_passant_square'] = BaseFieldDefinition::create('string')
       ->setDescription(t('En passant target square. If there is no en passant target square, this is "-". If a pawn has just made a 2-square move, this is the position "behind" the pawn. This is recorded regardless of whether there is a pawn in position to make an en-passant capture.'))
+      ->setSetting('max_length', 2)
       ->setDefaultValue('-');
 
     $fields['time_per_move'] = BaseFieldDefinition::create('integer')
@@ -496,6 +501,7 @@ class Game extends ContentEntityBase {
 
     $fields['time_units'] = BaseFieldDefinition::create('string')
       ->setDescription(t('Units of the time_per_move field'))
+      ->setSetting('max_length', 10)
       ->setDefaultValue(DEFAULT_TIME_UNITS);
 
     $fields['time_started'] = BaseFieldDefinition::create('timestamp')

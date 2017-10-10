@@ -54,6 +54,13 @@ class GamePlay {
 
   protected $time_per_move;  // e.g. 3
   protected $time_units;     // e.g. TIME_UNITS_DAYS
+
+  /**
+   * Maintains track of the castling status in the game.
+   *
+   * @var string[][]
+   */
+  protected $castling = [];
   
   // chatter: list of chatter lines (first is newest)
   
@@ -389,6 +396,20 @@ class GamePlay {
   
   public function setCastling($color, $side, $allowed) {
     $this->castling[$color][$side] = (bool) $allowed;
+    return $this;
+  }
+  
+  public function getCastling($color, $side) {
+    return $this->castling[$color][$side];
+  }
+
+  public function setCastlingForColor($color, $allowed) {
+    $this->castling[$color]['Q'] = (bool) $allowed;
+    $this->castling[$color]['K'] = (bool) $allowed;
+    return $this;
+  }
+
+  public function getCastlingString() {
     $castling = '';
     if ($this->castling['w']['K']) {
       $castling .= 'K';
@@ -402,12 +423,7 @@ class GamePlay {
     if ($this->castling['b']['Q']) {
       $castling .= 'q';
     }
-    $this->game->setCastling($castling);
-    return $this;
-  }
-  
-  public function getCastling($color, $side) {
-    return $this->castling[$color][$side];
+    return $castling;
   }
 
   public function offerDraw() {
@@ -482,6 +498,9 @@ class GamePlay {
    *   true for successful move, false for unsuccessful.
    */
   public function makeMove(UserInterface $user, Move $move, array &$messages, array &$errors) {
+    $move->setGameId($this->game->id())
+      ->setColor($this->game->getTurn());
+
     if (!$this->game->isPlayersMove($user)) {
       $errors[] = 'It is not your turn!';
       return FALSE;
@@ -586,8 +605,22 @@ class GamePlay {
       // If move was executed update game state.
       if ($move_ok) {
         $messages[] = new TranslatableMarkup('Your last move: @move', ['@move' => $move->getAlgebraic()]);
-        
-        // If this wasn't a 2-square pawn move, we need to reset 
+
+        // If it is a Rook or King move, invalidate castling as necessary.
+        $piece_type = $this->board->getPiece($move->toSquare())->getType();
+        if ($piece_type === 'K') {
+          $this->setCastlingForColor($this->game->getTurn(), FALSE);
+        }
+        else if ($piece_type === 'R') {
+          if ($move->fromSquare()->getFile() === 'a') {
+            $this->setCastling($this->game->getTurn(), 'Q', FALSE);
+          }
+          else if ($move->fromSquare()->getFile() === 'h') {
+            $this->setCastling($this->game->getTurn(), 'K', FALSE);
+          }
+        }
+
+        // If this wasn't a 2-square pawn move, we need to reset
         // the en_passant square.
         if (!$en_passant_set) {
           $this->board->resetEnPassantSquare();
@@ -612,16 +645,23 @@ class GamePlay {
           $messages[] = '... STALEMATE!';
         }
         
+        // Update game board position and castling status.
+        $this->game->setBoard($this->board->getFenString());
+        $this->game->setCastling($this->getCastlingString());
+
+        // Append move to scoresheet.
+        $this->game->getScoresheet()->appendMove($move);
+
         // Update whose turn it is.  Even if mate has occurred, it
         // is still logically the opponents move, even if they have
-        // no valid move that they can make  
-        if ($this->game->getTurn() == 'b') {
+        // no valid move that they can make
+        if ($this->game->getTurn() === 'b') {
           $this->game->setTurn('w');
         }
         else {
           $this->game->setTurn('b');
         }
-      
+
         // Add comment to head of chatter. Right now we have only two
         // chatter items. Strip backslashes and replace newlines to get
         // a single line.
@@ -669,12 +709,14 @@ class GamePlay {
     }
 
     if (count($gap_coords) === 2) {
-      if (!$this->getCastling($turn, 'K')) {
+      $side = 'K';
+      if (!$this->getCastling($turn, $side)) {
         $error = static::ERROR_CANNOT_CASTLE_SHORT;
       }
     }
     else { // count == 3
-      if (!$this->getCastling($turn, 'Q')) {
+      $side = 'Q';
+      if (!$this->getCastling($turn, $side)) {
         $error = static::ERROR_CANNOT_CASTLE_LONG;
       }
     }
@@ -707,8 +749,8 @@ class GamePlay {
       $this->board->movePiece(Square::fromCoordinate($king_from), Square::fromCoordinate($king_to));  // White King
       $this->board->movePiece(Square::fromCoordinate($rook_from), Square::fromCoordinate($rook_to));  // Rook
 
-      $this->setWhiteCastling(FALSE, FALSE);
-      $this->lastMove = 'Ke1-g1';
+      // Castling can only happen once. So all options are off.
+      $this->setCastlingForColor($turn, FALSE);
     }
 
     return $error;

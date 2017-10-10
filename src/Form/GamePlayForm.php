@@ -203,10 +203,7 @@ class GamePlayForm extends FormBase {
       $game = $this->game;
 
       /** @var \Drupal\vchess\Entity\Move $move */
-      $move = Move::create()
-        ->setGameId($this->game->id())
-        ->setColor($game->getTurn())
-        ->setLongMove($cmd);
+      $move = Move::create()->setLongMove($cmd);
       $gameplay = new GamePlay($game);
       $messages = [];
       $errors = [];
@@ -227,10 +224,6 @@ class GamePlayForm extends FormBase {
       // Only save move and game if a move has actually been made
 //      if ($player_with_turn !== $game->getTurn()) {
       if ($move_made) {
-        // Save move.
-//        $game->getScoresheet()->appendMove($move_no, $player_with_turn, $game->last_move());
-        $game->getScoresheet()->appendMove($move)->saveMoves();
-
         // Save game.
         $game->save();
 

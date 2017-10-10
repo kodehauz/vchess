@@ -119,30 +119,32 @@ class ChessPosition extends ContentEntityBase {
     $fields['board'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Board'))
       ->setDescription(t('Board position in FEN format'))
+      ->setSetting('max_length', 128)
       ->setRequired(TRUE);
 
     $fields['castling'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Castling'))
       ->setDefaultValue('KQkq')
+      ->setSetting('max_length', 5)
       ->setRequired(TRUE);
 
     $fields['en_passant'] = BaseFieldDefinition::create('string')
       ->setLabel(t('En_passant'))
       ->setDescription(t('ep (en passant) target square. If there is no ep target square, \' . \'
 this is "-". If a pawn has just made a 2-square move, this is the position "behind" the pawn. This is recorded regardless of whether there is a pawn in position to make an ep capture.\''))
-      ->setDefaultValue(0)
+      ->setDefaultValue('-')
+      ->setSetting('max_length', 1)
       ->setRequired(TRUE);
 
     $fields['title'] = BaseFieldDefinition::create('string')
       ->setLabel(t(''))
       ->setDescription(t('A short descriptive title'))
-      ->setDefaultValue(0)
+      ->setSetting('max_length', 128)
       ->setRequired(TRUE);
 
     $fields['description'] = BaseFieldDefinition::create('string')
       ->setLabel(t(''))
       ->setDescription(t('A description of the key features of the position'))
-      ->setDefaultValue(0)
       ->setRequired(TRUE);
 
     return $fields;

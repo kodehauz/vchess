@@ -194,15 +194,15 @@ class Scoresheet {
    * Gets the color whose turn it is to play.
    */
   public function getTurn() {
-    $move_no = count($this->moves);
+    $move_no = $this->getNextMoveNumber();
 
-    if ($move_no < 1 || array_key_exists('b', $this->moves[$move_no])) {
+    if (array_key_exists('w', $this->moves[$move_no])) {
       // No move played yet or last move was a black move.
-      return 'w';
+      return 'b';
     }
     else {
       // Looks like black hasn't moved yet for this move no.
-      return 'b';
+      return 'w';
     }
   }
 

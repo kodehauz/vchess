@@ -2,7 +2,6 @@
 
 namespace Drupal\vchess\Element;
 
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\Table;
 
 /**
@@ -17,14 +16,14 @@ class MoveList extends Table {
     $class = get_class($this);
     $info = parent::getInfo();
     $info['#moves'] = [];
-    $info['#game'] = [];
-    $info['#process'] = [
-      [$class, 'processMoves'],
+    $info['#theme'] = 'table__movelist';
+    $info['#pre_render'] = [
+      [$class, 'preRenderMoves'],
     ];
     return $info;
   }
 
-  public static function processMoves(&$element, FormStateInterface $form_state, &$complete_form) {
+  public static function preRenderMoves($element) {
     /** @var \Drupal\vchess\Entity\Move[] $moves */
     $rows = [];
     foreach ($element['#moves'] as $move_no => $moves) {
@@ -39,7 +38,7 @@ class MoveList extends Table {
     $element['#rows'] = $rows;
     $element['#empty'] = t("There are no moves played yet.");
 
-    parent::processTable($element, $form_state, $complete_form);
+    return parent::preRenderTable($element);
   }
 
 }
