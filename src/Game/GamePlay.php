@@ -763,9 +763,9 @@ class GamePlay {
     $pawn_promoted = FALSE;
     
     $piece = $this->board->getPiece($move->fromSquare());
-    if ($piece->getType() == 'P') {
-      if (($this->game->getTurn() == 'w' && $move->toSquare()->getRank() == 8) ||
-          ($this->game->getTurn() == 'b' && $move->toSquare()->getRank() == 1)) {
+    if ($piece->getType() === 'P') {
+      if (($this->game->getTurn() === 'w' && $move->toSquare()->getRank() == 8) ||
+          ($this->game->getTurn() === 'b' && $move->toSquare()->getRank() == 1)) {
         $promote_to = (new Piece())
           ->setType($move->getPromotionPieceType())
           ->setColor($this->game->getTurn());

@@ -119,10 +119,19 @@ table.board-main > tbody > tr > td {
     background-image: url("../images/default/wpawn.gif");
 }
 
-#board-commands {
-
+.board-captured {
+    padding: 2px;
+    width: 100%;
+    height: 40px;
+    vertical-align: middle;
+    border: none;
 }
 
-#board {
-
+.board-captured .board-piece {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    background-position-x: 0;
+    background-position-y: 0;
+    background-repeat: no-repeat;
 }

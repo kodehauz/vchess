@@ -38,3 +38,14 @@ function vchess_help($path, $arg) {
     return $txt;
   }
 }
+
+/**
+ * Implements hook_theme().
+ */
+function vchess_theme($existing, $type, $theme, $path) {
+  return [
+    'vchess_captured_pieces' => [
+      'variables' => ['pieces' => NULL, 'board_theme' => NULL],
+    ],
+  ];
+}

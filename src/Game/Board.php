@@ -84,7 +84,7 @@ class Board {
     $col = static::COL_a;
     $row = 8;
     foreach ($chars as $char) {
-      if ($char == "/") {
+      if ($char === '/') {
         $col = static::COL_a;
         $row--;
       }
@@ -93,17 +93,17 @@ class Board {
       }
       else {
         $piece = new Piece();
-        if (strtoupper($char) == $char) {
+        if (strtoupper($char) === $char) {
            // White piece.
           $piece
             ->setType($char)
-            ->setColor("w");
+            ->setColor('w');
         }
         else {
           // Black piece.
           $piece
             ->setType($char)
-            ->setColor("b");
+            ->setColor('b');
         }
 
         $coordinate = chr($col + 96) . $row;
@@ -128,6 +128,15 @@ class Board {
   public function setPiece(Piece $piece, $coordinate) {
     $this->board[$coordinate] = $piece;
     return $this;
+  }
+
+  /**
+   * Gets all the pieces on this board.
+   *
+   * @return \Drupal\vchess\Game\Piece[]
+   */
+  public function getPieces() {
+    return array_values($this->board);
   }
 
   /**
@@ -337,7 +346,7 @@ class Board {
    *   The king square.
    */
   public function getKingSquare($color) {
-    $squares = $this->getSquaresOfPieceType("K", $color);
+    $squares = $this->getSquaresOfPieceType('K', $color);
     // There should be only 1 square returned
     return $squares[0];
   }
@@ -401,7 +410,7 @@ class Board {
    * @return string
    */
   public function getFenString() {
-    $FEN_string = "";
+    $FEN_string = '';
     
     $square = new Square();
     for ($row = 8; $row >= 1; $row--) {
@@ -426,7 +435,7 @@ class Board {
       }
       // All rows except the row 1 with a / 
       if ($row > 1) {
-        $FEN_string .= "/";
+        $FEN_string .= '/';
       }
     }
     
@@ -709,20 +718,20 @@ class Board {
           // For a pawn we need to take into account the colour since a pawn is the one
           // piece which cannot go backwards
           $piece_color = $this->getPiece($from_square)->getColor();
-          if ($piece_color == "w") {
-            if (($dest_y - $piece_y) == 1) { // Normal 1-square move
+          if ($piece_color === 'w') {
+            if (($dest_y - $piece_y) === 1) { // Normal 1-square move
               $reachable = TRUE;
             }
-            elseif ($piece_y == 2 && (($dest_y - $piece_y) == 2)) { // Initial 2-square move
+            elseif ($piece_y === 2 && (($dest_y - $piece_y) === 2)) { // Initial 2-square move
               $reachable = TRUE;
             }
           }
           else { // $piece_color == "b"
-            if (($dest_y - $piece_y) == -1) {
+            if (($dest_y - $piece_y) === -1) {
               $reachable = TRUE;
             }
             else {
-              if ($piece_y == 7 && (($dest_y - $piece_y) == -2)) { // Initial 2-square move
+              if ($piece_y === 7 && (($dest_y - $piece_y) === -2)) { // Initial 2-square move
                 $reachable = TRUE;
               }
             }
@@ -730,16 +739,16 @@ class Board {
           break;
         // Knight
         case 'N':
-          if (abs($piece_x - $dest_x) == 1 && abs($piece_y - $dest_y) == 2) {
+          if (abs($piece_x - $dest_x) === 1 && abs($piece_y - $dest_y) === 2) {
             $reachable = TRUE;
           }
-          if (abs($piece_y - $dest_y) == 1 && abs($piece_x - $dest_x) == 2) {
+          if (abs($piece_y - $dest_y) === 1 && abs($piece_x - $dest_x) === 2) {
             $reachable = TRUE;
           }
           break;
         // Bishop
         case 'B':
-          if (abs($piece_x - $dest_x) != abs($piece_y - $dest_y)) {
+          if (abs($piece_x - $dest_x) !== abs($piece_y - $dest_y)) {
             break;
           }
           if ($dest_y < $piece_y) {
@@ -749,10 +758,10 @@ class Board {
             $change = 8;
           }
           if ($dest_x < $piece_x) {
-            $change -= 1;
+            $change--;
           }
           else {
-            $change += 1;
+            $change++;
           }
           if ($this->pathIsNotBlocked($piece_pos + $change, $dest_pos, $change)) {
             $reachable = TRUE;
@@ -760,10 +769,10 @@ class Board {
           break;
         // rook
         case 'R':
-          if ($piece_x != $dest_x && $piece_y != $dest_y) {
+          if ($piece_x !== $dest_x && $piece_y !== $dest_y) {
             break;
           }
-          if ($piece_x == $dest_x) {
+          if ($piece_x === $dest_x) {
             if ($dest_y < $piece_y) {
               $change = -8;
             }
@@ -785,11 +794,12 @@ class Board {
           break;
         // queen
         case 'Q':
-          if (abs($piece_x - $dest_x) != abs($piece_y - $dest_y) && $piece_x != $dest_x && $piece_y != $dest_y) {
+          if ($piece_x !== $dest_x && $piece_y !== $dest_y
+            && abs($piece_x - $dest_x) !== abs($piece_y - $dest_y)) {
             break;
           }
           // Check if diagonal
-          if (abs($piece_x - $dest_x) == abs($piece_y - $dest_y)) {
+          if (abs($piece_x - $dest_x) === abs($piece_y - $dest_y)) {
             if ($dest_y < $piece_y) {
               // diagonal down the board
               $change = -8;
@@ -800,14 +810,14 @@ class Board {
             }
             if ($dest_x < $piece_x) {
               // diagonal to the left
-              $change -= 1;
+              $change--;
             }
             else {
               // diagonal to the right
-              $change += 1;
+              $change++;
             }
           }
-          elseif ($piece_x == $dest_x) {
+          elseif ($piece_x === $dest_x) {
             // vertical
             if ($dest_y < $piece_y) {
               // vertical down the board
@@ -841,11 +851,11 @@ class Board {
           $kings = 0;
           $adj_squares = $this->getAdjacentSquares($from_square);
           foreach ($adj_squares as $adj_square) {
-            if ($this->getPiece($adj_square)->getType() == 'K') {
+            if ($this->getPiece($adj_square)->getType() === 'K') {
               $kings++;
             }
           }
-          if ($kings == 2) {
+          if ($kings === 2) {
             break;
           }
           $reachable = TRUE;
@@ -863,7 +873,7 @@ class Board {
    * @param \Drupal\vchess\Game\Square $square
    *   The square e.g. "a1".
    *
-   * @return \Drupal\vchess\Game\Piece|null
+   * @return \Drupal\vchess\Game\Piece
    *
    * @todo Determine the appropriate behaviour of this method.
    */
@@ -961,15 +971,15 @@ class Board {
     $dest_col = $to_square->getColumn();  // e.g. e -> 5
     $dest_rank = (int) $to_square->getRank();
   
-    if ($piece_color == 'w') {
+    if ($piece_color === 'w') {
       if ($dest_rank === $piece_rank + 1
-          && ($piece_col == ($dest_col - 1) || $piece_col == ($dest_col + 1))) {
+          && ($piece_col === ($dest_col - 1) || $piece_col === ($dest_col + 1))) {
         $attacks = TRUE;
       }
     }
-    elseif ($piece_color == 'b') {
-      if ($dest_rank == $piece_rank - 1
-          && ($piece_col == ($dest_col - 1) || $piece_col == ($dest_col + 1))) {
+    elseif ($piece_color === 'b') {
+      if ($dest_rank === $piece_rank - 1
+          && ($piece_col === ($dest_col - 1) || $piece_col === ($dest_col + 1))) {
         $attacks = TRUE;
       }
     }
@@ -987,7 +997,7 @@ class Board {
    * 
    */
   public function moveIsOk(Square $from_square, Square $to_square) {
-    if ($this->getPiece($from_square)->getType() == 'P') {
+    if ($this->getPiece($from_square)->getType() === 'P') {
       return $this->pawnMayMoveToSquare($from_square, $to_square);
     }
     else {
@@ -1007,12 +1017,12 @@ class Board {
     $pawn_moved_2_squares = FALSE;
     
     $piece = $this->getPiece($from_square);
-    if ($piece->getType() == 'P') {
-      if ($piece->getColor() == 'w'
+    if ($piece->getType() === 'P') {
+      if ($piece->getColor() === 'w'
       && ($from_square->getRank() == 1 && $to_square->getRank() == 3)) {
         $pawn_moved_2_squares = TRUE;
       }
-      elseif ($piece->getColor() == 'b'
+      elseif ($piece->getColor() === 'b'
       && ($from_square->getRank() == 7 && $to_square->getRank() == 5)) {
         $pawn_moved_2_squares = TRUE;
       }
@@ -1067,9 +1077,8 @@ class Board {
         }
         break;
       case 'Q':
-        $squares = array_merge(
-        $this->getSquaresOnRankFile($piece_square),
-        $this->getDiagonalSquares($piece_square));
+        $squares = array_merge(static::getSquaresOnRankFile($piece_square),
+          static::getDiagonalSquares($piece_square));
         foreach ($squares as $to_square) {
           if ($this->moveIsOk($piece_square, $to_square)) {
             $valid_moves[] = $this->getLongMove($piece_square, $to_square);
@@ -1077,7 +1086,7 @@ class Board {
         }
         break;
       case 'R':
-        $squares = $this->getSquaresOnRankFile($piece_square);
+        $squares = static::getSquaresOnRankFile($piece_square);
         foreach ($squares as $to_square) {
           if ($this->moveIsOk($piece_square, $to_square)) {
             $valid_moves[] = $this->getLongMove($piece_square, $to_square);
@@ -1085,7 +1094,7 @@ class Board {
         }
         break;
       case 'B':
-        $squares = $this->getDiagonalSquares($piece_square);
+        $squares = static::getDiagonalSquares($piece_square);
         foreach ($squares as $to_square) {
           if ($this->moveIsOk($piece_square, $to_square)) {
             $valid_moves[] = $this->getLongMove($piece_square, $to_square);
@@ -1110,10 +1119,9 @@ class Board {
           $valid_moves[] = $this->getLongMove($piece_square, $square_2_in_front);
         }
         // See if an en passant capture is possible.
-        if ($this->isEnPassant()) {
-          if ($this->moveIsOk($piece_square, $en_passant_square = Square::fromCoordinate($this->getEnPassantSquare()))) {
-            $valid_moves[] = $this->getLongMove($piece_square, $en_passant_square);
-          }
+        $en_passant_square = Square::fromCoordinate($this->getEnPassantSquare());
+        if ($this->isEnPassant() && $this->moveIsOk($piece_square, $en_passant_square)) {
+          $valid_moves[] = $this->getLongMove($piece_square, $en_passant_square);
         }
         break;
     }
@@ -1144,9 +1152,9 @@ class Board {
     if ($this->squareIsEmpty($to_square)) {
       $piece = $this->getPiece($from_square);
       $piece_file = $from_square->getFile(); // e.g. e
-      $piece_rank = $from_square->getRank(); // e.g. 2
+      $piece_rank = (int) $from_square->getRank(); // e.g. 2
       $dest_file = $to_square->getFile();  // e.g. e
-      $dest_rank = $to_square->getRank();  // e.g. 4
+      $dest_rank = (int) $to_square->getRank();  // e.g. 4
   
       // Check pawn stays on same file.
       // Captures are checked in pawn_attacks()
@@ -1155,27 +1163,27 @@ class Board {
       }
       elseif ($piece->getColor() === 'w') {
         // white pawn
-        if ($piece_rank == 2 && $dest_rank == 4) {
+        if ($piece_rank === 2 && $dest_rank === 4) {
           // Pawn moving 2 squares, so check if intermediate square is empty
-          $intermediate_coord = (new Square())->setCoordinate($piece_file . "3");
+          $intermediate_coord = (new Square())->setCoordinate($piece_file . '3');
           if ($this->squareIsEmpty($intermediate_coord)) {
             $move_ok = TRUE;
           }
         }
-        elseif ($dest_rank == ($piece_rank + 1)) {
+        elseif ($dest_rank === ($piece_rank + 1)) {
           $move_ok = TRUE;
         }
       }
       else {
         // black pawn
-        if ($piece_rank == 7 && $dest_rank == 5) {
+        if ($piece_rank === 7 && $dest_rank === 5) {
           // Pawn moving 2 squares, so check if intermediate square is empty
           $intermediate_coord = (new Square())->setCoordinate($piece_file . "6");
           if ($this->squareIsEmpty($intermediate_coord)) {
             $move_ok = TRUE;
           }
         }
-        elseif ($dest_rank == ($piece_rank - 1)) {
+        elseif ($dest_rank === ($piece_rank - 1)) {
           $move_ok = TRUE;
         }
       }
@@ -1187,7 +1195,12 @@ class Board {
   /**
    * Check whether piece at $from_square may move to $to_square.
    *
-   * @return
+   * @param Square $from_square
+   *   The square moving from.
+   * @param Square $to_square
+   *   The square moving to.
+   *
+   * @return bool
    *   TRUE if the knight may move to the given square
    *   FALSE if the knight may not legally move to the given square
    */
@@ -1242,7 +1255,7 @@ class Board {
    * Reset the en_passant square.
    */
   public function resetEnPassantSquare() {
-    $this->enPassantSquare = "-";
+    $this->enPassantSquare = '-';
     return $this;
   }
   
@@ -1253,7 +1266,7 @@ class Board {
    *   TRUE if an en_passant square currently exists
    */
   public function isEnPassant() {
-    return $this->enPassantSquare !== "-";
+    return $this->enPassantSquare !== '-';
   }
   
   /**
@@ -1291,7 +1304,7 @@ class Board {
 
     $inbetween_squares = array();
     $i = 0;
-    for ($pos = $start + $change; $pos != $end; $pos += $change) {
+    for ($pos = $start + $change; $pos !== $end; $pos += $change) {
       $inbetween_squares[$i++] = Square::fromIndex($pos);
     }
     return $inbetween_squares;
@@ -1329,15 +1342,15 @@ class Board {
           $change = 8;
         }
         if ($dest_x < $piece_x) {
-          $change -= 1;
+          $change--;
         }
         else {
-          $change += 1;
+          $change++;
         }
         break;
       // rook
       case 'R':
-        if ($piece_x == $dest_x) {
+        if ($piece_x === $dest_x) {
           if ($dest_y < $piece_y) {
             $change = -8;
           }
@@ -1356,7 +1369,7 @@ class Board {
         break;
       // queen
       case 'Q':
-        if (abs($piece_x -$dest_x) == abs($piece_y -$dest_y)) {
+        if (abs($piece_x -$dest_x) === abs($piece_y -$dest_y)) {
           if ($dest_y < $piece_y) {
             $change = -8;
           }
@@ -1364,13 +1377,13 @@ class Board {
             $change = 8;
           }
           if ($dest_x < $piece_x) {
-            $change -= 1;
+            $change--;
           }
           else {
-            $change += 1;
+            $change++;
           }
         }
-        elseif ($piece_x == $dest_x) {
+        elseif ($piece_x === $dest_x) {
           if ($dest_y < $piece_y) {
             $change = -8;
           }
@@ -1389,6 +1402,32 @@ class Board {
         break;
     }
     return $change;
+  }
+
+  /**
+   * Returns an array of captured pieces in FEN piece notation.
+   *
+   * e.g. ['q','Q','B','b','p','p','p'] means: black queen, white queen, white
+   *   bishop, black bishop and 3 black pawns were all captured.
+   *
+   * @return string[]
+   */
+  public function getCapturedPieces() {
+    $full = ['K','Q','B','B','N','N','R','R','P','P','P','P','P','P','P','P',
+      'k','q','b','b','n','n','r','r','p','p','p','p','p','p','p','p'];
+    foreach ($this->board as $piece) {
+      $index = array_search($piece->getFenType(), $full, TRUE);
+      if ($index !== FALSE) {
+        unset($full[$index]);
+      }
+    }
+    sort($full);
+    $partial = [];
+    foreach ($full as $piece_fen) {
+      $color = strtoupper($piece_fen) === $piece_fen ? 'w' : 'b';
+      $partial[$piece_fen] = (new Piece())->setType($piece_fen)->setColor($color);
+    }
+    return $partial;
   }
 
 }

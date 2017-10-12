@@ -10,7 +10,7 @@ class Piece {
   /**
    * Represents a blank piece.
    */
-  const BLANK = " ";
+  const BLANK = ' ';
 
   /**
    * The type of a piece (P, R, N, B, Q, K or a blank).

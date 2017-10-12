@@ -31,25 +31,25 @@ class Square {
    * 
    * @return string
    */
-  function getRank() {
+  public function getRank() {
     return $this->rank;
   }
   
   /** 
    * Get the file (=column letter) e.g. "d" for "d4"
    */
-  function getFile() {
+  public function getFile() {
     return $this->file;
   }
 
-  function getColumn() {
+  public function getColumn() {
     return ord($this->file) - 96;
   }
   
   /**
    * Get the coord, e.g. "d4"
    */
-  function getCoordinate() {
+  public function getCoordinate() {
     return $this->file . $this->rank;
   }
 

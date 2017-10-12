@@ -197,7 +197,7 @@ class Move extends ContentEntityBase {
 
     $source_piece_type = $this->getSourcePieceType();
 
-    if ($player == 'w') {
+    if ($player === 'w') {
       $opponent = 'b';
     }
     else {
@@ -205,36 +205,36 @@ class Move extends ContentEntityBase {
     }
 
     // Castling short
-    if ($this->getLongMove() == "Ke1-g1" || $this->getLongMove() == "Ke8-g8") {
-      $this->setAlgebraic("O-O");
+    if ($this->getLongMove() === 'Ke1-g1' || $this->getLongMove() === 'Ke8-g8') {
+      $this->setAlgebraic('O-O');
     }
     // Castling long
-    elseif ($this->getLongMove() == "Ke1-c1" || $this->getLongMove() == "Ke8-c8") {
-      $this->setAlgebraic("O-O-O");
+    elseif ($this->getLongMove() === 'Ke1-c1' || $this->getLongMove() === 'Ke8-c8') {
+      $this->setAlgebraic('O-O-O');
     }
     // Pawn moves
-    elseif ($source_piece_type == 'P') {
+    elseif ($source_piece_type === 'P') {
       // P moves are always unambiguous. For attacks skip source digit
       // and for moves skip source pos and "-"
-      if ($this->getType() == '-') {
-        if ($from_square->getFile() == $to_square->getFile()) {
+      if ($this->getType() === '-') {
+        if ($from_square->getFile() === $to_square->getFile()) {
           // e.g. e4
           $this->setAlgebraic($to_square->getCoordinate());
         }
         else {
           // A pawn move to another file which is not a capture (e.g. Pa5-b6)
           // must be an en passant capture, e.g. "axb5"
-          $this->setAlgebraic($from_square->getFile() . "x" . $to_square->getCoordinate());
+          $this->setAlgebraic($from_square->getFile() . 'x' . $to_square->getCoordinate());
         }
       }
       else {
         // e.g. cxd4
-        $this->setAlgebraic($this->getLongMove()[1] . "x" . $to_square->getCoordinate());
+        $this->setAlgebraic($this->getLongMove()[1] . 'x' . $to_square->getCoordinate());
       }
 
       // Check if pawn promotion, e.g. e8=Q
       if ($this->toSquare()->getRank() == 1 || $this->toSquare()->getRank() == 8) {
-        $this->setAlgebraic($this->getAlgebraic() . "=" . $this->getPromotionPieceType());
+        $this->setAlgebraic($this->getAlgebraic() . '=' . $this->getPromotionPieceType());
       }
     }
     // All other moves
@@ -243,14 +243,14 @@ class Move extends ContentEntityBase {
       $pieces_squares = $clone_board->getSquaresOfPieceType($source_piece_type, $player);
 
       // If there is only 1 piece of this type, then move is unambiguous
-      if (count($pieces_squares) == 1) {
-        if ($this->getType() == '-') {
+      if (count($pieces_squares) === 1) {
+        if ($this->getType() === '-') {
           // e.g. Ne4
           $this->setAlgebraic($source_piece_type . $to_square->getCoordinate());
         }
         else {
           // e.g. Nxd4
-          $this->setAlgebraic($source_piece_type . "x" . $to_square->getCoordinate());
+          $this->setAlgebraic($source_piece_type . 'x' . $to_square->getCoordinate());
         }
       }
       else {
@@ -265,15 +265,15 @@ class Move extends ContentEntityBase {
           }
         }
 
-        if (count($trouble_squares) == 0) {
+        if (count($trouble_squares) === 0) {
           // No other piece of this type can reach the square, so unambiguous
-          if ($this->getType() == '-') {
+          if ($this->getType() === '-') {
             // e.g. Ne4
             $this->setAlgebraic($source_piece_type . $to_square->getCoordinate());
           }
           else {
             // e.g. Nxd4
-            $this->setAlgebraic($source_piece_type . "x" . $to_square->getCoordinate());
+            $this->setAlgebraic($source_piece_type . 'x' . $to_square->getCoordinate());
           }
         }
         else {
@@ -281,19 +281,19 @@ class Move extends ContentEntityBase {
           $source_file = $from_square->getFile();
           $file_unique = TRUE;
           foreach ($trouble_squares as $trouble_coord) {
-            if ($trouble_coord->file() == $source_file) {
+            if ($trouble_coord->file() === $source_file) {
               $file_unique = FALSE;
             }
           }
 
           // In this case the file is enough to make the move unique, e.g. Ngf3
           if ($file_unique) {
-            if ($this->getType() == '-') {
+            if ($this->getType() === '-') {
               $this->setAlgebraic($source_piece_type . $source_file . $to_square->getCoordinate());
             }
             else {
               // e.g. Nxd4
-              $this->setAlgebraic($source_piece_type . $source_file . "x" . $to_square->getCoordinate());
+              $this->setAlgebraic($source_piece_type . $source_file . 'x' . $to_square->getCoordinate());
             }
           }
           else {
@@ -301,33 +301,33 @@ class Move extends ContentEntityBase {
             $source_rank = $from_square->getRank();
             $rank_unique = TRUE;
             foreach ($trouble_squares as $trouble_coord) {
-              if ($trouble_coord->rank() == $source_rank) {
+              if ($trouble_coord->rank() === $source_rank) {
                 $rank_unique = FALSE;
               }
             }
 
             // In this case the rank is enough to make the move unique, e.g. N1f3
             if ($rank_unique) {
-              if ($this->getType() == '-') {
+              if ($this->getType() === '-') {
                 // e.g. N1f3
                 $this->setAlgebraic($source_piece_type . $source_rank . $to_square->getCoordinate());
               }
               else {
                 // e.g. N1xf3
-                $this->setAlgebraic($source_piece_type . $source_rank . "x" . $to_square->getCoordinate());
+                $this->setAlgebraic($source_piece_type . $source_rank . 'x' . $to_square->getCoordinate());
               }
             }
             else {
               // File is not unique, rank is not unique, so we need full source square, e.g. Ng1f3
               // This can only ever happen when promotion to a third piece has occured.
               $prefix = $source_piece_type . $source_rank . $source_file;
-              if ($this->getType() == '-') {
+              if ($this->getType() === '-') {
                 // e.g. Ng1f3
                 $this->setAlgebraic($prefix . $to_square->getCoordinate());
               }
               else {
                 // e.g. Ng1xf3
-                $this->setAlgebraic($prefix . "x" . $to_square->getCoordinate());
+                $this->setAlgebraic($prefix . 'x' . $to_square->getCoordinate());
               }
             }
           }
@@ -340,20 +340,20 @@ class Move extends ContentEntityBase {
     $clone_board->movePiece($from_square, $to_square);
     if ($clone_board->isInCheck($opponent)) {
       if ($clone_board->isInCheckmate($opponent)) {
-        $this->setAlgebraic($this->getAlgebraic() . "#") ;
-        if ($player == 'w') {
-          $this->setAlgebraic($this->getAlgebraic() . " 1-0");
+        $this->setAlgebraic($this->getAlgebraic() . '#') ;
+        if ($player === 'w') {
+          $this->setAlgebraic($this->getAlgebraic() . ' 1-0');
         }
         else {
-          $this->setAlgebraic($this->getAlgebraic() . " 0-1");
+          $this->setAlgebraic($this->getAlgebraic() . ' 0-1');
         }
       }
       else {
-        $this->setAlgebraic($this->getAlgebraic() . "+");
+        $this->setAlgebraic($this->getAlgebraic() . '+');
       }
     }
     elseif ($clone_board->isStalemate($opponent)) {
-      $this->setAlgebraic($this->getAlgebraic() . " 1/2-1/2");
+      $this->setAlgebraic($this->getAlgebraic() . ' 1/2-1/2');
     }
 
     return $this->getAlgebraic();

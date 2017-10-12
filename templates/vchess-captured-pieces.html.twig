@@ -1,0 +1,20 @@
+{#
+/**
+ *  Variables:
+ *  - pieces: The pieces that have been captured in FEN notation.
+#}
+{{ attach_library('vchess/board') }}
+<div class="white board-captured">
+  {% for piece in pieces %}
+    {% if piece.getColor() == 'w' %}
+      <div class="w-{{ piece.getName()|lower }} default board-piece"></div>
+    {% endif %}
+  {% endfor %}
+</div>
+<div class="black board-captured">
+  {% for piece in pieces %}
+    {% if piece.getColor() == 'b' %}
+      <div class="b-{{ piece.getName()|lower }} default board-piece"></div>
+    {% endif %}
+  {% endfor %}
+</div>
