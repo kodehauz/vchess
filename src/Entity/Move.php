@@ -35,7 +35,7 @@ class Move extends ContentEntityBase {
   public function toSquare() {
     $to_square = new Square();
     
-    if ($this->getLongMove()[3] == "x") {
+    if ($this->getLongMove()[3] === 'x') {
       // In a move like "Bf5xPe4"
       //   $move[0] = source piece
       //   $move[1-2] = source coord
@@ -100,11 +100,11 @@ class Move extends ContentEntityBase {
    * "Ra1-a4" returns ""
    */
   public function getDestinationPieceType() {
-    if ($this->getLongMove()[3] == "x") {
+    if ($this->getLongMove()[3] === 'x') {
       $dest_piece_type = $this->getLongMove()[4];
     }
     else {
-      $dest_piece_type = "";
+      $dest_piece_type = '';
     }
   
     return $dest_piece_type;
@@ -139,15 +139,15 @@ class Move extends ContentEntityBase {
       }
     }
     
-    if (($this->getSourcePieceType() == "P")
+    if (($this->getSourcePieceType() === 'P')
     && ($white_promotion || $black_promotion)) {
-      if ($this->getType() == "-") {
+      if ($this->getType() === '-') {
         // e.g. In "Pb7-b8=Q" the "Q" is the 7th element
-        $piece_type = substr($this->getLongMove(), 7, 1);
+        $piece_type = $this->getLongMove()[7];
       }
       else {
         // e.g. In "Pb7xRa8=Q" the "Q" is the 8th element
-        $piece_type = substr($this->getLongMove(), 8, 1);
+        $piece_type = $this->getLongMove()[8];
       } 
     }
     
@@ -204,12 +204,13 @@ class Move extends ContentEntityBase {
       $opponent = 'w';
     }
 
-    // Castling short
-    if ($this->getLongMove() === 'Ke1-g1' || $this->getLongMove() === 'Ke8-g8') {
+    // Castling short.
+    $move = $this->getLongMove();
+    if ($move === 'Ke1-g1' || $move === 'Ke8-g8') {
       $this->setAlgebraic('O-O');
     }
     // Castling long
-    elseif ($this->getLongMove() === 'Ke1-c1' || $this->getLongMove() === 'Ke8-c8') {
+    elseif ($move === 'Ke1-c1' || $move === 'Ke8-c8') {
       $this->setAlgebraic('O-O-O');
     }
     // Pawn moves
@@ -233,7 +234,8 @@ class Move extends ContentEntityBase {
       }
 
       // Check if pawn promotion, e.g. e8=Q
-      if ($this->toSquare()->getRank() == 1 || $this->toSquare()->getRank() == 8) {
+      $to_rank = (int) $this->toSquare()->getRank();
+      if ($to_rank === 1 || $to_rank === 8) {
         $this->setAlgebraic($this->getAlgebraic() . '=' . $this->getPromotionPieceType());
       }
     }
@@ -255,7 +257,8 @@ class Move extends ContentEntityBase {
       }
       else {
         // Find how many other pieces of this type may move to the dest square
-        $trouble_squares = array();
+        /** @var \Drupal\vchess\Game\Square[] $trouble_squares */
+        $trouble_squares = [];
         foreach ($pieces_squares as $piece_square) {
           // Only look at the other pieces
           if ($piece_square->getIndex() !== $from_square->getIndex()) {
@@ -281,7 +284,7 @@ class Move extends ContentEntityBase {
           $source_file = $from_square->getFile();
           $file_unique = TRUE;
           foreach ($trouble_squares as $trouble_coord) {
-            if ($trouble_coord->file() === $source_file) {
+            if ($trouble_coord->getFile() === $source_file) {
               $file_unique = FALSE;
             }
           }

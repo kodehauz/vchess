@@ -515,12 +515,12 @@ class GamePlay {
 
       if ($this->isCastlingMove($move->getLongMove())) {
         $error = $this->castleMove($move);
-        if ($error !== "") {
+        if ($error !== '') {
           $errors[] = $error;
           return FALSE;
         }
       }
-      elseif ($move->getType() === "-") {
+      elseif ($move->getType() === '-') {
         // Validate piece and position.
         // Move is e.g. "Nb1-c3"
         $piece = (new Piece())
@@ -562,7 +562,7 @@ class GamePlay {
           }
         }
       }
-      elseif ($move->getType() === "x") {
+      elseif ($move->getType() === 'x') {
         if ($this->board->squareIsEmpty($move->toSquare())) {
           // En passant of pawn?
           if ($move->getSourcePieceType() === 'P') {

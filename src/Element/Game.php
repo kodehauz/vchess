@@ -39,6 +39,7 @@ class Game extends Table {
       '#flipped' => FALSE,
       '#active' => FALSE,
       '#board_theme' => 'default',
+      '#refresh_interval' => 10,
       // Properties for table rendering.
       '#header' => [],
       '#rows' => [],
@@ -92,6 +93,7 @@ class Game extends Table {
       'module_path' => '/' . $module_path,
       'module_url' => $base_path . $module_path,
       'full_url' => $full_module_url,
+      'refresh_interval' => $element['#refresh_interval'],
     ];
 
     $element['#attributes']['class'][] = 'board-main';

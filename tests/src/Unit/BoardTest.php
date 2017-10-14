@@ -261,10 +261,11 @@ class BoardTest extends UnitTestCase {
 
   public function providerGetSquaresAttackingSquare() {
     $board = $this->setUpBoard([
-      'e5' => 'P', 'f6' => 'b', 'd6' => 'b', 'e7' => 'q',
+      'e5' => 'P', 'g7' => 'b', 'd6' => 'p', 'e7' => 'q',
       'a8' => 'r', 'e8' => 'k', 'e1' => 'K', 'd1' => 'Q',
     ]);
     return [
+      [$board, 'e5', 'b', ['f6', 'd6', 'e7']],
       [$board, 'e5', 'b', ['f6', 'd6', 'e7']],
     ];
   }

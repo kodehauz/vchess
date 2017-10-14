@@ -28,6 +28,22 @@ trait BoardTestTrait {
   }
 
   /**
+   * Returns a more open board position with pieces in attacking positions.
+   */
+  protected function getAggressiveOpenBoard() {
+    return $this->setUpBoard([
+      'a1' => 'R', 'c1' => 'B', 'f4' => 'Q', 'e1' => 'K', 'h1' => 'R',
+      'a3' => 'P', 'e2' => 'P', 'f2' => 'P', 'h2' => 'P',
+      'b4' => 'P', 'c4' => 'P', 'd3' => 'P', 'g3' => 'P',
+      'g2' => 'B', 'c3' => 'N', 'g5' => 'N',
+      'a8' => 'r', 'c8' => 'b', 'd8' => 'q', 'e8' => 'k', 'h8' => 'r',
+      'e7' => 'p', 'f7' => 'p', 'h7' => 'p',
+      'b6' => 'p', 'c5' => 'p', 'e6' => 'p', 'g6' => 'p',
+      'g7' => 'b', 'c6' => 'n', 'e4' => 'n',
+    ]);
+  }
+
+  /**
    * Helper method to construct a board FEN string quickly.
    *
    * @param array $piece_positions

@@ -45,7 +45,7 @@ class GamePlayForm extends FormBase {
       $player_may_move = FALSE;
     }
 
-    $form['#prefix'] = '<div id="container">';
+    $form['#prefix'] = '<div id="vchess-container">';
     $form['#suffix'] = '</div>';
 
     // Display game heading, e.g. "white: admin - black: hugh"
@@ -69,6 +69,7 @@ class GamePlayForm extends FormBase {
         '#player' => $player_color,
         '#active' => $player_may_move,
         '#flipped' => $this->isBoardFlipped(),
+        '#refresh_interval' => 30,
       ],
     ];
 
@@ -105,7 +106,7 @@ class GamePlayForm extends FormBase {
 
     $form['move_button'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Move'),
+      '#value' => $this->t('Make move'),
 //    '#attributes' => ['class' => 'invisible'],
       '#attributes' => ['style' => ['visibility:hidden;']],
       '#name' => 'move_button',
@@ -124,6 +125,20 @@ class GamePlayForm extends FormBase {
         '#type' => 'submit',
         '#value' => $this->t('Resign'),
         '#name' => 'resign_button',
+      ];
+    }
+
+    if ($game->isMoveMade()
+      && !$game->isGameOver()
+      && ($game->isUserPlaying($user))) {
+      $form['refresh_button'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Refresh'),
+        '#name' => 'refresh_button',
+        '#ajax' => [
+          'callback' => '::refreshBoard',
+          'wrapper' => 'vchess-container',
+        ],
       ];
     }
 
@@ -196,7 +211,7 @@ class GamePlayForm extends FormBase {
     drupal_set_message($this->t('You have now resigned.'));
   }
 
-  protected function makeMove(array $form, FormStateInterface $form_state) {
+  protected function makeMove(array &$form, FormStateInterface $form_state) {
     // Command: e.g. Pe2-e4
     if ($cmd = $form_state->getValue('cmd')) {
       $user = User::load($this->currentUser()->id());
@@ -274,6 +289,10 @@ class GamePlayForm extends FormBase {
     }
   }
 
+  public function refreshBoard(array &$form, FormStateInterface $form_state) {
+    return $form;
+  }
+
   protected function isBoardFlipped() {
     $gid = $this->game->id();
     $vchess_board = \Drupal::state()->get('vchess_board', []);
@@ -281,3 +300,5 @@ class GamePlayForm extends FormBase {
   }
 
 }
+
+

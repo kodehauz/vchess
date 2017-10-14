@@ -13,12 +13,8 @@ use Drupal\user\UserInterface;
 use Drupal\vchess\Entity\Game;
 use Drupal\vchess\Form\GamePlayForm;
 use Drupal\vchess\Game\GamePlay;
-use Drupal\vchess\Entity\Scoresheet;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-
-// @todo Temporary shim!!!
-include __DIR__ . '/../../render.inc';
 
 class GameController extends ControllerBase {
 

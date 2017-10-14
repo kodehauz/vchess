@@ -446,7 +446,7 @@ class Board {
    * Checks that the path from a start square to an end square is not blocked.
    *
    * Checks a number of squares given a start and end square (which is not
-   * included to the check) and a position change for each iteration. Returns
+   * included in the check) and a position change for each iteration. Returns
    * TRUE if not blocked. All values are given for 1dim board.
    *
    * @param integer $start
@@ -459,15 +459,12 @@ class Board {
    * @return boolean
    */
   public function pathIsNotBlocked($start, $end, $change) {
-    $blocked = FALSE;
-
-    for ($pos = $start; $pos != $end; $pos += $change) {
+    for ($pos = $start; $pos !== $end; $pos += $change) {
       if (!$this->squareIsEmpty(Square::fromIndex($pos))) {
-        $blocked = TRUE;
+        return FALSE;
       }
     }
-  
-    return !$blocked;
+    return TRUE;
   }
 
   /**
@@ -698,19 +695,12 @@ class Board {
    * @return bool
    */
   public function squareIsReachable(Square $from_square, Square $to_square) {
-    $reachable = FALSE;
-  
     $piece_type = $this->getPiece($from_square)->getType();
     if ($from_square->getCoordinate() !== $to_square->getCoordinate()) {
-      $piece_pos = $from_square->getIndex();
-      $dest_pos = $to_square->getIndex();
-
-      // @todo Refactor using Piece::getRank() and Piece::getColumn() after tests
-      // are added.
-      $piece_y = floor($piece_pos / 8) + 1;
-      $piece_x = $piece_pos % 8;
-      $dest_y = floor($dest_pos / 8) + 1;
-      $dest_x = $dest_pos % 8;
+      $piece_row = (int) $from_square->getRank();
+      $piece_col = $from_square->getColumn();
+      $dest_row = (int) $to_square->getRank();
+      $dest_col = $to_square->getColumn();
   
       switch ($piece_type) {
         // Pawn
@@ -719,61 +709,59 @@ class Board {
           // piece which cannot go backwards
           $piece_color = $this->getPiece($from_square)->getColor();
           if ($piece_color === 'w') {
-            if (($dest_y - $piece_y) === 1) { // Normal 1-square move
-              $reachable = TRUE;
+            if (($dest_row - $piece_row) === 1) { // Normal 1-square move
+              return TRUE;
             }
-            elseif ($piece_y === 2 && (($dest_y - $piece_y) === 2)) { // Initial 2-square move
-              $reachable = TRUE;
+            if ($piece_row === 2 && (($dest_row - $piece_row) === 2)) { // Initial 2-square move
+              return TRUE;
             }
           }
-          else { // $piece_color == "b"
-            if (($dest_y - $piece_y) === -1) {
-              $reachable = TRUE;
+          else { // $piece_color === 'b'
+            if (($dest_row - $piece_row) === -1) {
+              return TRUE;
             }
-            else {
-              if ($piece_y === 7 && (($dest_y - $piece_y) === -2)) { // Initial 2-square move
-                $reachable = TRUE;
-              }
+            if ($piece_row === 7 && (($dest_row - $piece_row) === -2)) { // Initial 2-square move
+              return TRUE;
             }
           }
           break;
         // Knight
         case 'N':
-          if (abs($piece_x - $dest_x) === 1 && abs($piece_y - $dest_y) === 2) {
-            $reachable = TRUE;
+          if (abs($piece_col - $dest_col) === 1 && abs($piece_row - $dest_row) === 2) {
+            return TRUE;
           }
-          if (abs($piece_y - $dest_y) === 1 && abs($piece_x - $dest_x) === 2) {
-            $reachable = TRUE;
+          if (abs($piece_row - $dest_row) === 1 && abs($piece_col - $dest_col) === 2) {
+            return TRUE;
           }
           break;
         // Bishop
         case 'B':
-          if (abs($piece_x - $dest_x) !== abs($piece_y - $dest_y)) {
-            break;
+          if (abs($piece_col - $dest_col) !== abs($piece_row - $dest_row)) {
+            return FALSE;
           }
-          if ($dest_y < $piece_y) {
+          if ($dest_row < $piece_row) {
             $change = -8;
           }
           else {
             $change = 8;
           }
-          if ($dest_x < $piece_x) {
+          if ($dest_col < $piece_col) {
             $change--;
           }
           else {
             $change++;
           }
-          if ($this->pathIsNotBlocked($piece_pos + $change, $dest_pos, $change)) {
-            $reachable = TRUE;
+          if ($this->pathIsNotBlocked($from_square->getIndex() + $change, $to_square->getIndex(), $change)) {
+            return TRUE;
           }
           break;
         // rook
         case 'R':
-          if ($piece_x !== $dest_x && $piece_y !== $dest_y) {
-            break;
+          if ($piece_col !== $dest_col && $piece_row !== $dest_row) {
+            return FALSE;
           }
-          if ($piece_x === $dest_x) {
-            if ($dest_y < $piece_y) {
+          if ($piece_col === $dest_col) {
+            if ($dest_row < $piece_row) {
               $change = -8;
             }
             else {
@@ -781,26 +769,26 @@ class Board {
             }
           }
           else {
-            if ($dest_x < $piece_x) {
+            if ($dest_col < $piece_col) {
               $change = -1;
             }
             else {
               $change = 1;
             }
           }
-          if ($this->pathIsNotBlocked($piece_pos + $change, $dest_pos, $change)) {
-            $reachable = TRUE;
+          if ($this->pathIsNotBlocked($from_square->getIndex() + $change, $to_square->getIndex(), $change)) {
+            return TRUE;
           }
           break;
         // queen
         case 'Q':
-          if ($piece_x !== $dest_x && $piece_y !== $dest_y
-            && abs($piece_x - $dest_x) !== abs($piece_y - $dest_y)) {
-            break;
+          if ($piece_col !== $dest_col && $piece_row !== $dest_row
+            && abs($piece_col - $dest_col) !== abs($piece_row - $dest_row)) {
+            return FALSE;
           }
           // Check if diagonal
-          if (abs($piece_x - $dest_x) === abs($piece_y - $dest_y)) {
-            if ($dest_y < $piece_y) {
+          if (abs($piece_col - $dest_col) === abs($piece_row - $dest_row)) {
+            if ($dest_row < $piece_row) {
               // diagonal down the board
               $change = -8;
             }
@@ -808,7 +796,7 @@ class Board {
               // diagonal up the board
               $change = 8;
             }
-            if ($dest_x < $piece_x) {
+            if ($dest_col < $piece_col) {
               // diagonal to the left
               $change--;
             }
@@ -817,9 +805,9 @@ class Board {
               $change++;
             }
           }
-          elseif ($piece_x === $dest_x) {
+          elseif ($piece_col === $dest_col) {
             // vertical
-            if ($dest_y < $piece_y) {
+            if ($dest_row < $piece_row) {
               // vertical down the board
               $change = -8;
             }
@@ -830,7 +818,7 @@ class Board {
           }
           else {
             // horizontal
-            if ($dest_x < $piece_x) {
+            if ($dest_col < $piece_col) {
               // horizontal to the left
               $change = -1;
             }
@@ -839,14 +827,14 @@ class Board {
               $change = 1;
             }
           }
-          if ($this->pathIsNotBlocked($piece_pos + $change, $dest_pos, $change)) {
-            $reachable = TRUE;
+          if ($this->pathIsNotBlocked($from_square->getIndex() + $change, $to_square->getIndex(), $change)) {
+            return TRUE;
           }
           break;
         // king
         case 'K':
-          if (abs($piece_x - $dest_x) > 1 || abs($piece_y - $dest_y) > 1) {
-            break;
+          if (abs($piece_col - $dest_col) > 1 || abs($piece_row - $dest_row) > 1) {
+            return FALSE;
           }
           $kings = 0;
           $adj_squares = $this->getAdjacentSquares($from_square);
@@ -856,15 +844,14 @@ class Board {
             }
           }
           if ($kings === 2) {
-            break;
+            return FALSE;
           }
-          $reachable = TRUE;
-          break;
+          return TRUE;
       }
   
     }
   
-    return $reachable;
+    return FALSE;
   }
   
   /**
@@ -1119,8 +1106,7 @@ class Board {
           $valid_moves[] = $this->getLongMove($piece_square, $square_2_in_front);
         }
         // See if an en passant capture is possible.
-        $en_passant_square = Square::fromCoordinate($this->getEnPassantSquare());
-        if ($this->isEnPassant() && $this->moveIsOk($piece_square, $en_passant_square)) {
+        if ($this->isEnPassant() && $this->moveIsOk($piece_square, $en_passant_square = Square::fromCoordinate($this->getEnPassantSquare()))) {
           $valid_moves[] = $this->getLongMove($piece_square, $en_passant_square);
         }
         break;
@@ -1318,30 +1304,31 @@ class Board {
    * performed. Rook, queen and bishop are the only
    * units that can have empty tiles in between.
    *
-   * @param $piece_type Type of piece, "K", "Q", "R", "N", "B" or "P"
-   * @param $from_square Piece square
-   * @param $dest_index Destination square
+   * @param string $piece_type
+   *   Type of piece, "K", "Q", "R", "N", "B" or "P".
+   * @param \Drupal\vchess\Game\Square $from_square
+   *   Piece square.
+   * @param \Drupal\vchess\Game\Square $dest_square
+   *   Destination square.
+   *
+   * @return int
    */
   public static function getInbetweenSquaresChange($piece_type, Square $from_square, Square $dest_square) {
-
-    $piece_index = $from_square->getIndex();
-    $dest_index = $dest_square->getIndex();
-
     $change = 0;
-    $piece_y = floor($piece_index / 8);
-    $piece_x = $piece_index % 8;
-    $dest_y = floor($dest_index / 8);
-    $dest_x = $dest_index % 8;
+    $piece_row = (int) $from_square->getRank();
+    $piece_col = $from_square->getColumn();
+    $dest_row = (int) $dest_square->getRank();
+    $dest_column = $dest_square->getColumn();
     switch ($piece_type) {
       // bishop
       case 'B':
-        if ($dest_y < $piece_y) {
+        if ($dest_row < $piece_row) {
           $change = -8;
         }
         else {
           $change = 8;
         }
-        if ($dest_x < $piece_x) {
+        if ($dest_column < $piece_col) {
           $change--;
         }
         else {
@@ -1350,8 +1337,8 @@ class Board {
         break;
       // rook
       case 'R':
-        if ($piece_x === $dest_x) {
-          if ($dest_y < $piece_y) {
+        if ($piece_col === $dest_column) {
+          if ($dest_row < $piece_row) {
             $change = -8;
           }
           else {
@@ -1359,7 +1346,7 @@ class Board {
           }
         }
         else {
-          if ($dest_x < $piece_x) {
+          if ($dest_column < $piece_col) {
             $change = -1;
           }
           else {
@@ -1369,22 +1356,22 @@ class Board {
         break;
       // queen
       case 'Q':
-        if (abs($piece_x -$dest_x) === abs($piece_y -$dest_y)) {
-          if ($dest_y < $piece_y) {
+        if (abs($piece_col - $dest_column) === abs($piece_row - $dest_row)) {
+          if ($dest_row < $piece_row) {
             $change = -8;
           }
           else {
             $change = 8;
           }
-          if ($dest_x < $piece_x) {
+          if ($dest_column < $piece_col) {
             $change--;
           }
           else {
             $change++;
           }
         }
-        elseif ($piece_x === $dest_x) {
-          if ($dest_y < $piece_y) {
+        elseif ($piece_col === $dest_column) {
+          if ($dest_row < $piece_row) {
             $change = -8;
           }
           else {
@@ -1392,7 +1379,7 @@ class Board {
           }
         }
         else {
-          if ($dest_x < $piece_x) {
+          if ($dest_column < $piece_col) {
             $change = -1;
           }
           else {

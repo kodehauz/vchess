@@ -1,4 +1,4 @@
-(function (document, Drupal, drupalSettings) {
+(function (window, document, Drupal, drupalSettings, $) {
 
 Board = {
   move: {source: "", destination: ""},
@@ -14,13 +14,17 @@ Board.highlightMove = function (cmd) {
   var obj;
 
   // Clear old highlighting in source and destination.
-  obj = document.getElementById(this.move.source);
-  if (obj) obj.classList.remove('highlighted');
-  this.move.source = "";
+  if (this.move.source !== "") {
+    obj = document.getElementById(this.move.source);
+    if (obj) obj.classList.remove('highlighted');
+    this.move.source = "";
+  }
 
-  obj = document.getElementById(this.move.destination);
-  if (obj) obj.classList.remove('highlighted');
-  this.move.destination = "";
+  if (this.move.destination) {
+    obj = document.getElementById(this.move.destination);
+    if (obj) obj.classList.remove('highlighted');
+    this.move.destination = "";
+  }
 
   // If command is empty don't highlight again.
   if (cmd === null || cmd === "") {
@@ -74,31 +78,36 @@ Board.assembleCmd = function (part) {
   var cmd = form.move.value;
   var cmd3onwards = cmd.substring(3);
 
-  // e.g. cmd might contain something like "Pe2-e4"
-  if (cmd === part) {
-	  form.move.value = "";
-  }
-  else if (cmd.length === 0 || cmd.length >= 6) {
-    if (part.charAt(0) !== '-' && part.charAt(0) !== 'x') {
-      form.move.value = part;
+  if (form) {
+    // e.g. cmd might contain something like "Pe2-e4"
+    if (cmd === part) {
+      form.move.value = "";
     }
+    else
+      if (cmd.length === 0 || cmd.length >= 6) {
+        if (part.charAt(0) !== '-' && part.charAt(0) !== 'x') {
+          form.move.value = part;
+        }
 //  else if (cmd.length >= 6 && cmd3onwards == part) {
 //  if (confirm("Execute move "+cmd+"?")) {
 //	onClickMove();
 //    }
-  } else if (part.charAt(0) === '-' || part.charAt(0) === 'x') {
-	  form.move.value = cmd + part;
-  }
-  else {
-	  form.move.value = part;
-  }
+      }
+      else
+        if (part.charAt(0) === '-' || part.charAt(0) === 'x') {
+          form.move.value = cmd + part;
+        }
+        else {
+          form.move.value = part;
+        }
 
-  if (form.move.value.length >= 6) {
-	  this.onClickMove();
+    if (form.move.value.length >= 6) {
+      this.onClickMove();
+    }
+
+    this.highlightMove(form.move.value);
+    this.checkMoveButton();
   }
-  
-  this.highlightMove(form.move.value);
-  this.checkMoveButton();
 };
 
 /**
@@ -111,7 +120,7 @@ Board.assembleCmd = function (part) {
 Board.onClickMove = function () {
 	var form = this.getBoardForm();
 	
-	if (form.move.value !== "") {
+	if (form && form.move.value !== "") {
 		var move = form.move.value;
 		var move_type = move[3];
 		var to_rank;
@@ -170,20 +179,66 @@ Board.gatherCommandFormData = function () {
 };
 
 Board.getBoardForm = function () {
-  return document.getElementById('vchess-game-form')
+  return document.getElementsByClassName('vchess-game-form')[0];
+};
+
+Board.refresh = function () {
+  if (this.refreshAjax) {
+    var button = document.querySelector('[data-drupal-selector="edit-refresh-button"]');
+    var evt = new $.Event();
+    this.refreshAjax.eventResponse(button, evt);
+  }
+};
+
+Board.createAjaxEvent = function () {
+  var button = document.querySelector('[data-drupal-selector="edit-refresh-button"]');
+  var form = this.getBoardForm();
+  var board = this;
+  if (form) {
+    var ajax_settings = {
+      url: form.action + '?ajax_form=1',
+      callback: "::refreshBoard",
+      wrapper: "vchess-container",
+      setClick: true,
+      base: button.id,
+      element: button,
+      progress: false,
+      submit: {
+        js: true,
+        _triggering_element_name: "refresh_button"
+      }
+    };
+    this.refreshAjax = Drupal.ajax(ajax_settings);
+  }
+
+  // Create set interval for refreshing board.
+  var interval = Math.max(drupalSettings.vchess.refresh_interval, 10) * 1000;
+  window.setInterval(function () {
+    // Refresh the board in case a move was made.
+    // @todo Refresh only if it is not my turn to play.
+    Board.refresh();
+  }, interval);
 };
 
 Drupal.behaviors.vchess = {
   attach: function (context) {
-    jQuery('table.board-main')
+    $('table.board-main')
       .on('click', 'td.board-square', function (event) {
         Board.assembleCmd(this.dataset.chessCommand);
         event.stopImmediatePropagation();
       });
 
     Board.checkMoveButton();
-    Board.highlightMove(this.getBoardForm().move.value);
+    var form = Board.getBoardForm();
+    if (form) {
+      Board.highlightMove(form.move.value);
+    }
   }
 };
 
-})(window.document, Drupal, drupalSettings);
+$(document).ready(function () {
+  // Create ajax request for refreshing board.
+  Board.createAjaxEvent();
+});
+
+})(window, window.document, Drupal, drupalSettings, jQuery);

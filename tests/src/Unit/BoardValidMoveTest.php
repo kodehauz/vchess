@@ -68,4 +68,73 @@ class BoardValidMoveTest extends UnitTestCase {
     ];
   }
 
+  /**
+   * @covers ::squareIsReachable
+   * @dataProvider providerSquareIsReachable()
+   */
+  public function testSquareIsReachable(Board $board, $square_from, $square_to, $expected) {
+    $this->assertEquals($expected, $board->squareIsReachable(Square::fromCoordinate($square_from), Square::fromCoordinate($square_to)));
+  }
+
+  public function providerSquareIsReachable() {
+    $board = $this->getAggressiveOpenBoard();
+    return [
+      [$board, 'a8', 'a3', TRUE], [$board, 'b4', 'b5', TRUE],
+      [$board, 'c4', 'c5', TRUE], [$board, 'd3', 'd4', TRUE],
+      [$board, 'e4', 'c5', TRUE], [$board, 'e4', 'c3', TRUE],
+      [$board, 'c3', 'e4', TRUE], [$board, 'f4', 'e6', FALSE],
+      [$board, 'f4', 'f6', TRUE], [$board, 'f4', 'g5', TRUE],
+      [$board, 'f4', 'e4', TRUE], [$board, 'f4', 'c4', FALSE],
+      [$board, 'd8', 'd3', TRUE], [$board, 'd8', 'g5', FALSE],
+      [$board, 'a1', 'a3', TRUE], [$board, 'g7', 'c3', TRUE],
+      [$board, 'g2', 'e4', TRUE], [$board, 'g2', 'c6', FALSE],
+      [$board, 'g2', 'h3', TRUE], [$board, 'g2', 'f1', TRUE],
+      [$board, 'g2', 'h1', TRUE], [$board, 'g2', 'd5', FALSE],
+      [$board, 'c6', 'e7', TRUE], [$board, 'c6', 'd4', TRUE],
+      [$board, 'c6', 'a4', FALSE], [$board, 'c6', 'b4', TRUE],
+      [$board, 'f4', 'd8', FALSE], [$board, 'f4', 'b8', TRUE],
+      [$board, 'f4', 'h6', FALSE], [$board, 'f4', 'h4', TRUE],
+      [$board, 'a1', 'd1', FALSE], [$board, 'a1', 'b1', TRUE],
+      [$board, 'a1', 'a6', FALSE], [$board, 'a1', 'a2', TRUE],
+    ];
+  }
+
+  /**
+   * @covers ::pawnAttacks
+   * @dataProvider providerPawnAttacks()
+   */
+  public function testPawnAttacks(Board $board, $square_from, $square_to, $expected) {
+    $this->assertEquals($expected, $board->pieceAttacks(Square::fromCoordinate($square_from), Square::fromCoordinate($square_to)));
+  }
+
+  public function providerPawnAttacks() {
+    $board = $this->getAggressiveOpenBoard();
+    return [
+      [$board, 'a3', 'b4', TRUE], [$board, 'a3', 'a4', FALSE],
+      [$board, 'b4', 'c5', TRUE], [$board, 'b4', 'b3', FALSE],
+      [$board, 'b4', 'a5', TRUE], [$board, 'b4', 'b6', FALSE],
+      [$board, 'e2', 'f3', TRUE], [$board, 'e2', 'g4', FALSE],
+    ];
+  }
+
+  /**
+   * @covers ::pathIsNotBlocked
+   * @dataProvider providerPathIsNotBlocked()
+   */
+  public function testPathIsNotBlocked(Board $board, $square_from, $square_to, $direction, $expected) {
+    $start = (new Square())->setCoordinate($square_from)->getIndex();
+    $end = (new Square())->setCoordinate($square_to)->getIndex();
+    $this->assertEquals($expected, $board->pathIsNotBlocked($start, $end, $direction));
+  }
+
+  public function providerPathIsNotBlocked() {
+    $board = $this->getAggressiveOpenBoard();
+    return [
+      [$board, 'a7', 'a3', -8, TRUE],
+      [$board, 'd7', 'd3', -8, TRUE],
+      [$board, 'd5', 'g5', 1, TRUE],
+      [$board, 'f6', 'c3', -9, TRUE],
+    ];
+  }
+
 }
