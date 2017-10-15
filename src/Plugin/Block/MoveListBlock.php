@@ -2,6 +2,7 @@
 
 namespace Drupal\vchess\Plugin\Block;
 
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Block\BlockBase;
 use Drupal\vchess\Entity\Game;
 
@@ -19,19 +20,23 @@ class MoveListBlock extends BlockBase {
    */
   public function build() {
     if (($game_id = \Drupal::request()->get('vchess_game')) && ($game = Game::load($game_id))) {
-      return [
-        '#cache' => [
-          'max-age' => 0,
-        ],
-        '#type' => 'vchess_move_list',
-        '#moves' => $game->getScoresheet()->getMoves(),
-      ];
+      return static::buildContent($game);
     }
-    else {
-      return [
-        '#markup' => '',
-      ];
-    }
+    return ['#markup' => ''];
+  }
+
+  public static function buildContent(Game $game) {
+    $class = 'vchess-moves-list';
+    $id = Html::getUniqueId($class);
+    return [
+      '#cache' => [
+        'max-age' => 0,
+      ],
+      '#type' => 'vchess_move_list',
+      '#moves' => $game->getScoresheet()->getMoves(),
+      '#prefix' => '<div id="' . $id . '" class="' . $class . '">',
+      '#suffix' => '</div>',
+    ];
   }
 
 }

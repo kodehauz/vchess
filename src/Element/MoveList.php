@@ -17,6 +17,7 @@ class MoveList extends Table {
     $info = parent::getInfo();
     $info['#moves'] = [];
     $info['#theme'] = 'table__movelist';
+    $info['#sort'] = 'DESC';
     $info['#pre_render'] = [
       [$class, 'preRenderMoves'],
     ];
@@ -26,6 +27,13 @@ class MoveList extends Table {
   public static function preRenderMoves($element) {
     /** @var \Drupal\vchess\Entity\Move[] $moves */
     $rows = [];
+    if ($element['#sort'] === 'ASC') {
+      $callback = 'ksort';
+    }
+    else {
+      $callback = 'krsort';
+    }
+    $callback($element['#moves']);
     foreach ($element['#moves'] as $move_no => $moves) {
       if (array_key_exists('b', $moves)) {
         $rows[] = [$move_no, $moves['w']->getAlgebraic(), $moves['b']->getAlgebraic()];
@@ -34,9 +42,10 @@ class MoveList extends Table {
         $rows[] = [$move_no, $moves['w']->getAlgebraic(), ""];
       }
     }
+    unset($element['#moves']);
     $element['#header'] = [t('Move #'), t('White'), t('Black')];
     $element['#rows'] = $rows;
-    $element['#empty'] = t("There are no moves played yet.");
+    $element['#empty'] = t('There are no moves played yet.');
 
     return parent::preRenderTable($element);
   }

@@ -4,6 +4,7 @@ namespace Drupal\vchess\Controller;
 
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Url;
 use Drupal\gamer\Entity\GamerStatistics;
@@ -13,8 +14,11 @@ use Drupal\user\UserInterface;
 use Drupal\vchess\Entity\Game;
 use Drupal\vchess\Form\GamePlayForm;
 use Drupal\vchess\Game\GamePlay;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Zend\Diactoros\Response\JsonResponse;
 
 class GameController extends ControllerBase {
 
@@ -26,7 +30,6 @@ class GameController extends ControllerBase {
     if ($user->isAuthenticated()) {
       $gamefolder =  $this->config('vchess.settings')->get('game_files_folder');
       $res_games = $gamefolder;
-
 //
 //      if (!$user->getDisplayName()) {
 //        $txt = t('Please, register to play chess');
@@ -259,7 +262,6 @@ class GameController extends ControllerBase {
         ->save();
     }
 
-//        $out .= $this->buildPlayerStatistics($user);
     return GamerController::playerStatsTable($user);
   }
 

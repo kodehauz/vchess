@@ -182,7 +182,19 @@ Board.refresh = function () {
   if (this.refreshAjax) {
     var button = document.querySelector('[data-drupal-selector="edit-refresh-button"]');
     var evt = new $.Event();
-    this.refreshAjax.eventResponse(button, evt);
+    this.refreshAjax['board'].eventResponse(button, evt);
+    if (this.refreshAjax['movelist']) {
+      // Because moves list is in a block, we avoid the problem of duplicated
+      // DOM element IDs by using the class and pulling the first.
+      this.refreshAjax['movelist'].wrapper = '#' + $('.vchess-moves-list').get(0).id;
+      this.refreshAjax['movelist'].execute();
+    }
+    if (this.refreshAjax['captured']) {
+      // Because captured pieces are in a block, we avoid the problem of
+      // duplicated DOM element IDs by using the class and pulling the first.
+      this.refreshAjax['captured'].wrapper = '#' + $('.vchess-captured-pieces').get(0).id;
+      this.refreshAjax['captured'].execute();
+    }
   }
 };
 
@@ -190,7 +202,11 @@ Board.createAjaxEvent = function () {
   var button = document.querySelector('[data-drupal-selector="edit-refresh-button"]');
   var form = this.getBoardForm();
   if (form) {
-    var ajax_settings = {
+    // Create different ajax handlers to refresh the game board area.
+    this.refreshAjax = {};
+
+    // The board itself.
+    var refresh_board_settings = {
       url: form.action + '?ajax_form=1',
       callback: "::refreshBoard",
       wrapper: "vchess-container",
@@ -203,7 +219,29 @@ Board.createAjaxEvent = function () {
         _triggering_element_name: "refresh_button"
       }
     };
-    this.refreshAjax = Drupal.ajax(ajax_settings);
+    this.refreshAjax['board'] = Drupal.ajax(refresh_board_settings);
+
+    // The move list block.
+    var movelist = $('.vchess-moves-list').get(0);
+    if (movelist) {
+      var refresh_movelist_settings = {
+        url: drupalSettings.vchess.movelist_url,
+        wrapper: movelist.id,
+        progress: false
+      };
+      this.refreshAjax['movelist'] = Drupal.ajax(refresh_movelist_settings);
+    }
+
+    // The captured pieces block.
+    var captured_pieces = $('.vchess-captured-pieces').get(0);
+    if (captured_pieces) {
+      var refresh_captured_settings = {
+        url: drupalSettings.vchess.captured_pieces_url,
+        wrapper: captured_pieces.id,
+        progress: false
+      };
+      this.refreshAjax['captured'] = Drupal.ajax(refresh_captured_settings);
+    }
   }
 
   // Create interval for refreshing board.

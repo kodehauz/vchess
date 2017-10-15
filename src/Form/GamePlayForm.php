@@ -120,7 +120,7 @@ class GamePlayForm extends FormBase {
 
     if ($game->isMoveMade()
       && !$game->isGameOver()
-      && ($game->isUserPlaying($user))) {
+      && $game->isUserPlaying($user)) {
       $form['resign_button'] = [
         '#type' => 'submit',
         '#value' => $this->t('Resign'),
@@ -130,7 +130,7 @@ class GamePlayForm extends FormBase {
 
     if ($game->isMoveMade()
       && !$game->isGameOver()
-      && ($game->isUserPlaying($user))) {
+      && $game->isUserPlaying($user)) {
       $form['refresh_button'] = [
         '#type' => 'submit',
         '#value' => $this->t('Refresh'),

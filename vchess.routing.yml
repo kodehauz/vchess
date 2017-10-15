@@ -85,6 +85,20 @@ vchess.game:
   requirements:
     _permission: 'view game'
 
+vchess.movelist_block:
+  path: /vchess/game/block/{vchess_game}/movelist
+  defaults:
+    _controller: \Drupal\vchess\Controller\AjaxController::moveList
+  requirements:
+    _permission: 'view game'
+
+vchess.captured_pieces_block:
+  path: /vchess/game/block/{vchess_game}/captured
+  defaults:
+    _controller: \Drupal\vchess\Controller\AjaxController::capturedPieces
+  requirements:
+    _permission: 'view game'
+
 vchess.reset_games:
   path: /vchess/reset_games
   defaults:

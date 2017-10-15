@@ -3,6 +3,7 @@
 namespace Drupal\vchess\Element;
 
 use Drupal\Core\Render\Element\Table;
+use Drupal\Core\Url;
 use Drupal\vchess\Entity\Game as GameEntity;
 use Drupal\vchess\Game\Board;
 use Drupal\vchess\Game\Piece;
@@ -94,6 +95,8 @@ class Game extends Table {
       'module_url' => $base_path . $module_path,
       'full_url' => $full_module_url,
       'refresh_interval' => $element['#refresh_interval'],
+      'movelist_url' => Url::fromRoute('vchess.movelist_block', ['vchess_game' => $element['#game']->id()])->toString(),
+      'captured_pieces_url' => Url::fromRoute('vchess.captured_pieces_block', ['vchess_game' => $element['#game']->id()])->toString(),
     ];
 
     $element['#attributes']['class'][] = 'board-main';
@@ -240,7 +243,7 @@ class Game extends Table {
       $element['#rows'][] = $row;
     }
     // Unset game so we don't end up re-rendering.
-    $element['#game'] = NULL;
+    unset($element['#game']);
     return $element;
   }
 
