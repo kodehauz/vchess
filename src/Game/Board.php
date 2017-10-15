@@ -1191,8 +1191,6 @@ class Board {
    *   FALSE if the knight may not legally move to the given square
    */
   protected function nonPawnMayMoveToSquare(Square $from_square, Square $to_square) {
-    $move_ok = FALSE;
-  
     $color = $this->getPiece($from_square)->getColor();
     if ($this->squareIsEmpty($to_square) && $this->squareIsReachable($from_square, $to_square)) {
       // The only thing which would stop it would be if moving the piece
@@ -1202,28 +1200,13 @@ class Board {
         ->setupPosition($this->getFenString())
         ->movePiece($from_square, $to_square);
       if (!$new_board->isInCheck($color)) {
-        $move_ok = TRUE;        
+        return TRUE;
       }
     }
   
-    return $move_ok;
+    return FALSE;
   }
   
-//  /**
-//   * Set the en_passant square
-//   *
-//   * @param \Drupal\vchess\Game\Square $square_in_front
-//   *   The square which is just in front of the en_passant.  For
-//   *   example, if white has moved Pe2-e4, then the square passed will
-//   *   be the e4 square and the en_passant will be e3
-//   *
-//   * @return $this
-//   */
-//  public function setEnPassant(Square $square_in_front) {
-//
-//    return $this;
-//  }
-//
   /**
    * Set en_passant square.
    * 

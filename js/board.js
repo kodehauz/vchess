@@ -88,10 +88,6 @@ Board.assembleCmd = function (part) {
         if (part.charAt(0) !== '-' && part.charAt(0) !== 'x') {
           form.move.value = part;
         }
-//  else if (cmd.length >= 6 && cmd3onwards == part) {
-//  if (confirm("Execute move "+cmd+"?")) {
-//	onClickMove();
-//    }
       }
       else
         if (part.charAt(0) === '-' || part.charAt(0) === 'x') {
@@ -193,7 +189,6 @@ Board.refresh = function () {
 Board.createAjaxEvent = function () {
   var button = document.querySelector('[data-drupal-selector="edit-refresh-button"]');
   var form = this.getBoardForm();
-  var board = this;
   if (form) {
     var ajax_settings = {
       url: form.action + '?ajax_form=1',
@@ -211,11 +206,10 @@ Board.createAjaxEvent = function () {
     this.refreshAjax = Drupal.ajax(ajax_settings);
   }
 
-  // Create set interval for refreshing board.
+  // Create interval for refreshing board.
   var interval = Math.max(drupalSettings.vchess.refresh_interval, 10) * 1000;
-  window.setInterval(function () {
+  Board.interval = window.setInterval(function () {
     // Refresh the board in case a move was made.
-    // @todo Refresh only if it is not my turn to play.
     Board.refresh();
   }, interval);
 };
@@ -223,7 +217,7 @@ Board.createAjaxEvent = function () {
 Drupal.behaviors.vchess = {
   attach: function (context) {
     $('table.board-main')
-      .on('click', 'td.board-square', function (event) {
+      .on('click', 'td.board-square.enabled', function (event) {
         Board.assembleCmd(this.dataset.chessCommand);
         event.stopImmediatePropagation();
       });
@@ -233,12 +227,20 @@ Drupal.behaviors.vchess = {
     if (form) {
       Board.highlightMove(form.move.value);
     }
+
+    // Create ajax request for refreshing board.
+    // Only if it is not current user's turn to play.
+    var isActivePlayer = $('td.board-square.enabled').size() > 0;
+    if (Board.refreshAjax === undefined && !isActivePlayer) {
+      Board.createAjaxEvent();
+    }
+    // Remove the ajax refresh request if the player is active since it is not
+    // needed.
+    else if (Board.refreshAjax !== undefined && isActivePlayer) {
+      delete Board.refreshAjax; // = undefined;
+      window.clearInterval(Board.interval);
+    }
   }
 };
-
-$(document).ready(function () {
-  // Create ajax request for refreshing board.
-  Board.createAjaxEvent();
-});
 
 })(window, window.document, Drupal, drupalSettings, jQuery);

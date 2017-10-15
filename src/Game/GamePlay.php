@@ -701,7 +701,7 @@ class GamePlay {
   public function castle($turn, $king_from, $king_to, $rook_from, $rook_to, $gap_coords) {
     $error = "";
 
-    if ($turn == 'w') {
+    if ($turn === 'w') {
       $opponent = 'b';
     }
     else {
@@ -721,7 +721,7 @@ class GamePlay {
       }
     }
 
-    if ($error === "") {
+    if ($error === '') {
       foreach ($gap_coords as $gap_coord) {
         if (!$this->board->squareAtCoordinateIsEmpty($gap_coord)) {
           $error = static::ERROR_CASTLING_SQUARES_BLOCKED;
@@ -729,14 +729,14 @@ class GamePlay {
       }
     }
 
-    if ($error == "") {
+    if ($error === '') {
       if ($this->board->isInCheck($turn)) {
         $error = static::ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
       }
     }
     // Ensure the squares between the king's current position and where he will
     // move to are not under attack.
-    if ($error === "") {
+    if ($error === '') {
       foreach ($gap_coords as $gap_coord) {
         $square = (new Square)->setCoordinate($gap_coord);
         if ($this->board->squareIsUnderAttack($square, $opponent)) {
@@ -745,7 +745,7 @@ class GamePlay {
       }
     }
 
-    if ($error === "") {
+    if ($error === '') {
       $this->board->movePiece(Square::fromCoordinate($king_from), Square::fromCoordinate($king_to));  // White King
       $this->board->movePiece(Square::fromCoordinate($rook_from), Square::fromCoordinate($rook_to));  // Rook
 

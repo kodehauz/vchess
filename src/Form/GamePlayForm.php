@@ -69,7 +69,7 @@ class GamePlayForm extends FormBase {
         '#player' => $player_color,
         '#active' => $player_may_move,
         '#flipped' => $this->isBoardFlipped(),
-        '#refresh_interval' => 30,
+        '#refresh_interval' => 5,
       ],
     ];
 
