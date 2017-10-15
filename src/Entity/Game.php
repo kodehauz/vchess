@@ -14,10 +14,10 @@ use Drupal\vchess\Game\GamePlay;
 /**
  * @ContentEntityType(
  *   id = "vchess_game",
- *   label = @Translation("A vChess Game"),
+ *   label = @Translation("VChess game"),
  *   handlers = {
  *     "list_builder" = "\Drupal\vchess\GameListBuilder",
- *     "view_builder" = "\Drupal\vchess\GameViewBuilder",
+ *     "views_data" = "Drupal\views\EntityViewsData",
  *     "form" = {
  *        "add" = "\Drupal\vchess\Form\OpponentGameForm",
  *        "edit" = "\Drupal\vchess\Form\PlayGameForm",
@@ -59,13 +59,6 @@ class Game extends ContentEntityBase {
    * @var \Drupal\vchess\Entity\Scoresheet
    */
   protected $scoresheet;
-
-  public function postSave(EntityStorageInterface $storage, $update = TRUE) {
-    parent::postSave($storage, $update);
-    // Save moves after this game is saved.
-    // @todo Should we do integrity check on the board position?
-    $this->getScoresheet()->saveMoves();
-  }
 
   /**
    * Gets the last move for this game.
@@ -282,9 +275,20 @@ class Game extends ContentEntityBase {
       $uid = $this->getBlackUser()->id();
     }
 
-    $challenger = GamerStatistics::loadForUser(User::load($uid));
+    return GamerStatistics::loadForUser(User::load($uid));
+  }
 
-    return $challenger;
+  /**
+   * Sets the human-readable title / label of the game.
+   *
+   * @param string $value
+   *   The label of the game.
+   *
+   * @return $this
+   */
+  public function setLabel($value) {
+    $this->set('label', $value);
+    return $this;
   }
 
   /**
@@ -459,6 +463,7 @@ class Game extends ContentEntityBase {
     $fields = parent::baseFieldDefinitions($entity_type);
     // Table of each game, one row per game
     $fields['turn'] = BaseFieldDefinition::create('string')
+      ->setLabel('Turn')
       ->setDescription(t('Whose turn it is to play, either "w" (white) or "b" (black)'))
       ->setRequired(TRUE)
       ->setDefaultValue('w')
@@ -466,55 +471,91 @@ class Game extends ContentEntityBase {
       ->addConstraint('AllowedValues', ['choices' => ['w', 'b']]);
 
     $fields['status'] = BaseFieldDefinition::create('string')
+      ->setLabel('Status')
       ->setDescription(t('Status of the game'))
       ->setSetting('max_length', 64)
       ->setDefaultValue('in progress')
       ->setRequired(TRUE);
 
     $fields['white_uid'] = BaseFieldDefinition::create('entity_reference')
-      ->setDescription(t('Userid of white player'))
+      ->setLabel('White player')
+      ->setDescription(t('User ID of white player'))
       ->setSetting('target_type', 'user');
 
     $fields['black_uid'] = BaseFieldDefinition::create('entity_reference')
-      ->setDescription(t('Userid of black player'))
+      ->setLabel('Black player')
+      ->setDescription(t('User ID of black player'))
       ->setSetting('target_type', 'user');
 
+    $fields['label'] = BaseFieldDefinition::create('string')
+      ->setLabel('Label')
+      ->setDescription(t('A descriptive label for this game'))
+      ->setRequired(FALSE);
+
     $fields['board']  = BaseFieldDefinition::create('string')
+      ->setLabel('Board')
       ->setDescription(t('The board position saved as standard Forsyth�Edwards Notation (FEN)'))
       ->setDefaultValue('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
       ->setSetting('max_length', 128)
       ->setRequired(TRUE);
 
     $fields['castling'] = BaseFieldDefinition::create('string')
+      ->setLabel('Castling')
       ->setDescription(t('Castling availability. If neither side can castle, this is "-". Otherwise, this has one or more letters: "K" (White can castle kingside), "Q" (White can castle queenside), "k" (Black can castle kingside), and/or "q" (Black can castle queenside).'))
       ->setSetting('max_length', 5)
       ->setDefaultValue('KQkq') ;
 
     $fields['en_passant_square'] = BaseFieldDefinition::create('string')
+      ->setLabel('En passant square')
       ->setDescription(t('En passant target square. If there is no en passant target square, this is "-". If a pawn has just made a 2-square move, this is the position "behind" the pawn. This is recorded regardless of whether there is a pawn in position to make an en-passant capture.'))
       ->setSetting('max_length', 2)
       ->setDefaultValue('-');
 
     $fields['time_per_move'] = BaseFieldDefinition::create('integer')
+      ->setLabel('Time per move')
       ->setDescription(t('Time per move (the units are defined by time_units field)'))
       ->setDefaultValue(DEFAULT_TIME_PER_MOVE);
 
     $fields['time_units'] = BaseFieldDefinition::create('string')
+      ->setLabel('Time units')
       ->setDescription(t('Units of the time_per_move field'))
       ->setSetting('max_length', 10)
       ->setDefaultValue(DEFAULT_TIME_UNITS);
 
     $fields['time_started'] = BaseFieldDefinition::create('timestamp')
+      ->setLabel('Time started')
       ->setDescription(t('Date and time of the start of the game, e.g. 2012-05-03 12:01:29'));
 
     return $fields;
   }
 
-
   /**
-   * @file
-   * Functions for dealing with player statistics
+   * {@inheritdoc}
    */
+  public function preSave(EntityStorageInterface $storage) {
+    // If label has not been set, then use the players' names.
+    if ($white = $this->getWhiteUser()) {
+      $white_name = $white->getDisplayName();
+    }
+    else {
+      $white_name = 'Unknown';
+    }
+    if ($white = $this->getBlackUser()) {
+      $black_name = $white->getDisplayName();
+    }
+    else {
+      $black_name = 'Unknown';
+    }
+    $this->setLabel($white_name . ' vs. ' . $black_name);
+    parent::preSave($storage);
+  }
+
+  public function postSave(EntityStorageInterface $storage, $update = TRUE) {
+    parent::postSave($storage, $update);
+    // Save moves after this game is saved.
+    // @todo Should we do integrity check on the board position?
+    $this->getScoresheet()->saveMoves();
+  }
 
   /**
    * Calculate the number of games won

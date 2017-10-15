@@ -155,7 +155,7 @@ class GameController extends ControllerBase {
       ['data' => $this->t('Time left'), 'field' => 'time_left'],
       ['data' => $this->t('Time per move'), 'field' => 'speed'],
       ['data' => $this->t('Turn'), 'field' => 'turn'],
-      $this->t('View'),
+      ['data' => $this->t('View')],
     ];
 
     // getting the current sort and order parameters from the url
@@ -387,8 +387,7 @@ class GameController extends ControllerBase {
       $res_games = $gamefolder;
 
       if (!$user->getAccountName()) {
-        $txt = $this->t('Please, register to play chess');
-        return $txt;
+        return $this->t('Please, register to play chess');
       }
 
       // Get the list of possible games to view
@@ -442,9 +441,7 @@ class GameController extends ControllerBase {
     // Get the list of possible games to view
     $games = Game::loadUsersCurrentGames($user);
 
-    $html = $this->buildCurrentGamesTable($games, $user);
-
-    return $html;
+    return $this->buildCurrentGamesTable($games, $user);
   }
 
   /**
@@ -523,8 +520,8 @@ class GameController extends ControllerBase {
     }
 
     $html .= '<div style="text-align:center;">';
-    $html .= t('won:') . " " . $player->won() . " " . t('lost:') . " " . $player->lost() . " " .
-      t('drawn:') . " " . $player->drawn() . '</div>';
+    $html .= t('won:') . " " . $player->getWon() . " " . t('lost:') . " " . $player->getLost() . " " .
+      t('drawn:') . " " . $player->getDrawn() . '</div>';
     $html .= "<br />";
 
     return $html;

@@ -16,6 +16,9 @@ use Drupal\vchess\Game\GamePlay;
  * @ContentEntityType(
  *   id = "gamer_statistics",
  *   label = @Translation("Gamer statistics"),
+ *   handlers = {
+ *     "views_data" = "Drupal\views\EntityViewsData",
+ *   },
  *   entity_keys = {
  *     "id" = "id",
  *     "uuid" = "uuid",

@@ -11,8 +11,12 @@ use Drupal\vchess\Game\Square;
 /**
  * @ContentEntityType(
  *   id = "vchess_move",
+ *   label = @Translation("VChess move"),
  *   base_table = "vchess_move",
  *   data_table = "vchess_move_field_date",
+ *   handlers = {
+ *     "views_data" = "Drupal\views\EntityViewsData",
+ *   },
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "label",
@@ -456,31 +460,34 @@ class Move extends ContentEntityBase {
     $fields = parent::baseFieldDefinitions($entity_type);
     // Table of the moves of each game, one row per move
     $fields['gid'] = BaseFieldDefinition::create('integer')
-      ->setDescription(t('Game ID'))
+      ->setLabel(t('Game ID'))
       ->setRequired(TRUE);
 
     $fields['move_no'] = BaseFieldDefinition::create('integer')
-      ->setDescription(t('Move number'))
+      ->setLabel(t('Move number'))
       ->setSetting('max_length', 128)
       ->setRequired(TRUE);
 
     $fields['color'] = BaseFieldDefinition::create('string')
-      ->setDescription('Move color')
+      ->setLabel('Move color')
       ->setSetting('max_length', 1)
       ->addConstraint('AllowedValues', ['choices' => ['w', 'b']])
       ->setRequired(TRUE);
 
     $fields['long_move'] = BaseFieldDefinition::create('string')
+      ->setLabel('Long notation')
       ->setDescription(t('The actual move in full detail format, e.g. "Pe2-e4", "Nf6xBg8", "Ke1-g1"'))
       ->setSetting('max_length', 10)
       ->setRequired(TRUE);
 
     $fields['algebraic'] = BaseFieldDefinition::create('string')
+      ->setLabel('Algebraic notation')
       ->setDescription(t('Move in algebraic notation (e.g. "e4", "Nc3", "O-O")'))
       ->setSetting('max_length', 10)
       ->setRequired(TRUE);
 
     $fields['timestamp'] = BaseFieldDefinition::create('created')
+      ->setLabel('Timestamp')
       ->setDescription(t('Exact date and time of the move'))
       ->setRequired(TRUE);
 

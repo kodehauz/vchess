@@ -24,6 +24,7 @@ class GameTest extends KernelTestBase {
     $this->installSchema('system', 'sequences');
     $this->installEntitySchema('user');
     $this->installEntitySchema('vchess_game');
+    $this->installEntitySchema('vchess_move');
   }
 
   public function testGetterSetters() {
@@ -34,7 +35,7 @@ class GameTest extends KernelTestBase {
     $white_user->save();
 
     $board = $this->randomString();
-    $castling = $this->randomString();
+    $castling = $this->randomString(4);
 
     /** @var \Drupal\vchess\Entity\Game $game */
     $game = Game::create()
@@ -61,7 +62,7 @@ class GameTest extends KernelTestBase {
     $board = $this->randomMachineName();
     $castling = 'KQkq';
     $en_passant = $this->randomString();
-    $turn = $this->randomString();
+    $turn = rand(0, 1) === 1 ? 'w' : 'b';
 
     $game = Game::create()
       ->setBoard($board)
@@ -95,6 +96,28 @@ class GameTest extends KernelTestBase {
     $game3->save();
 
     $this->assertEquals(3, Game::countUsersCurrentGames($black_user));
+  }
+
+  public function testDefaultLabel() {
+    $black_user = User::create()->setUsername($this->randomMachineName());
+    $black_user->save();
+    $white_user = User::create()->setUsername($this->randomMachineName());
+    $white_user->save();
+
+    $game = $this->createRandomGame()
+      ->setWhiteUser($white_user)
+      ->setBlackUser($black_user);
+    $game->save();
+
+    $this->assertEquals($white_user->getDisplayName() . ' vs. ' . $black_user->getDisplayName(),
+      $game->label());
+  }
+
+  /**
+   * @todo Entity schema constraints test.
+   */
+  public function testEntitySchemaConstraints() {
+    $this->markTestIncomplete();
   }
 
 }
