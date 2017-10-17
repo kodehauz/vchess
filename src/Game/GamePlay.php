@@ -73,7 +73,7 @@ class GamePlay {
   /**
    * Game constructor
    */
-  function __construct(Game $game = NULL) {
+  public function __construct(Game $game = NULL) {
     if ($game === NULL) {
       // Setup the board
       $this->board = new Board();
@@ -462,10 +462,6 @@ class GamePlay {
     }
   }
 
-  protected function isCastlingMove($move) {
-    return $move === 'Ke1-g1' || $move === 'Ke8-g8' || $move === 'Ke1-c1' || $move === 'Ke8-c8';
-  }
-
   protected function castleMove(Move $move) {
     $error = '';
     switch ($move->getLongMove()) {
@@ -527,19 +523,19 @@ class GamePlay {
           ->setType($move->getSourcePieceType())
           ->setColor($this->game->getTurn());
 
-        if ($piece->getType() === 'P' && $move->toSquare()->getCoordinate() === $this->board->getEnPassantSquare()) {
+        if ($piece->getType() === 'P' && $move->squareTo()->getCoordinate() === $this->board->getEnPassantSquare()) {
           // Perform en passant pawn capture.
-          $this->board->performEnPassantCapture($move->fromSquare(), $move->toSquare());
+          $this->board->performEnPassantCapture($move->squareFrom(), $move->squareTo());
         }
-        elseif (!$this->board->moveIsOk($move->fromSquare(), $move->toSquare())) {
+        elseif (!$this->board->moveIsOk($move->squareFrom(), $move->squareTo())) {
           $move_ok = FALSE;
         }
         else {
           // If pawn moved 2 squares, then record the en_passant square
           // (the square behind the pawn which has just moved)
-          if ($this->board->pawnMoved2Squares($move->fromSquare(), $move->toSquare())) {
-            $file = $move->toSquare()->getFile();
-            if ($move->toSquare()->getRank() == 4) {
+          if ($this->board->pawnMoved2Squares($move->squareFrom(), $move->squareTo())) {
+            $file = $move->squareTo()->getFile();
+            if ($move->squareTo()->getRank() == 4) {
               // White has moved something like "Ph2-h4"
               // so target will be "h3"
               $this->board->setEnPassantSquare($file . "3");
@@ -558,30 +554,30 @@ class GamePlay {
         
           if (!$pawn_promoted) {
             // Perform normal move
-            $this->board->movePiece($move->fromSquare(), $move->toSquare());
+            $this->board->movePiece($move->squareFrom(), $move->squareTo());
           }
         }
       }
       elseif ($move->getType() === 'x') {
-        if ($this->board->squareIsEmpty($move->toSquare())) {
+        if ($this->board->squareIsEmpty($move->squareTo())) {
           // En passant of pawn?
           if ($move->getSourcePieceType() === 'P') {
             $move_ok = TRUE;
           }
           else {
             $errors[] = new TranslatableMarkup('ERROR: @square is empty!',
-              ['@square' => $move->toSquare()->getCoordinate()]);
+              ['@square' => $move->squareTo()->getCoordinate()]);
             $move_ok = FALSE;
           }
         }
-        elseif ($this->board->getPiece($move->toSquare())->getColor() === $this->game->getTurn()) {
+        elseif ($this->board->getPiece($move->squareTo())->getColor() === $this->game->getTurn()) {
           $errors[] = new TranslatableMarkup('ERROR: You cannot attack own chessman at @square!',
-            ['@square' => $move->toSquare()->getCoordinate()]);
+            ['@square' => $move->squareTo()->getCoordinate()]);
           $move_ok = FALSE;
         }
-        elseif (!$this->board->pieceAttacks($move->fromSquare(), $move->toSquare())) {
+        elseif (!$this->board->pieceAttacks($move->squareFrom(), $move->squareTo())) {
           $errors[] = new TranslatableMarkup('ERROR: You cannot take the piece on @square!',
-            ['@square' => $move->toSquare()->getCoordinate()]);
+            ['@square' => $move->squareTo()->getCoordinate()]);
           $move_ok = FALSE;
         }
         
@@ -590,7 +586,7 @@ class GamePlay {
         
         if ($move_ok && !$pawn_promoted) {
           // Perform normal capture
-          $this->board->movePiece($move->fromSquare(), $move->toSquare());
+          $this->board->movePiece($move->squareFrom(), $move->squareTo());
         }
       }
     
@@ -607,15 +603,15 @@ class GamePlay {
         $messages[] = new TranslatableMarkup('Your last move: @move', ['@move' => $move->getAlgebraic()]);
 
         // If it is a Rook or King move, invalidate castling as necessary.
-        $piece_type = $this->board->getPiece($move->toSquare())->getType();
+        $piece_type = $this->board->getPiece($move->squareTo())->getType();
         if ($piece_type === 'K') {
           $this->setCastlingForColor($this->game->getTurn(), FALSE);
         }
         else if ($piece_type === 'R') {
-          if ($move->fromSquare()->getFile() === 'a') {
+          if ($move->squareFrom()->getFile() === 'a') {
             $this->setCastling($this->game->getTurn(), 'Q', FALSE);
           }
-          else if ($move->fromSquare()->getFile() === 'h') {
+          else if ($move->squareFrom()->getFile() === 'h') {
             $this->setCastling($this->game->getTurn(), 'K', FALSE);
           }
         }
@@ -699,14 +695,7 @@ class GamePlay {
    *
    */
   public function castle($turn, $king_from, $king_to, $rook_from, $rook_to, $gap_coords) {
-    $error = "";
-
-    if ($turn === 'w') {
-      $opponent = 'b';
-    }
-    else {
-      $opponent = 'w';
-    }
+    $error = '';
 
     if (count($gap_coords) === 2) {
       $side = 'K';
@@ -721,34 +710,20 @@ class GamePlay {
       }
     }
 
-    if ($error === '') {
-      foreach ($gap_coords as $gap_coord) {
-        if (!$this->board->squareAtCoordinateIsEmpty($gap_coord)) {
-          $error = static::ERROR_CASTLING_SQUARES_BLOCKED;
-        }
-      }
-    }
+//    if ($error === '') {
+//      foreach ($gap_coords as $gap_coord) {
+//        if (!$this->board->squareAtCoordinateIsEmpty($gap_coord)) {
+//          $error = static::ERROR_CASTLING_SQUARES_BLOCKED;
+//        }
+//      }
+//    }
 
     if ($error === '') {
       if ($this->board->isInCheck($turn)) {
         $error = static::ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
       }
     }
-    // Ensure the squares between the king's current position and where he will
-    // move to are not under attack.
-    if ($error === '') {
-      foreach ($gap_coords as $gap_coord) {
-        $square = (new Square)->setCoordinate($gap_coord);
-        if ($this->board->squareIsUnderAttack($square, $opponent)) {
-          $error = static::ERROR_CANNOT_CASTLE_ACROSS_CHECK;
-        }
-      }
-    }
-
-    if ($error === '') {
-      $this->board->movePiece(Square::fromCoordinate($king_from), Square::fromCoordinate($king_to));  // White King
-      $this->board->movePiece(Square::fromCoordinate($rook_from), Square::fromCoordinate($rook_to));  // Rook
-
+    if ($this->board->performCastling($king_from, $king_to)) {
       // Castling can only happen once. So all options are off.
       $this->setCastlingForColor($turn, FALSE);
     }
@@ -762,15 +737,15 @@ class GamePlay {
   public function handlePawnPromotion(Move $move) {
     $pawn_promoted = FALSE;
     
-    $piece = $this->board->getPiece($move->fromSquare());
+    $piece = $this->board->getPiece($move->squareFrom());
     if ($piece->getType() === 'P') {
-      if (($this->game->getTurn() === 'w' && $move->toSquare()->getRank() == 8) ||
-          ($this->game->getTurn() === 'b' && $move->toSquare()->getRank() == 1)) {
+      if (($this->game->getTurn() === 'w' && $move->squareTo()->getRank() == 8) ||
+          ($this->game->getTurn() === 'b' && $move->squareTo()->getRank() == 1)) {
         $promote_to = (new Piece())
           ->setType($move->getPromotionPieceType())
           ->setColor($this->game->getTurn());
     
-        $this->board->promotePawn($move->fromSquare(), $move->toSquare(), $promote_to);
+        $this->board->promotePawn($move->squareFrom(), $move->squareTo(), $promote_to);
         
         $pawn_promoted = TRUE;
       }

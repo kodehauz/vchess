@@ -104,13 +104,19 @@ class GamePlayForm extends FormBase {
       '#default_value' => '',
     ];
 
-    $form['move_button'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Make move'),
-//    '#attributes' => ['class' => 'invisible'],
-      '#attributes' => ['style' => ['visibility:hidden;']],
-      '#name' => 'move_button',
-    ];
+    if ($game->isMoveMade()
+      && !$game->isGameOver()
+      && $game->isUserPlaying($user)) {
+      $form['refresh_button'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Refresh'),
+        '#name' => 'refresh_button',
+        '#ajax' => [
+          'callback' => '::refreshBoard',
+          'wrapper' => 'vchess-container',
+        ],
+      ];
+    }
 
     $form['flip_board_button'] = [
       '#type' => 'submit', // For now!
@@ -128,19 +134,13 @@ class GamePlayForm extends FormBase {
       ];
     }
 
-    if ($game->isMoveMade()
-      && !$game->isGameOver()
-      && $game->isUserPlaying($user)) {
-      $form['refresh_button'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Refresh'),
-        '#name' => 'refresh_button',
-        '#ajax' => [
-          'callback' => '::refreshBoard',
-          'wrapper' => 'vchess-container',
-        ],
-      ];
-    }
+    $form['move_button'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Make move'),
+//    '#attributes' => ['class' => 'invisible'],
+      '#attributes' => ['style' => ['visibility:hidden;']],
+      '#name' => 'move_button',
+    ];
 
     $form['move'] = [
       '#type' => 'hidden',

@@ -4,7 +4,6 @@ namespace Drupal\vchess\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Url;
 use Drupal\user\Entity\User;
 use Drupal\vchess\Entity\Game;
 
@@ -22,7 +21,7 @@ class OpponentGameForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
 
-    $colors = ['w' => $this->t('white'), 'b' => $this->t('black')];
+    $colors = ['w' => $this->t('White'), 'b' => $this->t('Black')];
 
     $form['colorfield'] = [
       '#type' => 'fieldset',
@@ -36,8 +35,9 @@ class OpponentGameForm extends FormBase {
     ];
 
     $form['opponent'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('opponent'),
+      '#type' => 'entity_autocomplete',
+      '#target_type' => 'user',
+      '#title' => $this->t('Opponent'),
       '#description' => $this->t('Type opponent\'s name. Opponent must be registered on this site.'),
       '#required' => TRUE,
     ];
@@ -54,12 +54,8 @@ class OpponentGameForm extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    $users = \Drupal::entityTypeManager()
-      ->getStorage('user')
-      ->loadByProperties(['name' => $form_state->getValue('opponent')]);
-
-    if (count($users) === 0) {
-      $form_state->setErrorByName('opponent', t('Opponent does not exist on this site'));
+    if (User::load($form_state->getValue('opponent')) === NULL) {
+      $form_state->setErrorByName('opponent', $this->t('Opponent does not exist on this site'));
     }
   }
 
@@ -72,31 +68,29 @@ class OpponentGameForm extends FormBase {
    *   The current state of the form.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $opponent = \Drupal::entityTypeManager()
-      ->getStorage('user')
-      ->loadByProperties(['name' => $form_state->getValue('opponent')]);
+    $opponent = User::load($form_state->getValue('opponent'));
 
     if ($form_state->getValue('color') === 'w') {
-      // user plays white
+      // User plays white.
       $white_user = User::load($this->currentUser()->id());
 
-      // opponent plays black
-      $black_user = reset($opponent);
+      // Opponent plays black.
+      $black_user = $opponent;
     }
     else {
-      // user plays black
+      // User plays black.
       $black_user = User::load($this->currentUser()->id());
 
-      // opponent plays white
-      $white_user = reset($opponent);
+      // Opponent plays white.
+      $white_user = $opponent;
     }
 
     $game = Game::create()
       ->setWhiteUser($white_user)
-      ->setBlackUser($black_user)
-      ->save();
-    drupal_set_message($this->t('Game has been created.'));
-    $form_state->setRedirect(Url::fromRoute('vchess.game', ['game' => $game->id()]));
+      ->setBlackUser($black_user);
+    $game->save();
+    drupal_set_message($this->t('Game %label has been created.', ['%label' => $game->label()]));
+    $form_state->setRedirect('vchess.game', ['vchess_game' => $game->id()]);
   }
 
 }

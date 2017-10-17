@@ -36,16 +36,16 @@ class GameListBuilder extends EntityListBuilder {
     if ($game->isUserPlaying($user)) {
       if ($game->isPlayersMove($user)) {
         $markup_arguments['mark'] = 'greenmark.gif';
-        $markup_arguments['alt'] = '1.green'; // alt text is used so sort order is green, red, grey
+        $markup_arguments['@alt'] = '1.green'; // alt text is used so sort order is green, red, grey
       }
       else {
         $markup_arguments['mark'] = 'redmark.gif';
-        $markup_arguments['alt'] = '2.red';
+        $markup_arguments['@alt'] = '2.red';
       }
     }
     else {
       $markup_arguments['mark'] = 'greymark.gif';
-      $markup_arguments['alt'] = '3.grey';
+      $markup_arguments['@alt'] = '3.grey';
     }
 
     if ($game->getTurn() === 'w') {

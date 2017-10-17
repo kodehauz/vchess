@@ -36,7 +36,7 @@ class Move extends ContentEntityBase {
    *
    * @return \Drupal\vchess\Game\Square
    */
-  public function toSquare() {
+  public function squareTo() {
     $to_square = new Square();
     
     if ($this->getLongMove()[3] === 'x') {
@@ -69,8 +69,8 @@ class Move extends ContentEntityBase {
    *
    * @return \Drupal\vchess\Game\Square
    */
-  public function fromSquare() {
-    return (new Square())->setCoordinate(substr($this->getLongMove(), 1, 2));
+  public function squareFrom() {
+    return Square::fromCoordinate(substr($this->getLongMove(), 1, 2));
   }
   
   /**
@@ -128,14 +128,14 @@ class Move extends ContentEntityBase {
     $piece_type = "";
     
     // Check that a pawn promotion is happening
-    if ($this->fromSquare()->getRank() == 7 && $this->toSquare()->getRank() == 8) {
+    if ($this->squareFrom()->getRank() == 7 && $this->squareTo()->getRank() == 8) {
       $white_promotion = TRUE;
       $black_promotion = FALSE;
     }
     else {
       $white_promotion = FALSE;
       
-      if ($this->fromSquare()->getRank() == 2 && $this->toSquare()->getRank() == 1) {
+      if ($this->squareFrom()->getRank() == 2 && $this->squareTo()->getRank() == 1) {
         $black_promotion = TRUE;
       }
       else {
@@ -196,8 +196,8 @@ class Move extends ContentEntityBase {
     // If all else fails, just return the long move
     $this->setAlgebraic($this->getLongMove());
 
-    $from_square = $this->fromSquare();
-    $to_square = $this->toSquare();
+    $from_square = $this->squareFrom();
+    $to_square = $this->squareTo();
 
     $source_piece_type = $this->getSourcePieceType();
 
@@ -238,7 +238,7 @@ class Move extends ContentEntityBase {
       }
 
       // Check if pawn promotion, e.g. e8=Q
-      $to_rank = (int) $this->toSquare()->getRank();
+      $to_rank = (int) $this->squareTo()->getRank();
       if ($to_rank === 1 || $to_rank === 8) {
         $this->setAlgebraic($this->getAlgebraic() . '=' . $this->getPromotionPieceType());
       }

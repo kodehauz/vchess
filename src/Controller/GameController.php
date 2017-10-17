@@ -91,16 +91,17 @@ class GameController extends ControllerBase {
           if ($game->isUserPlaying($user)) {
             if ($game->isPlayersMove($user)) {
               $markup_arguments['mark'] = 'greenmark.gif';
-              $markup_arguments['alt'] = '1.green'; // alt text is used so sort order is green, red, grey
+              $markup_arguments['@alt'] = '1.green';
+              // alt text is used so sort order is green, red, grey
             }
             else {
               $markup_arguments['mark'] = 'redmark.gif';
-              $markup_arguments['alt'] = '2.red';
+              $markup_arguments['@alt'] = '2.red';
             }
           }
           else {
             $markup_arguments['mark'] = 'greymark.gif';
-            $markup_arguments['alt'] = '3.grey';
+            $markup_arguments['@alt'] = '3.grey';
           }
 
           if ($game->getTurn() === 'w') {
@@ -250,7 +251,7 @@ class GameController extends ControllerBase {
   protected function buildPlayerStatsTable(UserInterface $user) {
     $gamer_stats = GamerStatistics::loadForUser($user);
     $vchess_calculated = Game::countUsersCurrentGames($user);
-    if ($gamer_stats->getCurrent() != $vchess_calculated) {
+    if ($gamer_stats->getCurrent() !== $vchess_calculated) {
       $this->getLogger('vchess')->error($this->t('Stats for current games from gamer was @gamer_current but vchess calculates @vchess',
         [
           '@gamer_current' => $gamer_stats->getCurrent(),
@@ -288,7 +289,7 @@ class GameController extends ControllerBase {
         ->setWhiteUser($user);
       $game->save();
       drupal_set_message($this->t('Challenge has been created.'));
-      return new RedirectResponse(Url::fromRoute('vchess.game', ['game' => $game->id()])->toString());
+      return new RedirectResponse(Url::fromRoute('vchess.game', ['vchess_game' => $game->id()])->toString());
     }
     else {
       drupal_set_message($this->t('You already have the maximum of @max challenges pending.', ['@max' => VCHESS_PENDING_LIMIT]));

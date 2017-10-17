@@ -17,11 +17,9 @@ class CreateChallengeForm extends FormBase {
     return 'vchess_create_challenge_form';
   }
   /**
-   * menu callback vchess_create_challenge_form to display new game form
+   * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $form = [];
-
     $form['description'] = array(
       '#type' => 'item',
       '#title' => $this->t('Simply click on the button below and we will create
@@ -37,7 +35,7 @@ class CreateChallengeForm extends FormBase {
         '3' => $this->t('3 days'),
         '5' => $this->t('5 days'),
       ),
-      '#default_value' => "3", // added default value.
+      '#default_value' => '3', // added default value.
     );
 
     $positions = ChessPosition::getPositionLabels();
