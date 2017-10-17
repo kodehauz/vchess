@@ -21,7 +21,7 @@ class VChessSquareTest extends UnitTestCase {
    * @dataProvider providerI2Square()
    */
   public function testSettersAndGetters($square_index, $square_a1) {
-    $square = (new Square())->setCoordinate($square_a1);
+    $square = Square::fromCoordinate($square_a1);
     $this->assertEquals($square_index, $square->getIndex());
     $this->assertEquals($square_a1, $square->getCoordinate());
     $this->assertEquals($square_a1[0], $square->getFile());
@@ -87,7 +87,7 @@ class VChessSquareTest extends UnitTestCase {
    * @dataProvider providerNextSquare()
    */
   public function testNextSquare($square_a1, $direction, $next_square_a1) {
-    $this->assertEquals($next_square_a1, (new Square())->setCoordinate($square_a1)->nextSquare($direction)->getCoordinate());
+    $this->assertEquals($next_square_a1, Square::fromCoordinate($square_a1)->nextSquare($direction)->getCoordinate());
   }
 
   public function providerNextSquare() {

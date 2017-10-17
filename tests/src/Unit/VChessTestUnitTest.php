@@ -7,7 +7,7 @@ use Drupal\Tests\UnitTestCase;
 /**
  * Ensure that VChess functions properly.
  *
- * @group VChess
+ * @group vchess
  */
 class VChessTestUnitTest extends UnitTestCase {
   protected $privileged_user;

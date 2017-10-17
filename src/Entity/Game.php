@@ -299,7 +299,7 @@ class Game extends ContentEntityBase {
    *   Returns the speed per move, e.g. "3 days"
    */
   public function getSpeed() {
-    return $this->getTimePerMove() . " " . $this->getTimeUnits();
+    return $this->getTimePerMove() . ' ' . $this->getTimeUnits();
   }
 
   public function getTurn() {
@@ -426,12 +426,14 @@ class Game extends ContentEntityBase {
    * Sets the time per move
    *
    * This just sets the value of the time per move (e.g. 1 or 3).  The units of time
-   * would be set in set_time_units(), which isn't currently needed so does not exist.
+   * would be set in setTimeUnits(), which isn't currently needed so does not exist.
    *
-   * @param  $value
-   *   Time per move, e.g. "3".
+   * @param int $value
+   *   Time per move, e.g. 3.
    *
    * @return $this
+   *
+   * @see \Drupal\vchess\Entity\Game::setTimePerMove()
    */
   public function setTimePerMove($value) {
     $this->set('time_per_move', $value);
@@ -443,7 +445,7 @@ class Game extends ContentEntityBase {
   }
 
   public function setTimeUnits($value) {
-    if (!in_array($value, static::$gameTime)) {
+    if (!in_array($value, static::$gameTime, TRUE)) {
       throw new \InvalidArgumentException('Value must be one of ' . implode(', ', static::$gameTime));
     }
     $this->set('time_units', $value);
@@ -459,6 +461,9 @@ class Game extends ContentEntityBase {
     return $this;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields = parent::baseFieldDefinitions($entity_type);
     // Table of each game, one row per game
@@ -474,7 +479,7 @@ class Game extends ContentEntityBase {
       ->setLabel('Status')
       ->setDescription(t('Status of the game'))
       ->setSetting('max_length', 64)
-      ->setDefaultValue('in progress')
+      ->setDefaultValue(GamePlay::STATUS_AWAITING_PLAYERS)
       ->setRequired(TRUE);
 
     $fields['white_uid'] = BaseFieldDefinition::create('entity_reference')
@@ -533,23 +538,29 @@ class Game extends ContentEntityBase {
    * {@inheritdoc}
    */
   public function preSave(EntityStorageInterface $storage) {
-    // If label has not been set, then use the players' names.
-    if ($white = $this->getWhiteUser()) {
-      $white_name = $white->getDisplayName();
+    if (empty($this->label())) {
+
+      // If label has not been set, then use the players' names.
+      if ($white = $this->getWhiteUser()) {
+        $white_name = $white->getDisplayName();
+      }
+      else {
+        $white_name = 'Unknown';
+      }
+      if ($white = $this->getBlackUser()) {
+        $black_name = $white->getDisplayName();
+      }
+      else {
+        $black_name = 'Unknown';
+      }
+      $this->setLabel($white_name . ' vs. ' . $black_name);
     }
-    else {
-      $white_name = 'Unknown';
-    }
-    if ($white = $this->getBlackUser()) {
-      $black_name = $white->getDisplayName();
-    }
-    else {
-      $black_name = 'Unknown';
-    }
-    $this->setLabel($white_name . ' vs. ' . $black_name);
     parent::preSave($storage);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function postSave(EntityStorageInterface $storage, $update = TRUE) {
     parent::postSave($storage, $update);
     // Save moves after this game is saved.
@@ -558,67 +569,65 @@ class Game extends ContentEntityBase {
   }
 
   /**
-   * Calculate the number of games won
+   * Counts the number of games won by a given user.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The user whose lost games are being counted.
+   *
+   * @return integer
    */
-  public static function gamesWonByUser($uid) {
+  public static function countGamesWonByUser(UserInterface $user) {
     $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getAggregateQuery('OR');
     $white_condition = $query->andConditionGroup()
-      ->condition('white_uid', $uid)
+      ->condition('white_uid', $user->id())
       ->condition('status', GamePlay::STATUS_WHITE_WIN);
     $black_condition = $query->andConditionGroup()
-      ->condition('black_uid', $uid)
+      ->condition('black_uid', $user->id())
       ->condition('status', GamePlay::STATUS_BLACK_WIN);
 
     $count = $query
-      ->aggregate('gid', 'COUNT')
+      ->aggregate('id', 'COUNT')
       ->condition($white_condition)
       ->condition($black_condition)
-      ->execute()
-      ->fetchColumn();
+      ->execute();
 
-//    $sql = "SELECT count(gid) FROM {vchess_games} WHERE " .
-//      "(white_uid = '" . $uid . "' AND status = '" . STATUS_WHITE_WIN . ") " .
-//      "OR";
-//    "(black_uid = '" . $uid . "' AND status = '" . STATUS_BLACK_WIN . ") ";
-
-//    $result = ($sql);
-//    $count = $result->fetchColumn();
-
-    return $count;
+    if ($count) {
+      return $count[0]['id_count'];
+    }
+    return 0;
   }
 
   /**
-   * Calculate the number of games lost
+   * Counts the number of games lost by a user.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The user whose lost games are being counted.
+   *
+   * @return integer
    */
-  public static function gamesLostByUser($uid) {
+  public static function countGamesLostByUser(UserInterface $user) {
     $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getAggregateQuery('OR');
     $white_condition = $query->andConditionGroup()
-      ->condition('white_uid', $uid)
+      ->condition('white_uid', $user->id())
       ->condition('status', GamePlay::STATUS_BLACK_WIN);
     $black_condition = $query->andConditionGroup()
-      ->condition('black_uid', $uid)
+      ->condition('black_uid', $user->id())
       ->condition('status', GamePlay::STATUS_WHITE_WIN);
 
     $count = $query
       ->condition($white_condition)
       ->condition($black_condition)
-      ->aggregate('gid', 'COUNT')
-      ->execute()
-      ->fetchColumn();
+      ->aggregate('id', 'COUNT')
+      ->execute();
 
-//    $sql = "SELECT count(gid) FROM {vchess_games} WHERE " .
-//      "(white_uid = '" . $uid . "' AND status = '" . STATUS_BLACK_WIN . ") " .
-//      "OR";
-//    "(black_uid = '" . $uid . "' AND status = '" . STATUS_WHITE_WIN . ") ";
-//
-//    $result = db_query($sql);
-//    $count = $result->fetchColumn();
-
-    return $count;
+    if ($count) {
+      return $count[0]['id_count'];
+    }
+    return 0;
   }
 
   /**
-   * Calculate the number of games in progress for a given user.
+   * Calculates the number of games in progress for a given user.
    *
    * @param \Drupal\user\UserInterface $user
    *   The user.
@@ -641,23 +650,19 @@ class Game extends ContentEntityBase {
     if ($count) {
       return $count[0]['id_count'];
     }
-    else {
-      return 0;
-    }
+    return 0;
   }
 
-
   /**
-   * Load a list of games for the given userid
+   * Loads a list of games for the given user.
    *
-   * @param
-   *   $uid the userid of the user whose games we want
+   * @param UserInterface $user
+   *   The user whose games we want.
    *
-   * @return
-   *   An array of in progress games
+   * @return \Drupal\vchess\Entity\Game[]
+   *   An array of the user's in progress games.
    */
   public static function loadUsersCurrentGames(UserInterface $user) {
-//    $game_list = array();
     $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getQuery('AND');
     $user_condition = $query->orConditionGroup()
       ->condition('white_uid', $user->id())
@@ -668,98 +673,40 @@ class Game extends ContentEntityBase {
       ->condition('status', 'in progress')
       ->sort('time_started', 'DESC')
       ->execute();
-//
-//    $sql = "SELECT gid FROM {vchess_games} WHERE (white_uid = :uid OR black_uid = :uid) AND status = 'in progress'";
-//    $result = db_query($sql, array('uid' => $uid));
-    $game_list = Game::loadMultiple($ids);
-//
-//    foreach ($result as $data) {
-//      $gid = $data->gid;
-//
-//      // Add a game to the list
-//      $game = new Game();
-//      $game->load($gid);
-//      $game_list[] = $game;
-//    }
 
-    // NB: sort will destroy index key, therefore $game_list['gid'] is used
-    // later instead.
-//    if (count($game_list) > 0) {
-//      usort($game_list, 'vchess_compareTimestamp');
-//    }
-    return $game_list;
+    return static::loadMultiple($ids);
   }
 
   /**
-   * Load a list of all current games
+   * Loads a list of all current games.
    *
    * @return \Drupal\vchess\Entity\Game[]
-   *   An array of current (in progress) games
+   *   An array of all current (in progress) games
    */
   public static function loadAllCurrentGames() {
-//    $game_list = array();
     $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getQuery();
-
     $ids = $query
       ->condition('status', GamePlay::STATUS_IN_PROGRESS)
       ->sort('time_started', 'DESC')
       ->execute();
-//    $sql = "SELECT gid FROM {vchess_games} WHERE status = '" . STATUS_IN_PROGRESS . "'";
-//    $result = db_query($sql);
-
-    $game_list = Game::loadMultiple($ids);
-//    foreach ($result as $data) {
-//      $gid = $data->gid;
-//
-//      // Add a game to the list
-//      $game = new Game();
-//      $game->load($gid);
-//      $game_list[] = $game;
-//    }
-
-    // NB: sort will destroy index key, therefore $game_list['gid'] is used
-    // later instead.
-//    if (count($game_list) > 0) {
-//      usort($game_list, 'vchess_compareTimestamp');
-//    }
-    return $game_list;
+    return Game::loadMultiple($ids);
   }
 
   /**
-   * Load a list of all current games
+   * Loads a list of all challenges - i.e. games without complete players.
    *
    * @return \Drupal\vchess\Entity\Game[]
-   *   An array of current (in progress) games
+   *   An array of challenges awaiting players.
    */
   public static function loadChallenges() {
-//    $game_list = array();
     $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getQuery();
 
     $ids = $query
       ->condition('status', GamePlay::STATUS_AWAITING_PLAYERS)
       ->sort('time_started', 'ASC')
       ->execute();
-//
-//    $sql = "SELECT gid FROM {vchess_games} WHERE status = '" . STATUS_AWAITING_PLAYERS . "'" .
-//      "ORDER BY time_started ASC";
-//    $result = db_query($sql);
 
-    $game_list = Game::loadMultiple($ids);
-//
-//    foreach ($result as $data) {
-//      $gid = $data->gid;
-//
-//      // Add a game to the list
-//      $game = new Game();
-//      $game->load($gid);
-//      $game_list[] = $game;
-//    }
-
-    // NB: sort will destroy index key, therefore $game_list['gid'] is used
-    // later instead.
-//    if (count($game_list) > 0) {
-//      usort($game_list, 'vchess_compareTimestamp');
-//    }
-    return $game_list;
+    return Game::loadMultiple($ids);
   }
+
 }

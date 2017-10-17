@@ -15,6 +15,9 @@ class ScoreSheetTest extends KernelTestBase {
 
   public static $modules = ['user', 'vchess'];
 
+  /**
+   * {@inheritdoc}
+   */
   public function setUp() {
     parent::setUp();
     $this->installEntitySchema('vchess_move');
@@ -62,6 +65,9 @@ class ScoreSheetTest extends KernelTestBase {
     $this->assertEquals(6, count($scoresheet->getMoves()));
   }
 
+  /**
+   * @covers ::getLastMove
+   */
   public function testGetLastMove() {
     $game = Game::create();
     $game->save();
@@ -85,17 +91,9 @@ class ScoreSheetTest extends KernelTestBase {
     $this->assertEquals($move2, $scoresheet->getLastMove());
   }
 
-  public function testGetMove() {
-    $scoresheet = new Scoresheet(0);
-
-
-
-    $move1 = Move::create(['long_move' => 'Ng1-f3']);
-    $scoresheet->appendMove($move1);
-
-
-  }
-
+  /**
+   * @covers ::saveMoves
+   */
   public function testSaveMoves() {
     $moves = ['Ng1-f3', 'Ng8-f6', 'Pd2-d4', 'Pd7-d6', 'Pe2-e3', 'Nb8-c6', 'Bf1-c4'];
     $game = Game::create();
@@ -107,7 +105,32 @@ class ScoreSheetTest extends KernelTestBase {
     $scoresheet->saveMoves();
 
     $scoresheet2 = new Scoresheet($game->id());
-    $this->assertEquals($scoresheet, $scoresheet2);
+    // @todo A good way to compare scoresheets.
+//    $this->assertEquals($scoresheet, $scoresheet2);
+    $this->assertMoveEquals($scoresheet->getLastMove(), $scoresheet2->getLastMove());
+    $this->assertEquals(count($scoresheet->getMoves()), count($scoresheet2->getMoves()));
+    $this->assertEquals($scoresheet->getNextMoveNumber(), $scoresheet2->getNextMoveNumber());
+    $this->assertMoveEquals($scoresheet->getWhiteMove(2), $scoresheet2->getWhiteMove(2));
+    $this->assertMoveEquals($scoresheet->getBlackMove(1), $scoresheet2->getBlackMove(1));
+    $this->assertMoveNotEquals($scoresheet->getWhiteMove(3), $scoresheet2->getBlackMove(3));
+    $this->assertMoveNotEquals($scoresheet->getWhiteMove(3), $scoresheet2->getWhiteMove(1));
+
+  }
+
+  /**
+   * @param \Drupal\vchess\Entity\Move $expected
+   * @param \Drupal\vchess\Entity\Move $actual
+   */
+  protected function assertMoveEquals($expected, $actual) {
+    return $this->assertEquals($expected->getLongMove(), $actual->getLongMove());
+  }
+
+  /**
+   * @param \Drupal\vchess\Entity\Move $expected
+   * @param \Drupal\vchess\Entity\Move $actual
+   */
+  protected function assertMoveNotEquals($expected, $actual) {
+    return $this->assertNotEquals($expected->getLongMove(), $actual->getLongMove());
   }
 
 }

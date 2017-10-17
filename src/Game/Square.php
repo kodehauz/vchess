@@ -68,7 +68,7 @@ class Square {
   }
 
   public function setColumn($column) {
-    assert(is_integer($column) && $column >= 1 && $column <= 8);
+    assert(is_int($column) && $column >= 1 && $column <= 8);
     $this->file = chr($column + 96);
     return $this;
   }

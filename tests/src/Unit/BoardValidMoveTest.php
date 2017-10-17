@@ -19,7 +19,7 @@ class BoardValidMoveTest extends UnitTestCase {
    * @covers ::getValidMoves
    */
   public function testGetValidMoves(Board $board, $coordinate, array $moves) {
-    $square = (new Square())->setCoordinate($coordinate);
+    $square = Square::fromCoordinate($coordinate);
     $this->assertEquals($moves, $board->getValidMoves($square));
   }
 
@@ -45,14 +45,15 @@ class BoardValidMoveTest extends UnitTestCase {
    * @dataProvider providerMoveIsOk()
    */
   public function testMoveIsOk(Board $board, $move, $expected) {
-    $from_square = (new Square())->setCoordinate(substr($move, 1, 2));
-    $to_square = (new Square())->setCoordinate(substr($move, -2, 2));
+    $from_square = Square::fromCoordinate(substr($move, 1, 2));
+    $to_square = Square::fromCoordinate(substr($move, -2, 2));
     $this->assertEquals($expected, $board->moveIsOk($from_square, $to_square), 'Move ' . $move . ' is ' . ($expected ? 'ok' : 'not ok'));
   }
 
   public function providerMoveIsOk() {
     $default_board = (new Board())->setupAsStandard();
     $open_board = $this->getOpenBoard();
+    $simple_board = $this->setUpBoard(['c2'=>'P','b3'=>'p','d3'=>'p','e5'=>'p','f5'=>'P'])->setEnPassantSquare('e6');
     return [
       [$default_board, 'Nb1-c3', TRUE], [$default_board, 'Nb1-a3', TRUE], [$default_board, 'Ng1-f3', TRUE],
       [$default_board, 'Ng1-h3', TRUE], [$default_board, 'Nb1-a2', FALSE], [$default_board, 'Ng1-e3', FALSE],
@@ -65,6 +66,12 @@ class BoardValidMoveTest extends UnitTestCase {
       [$open_board, 'Ke1-g1', TRUE], [$open_board, 'Rh1-g1', TRUE], [$open_board, 'Rh1-f1', TRUE],
       [$open_board, 'Ke1-a1', FALSE], [$open_board, 'Rh8-h1', FALSE], [$open_board, 'Bg7-f6', FALSE],
       [$open_board, 'Pe6-e4', FALSE], [$open_board, 'Ke8-e7', FALSE], [$open_board, 'Qd1-a1', FALSE],
+
+      [$simple_board, 'Pc2-c3', TRUE], [$simple_board, 'Pc2-c4', TRUE], [$simple_board, 'Pc2xb3', TRUE],
+      [$simple_board, 'Pc2xd3', TRUE], [$simple_board, 'Pd3xc2', TRUE], [$simple_board, 'Pb3xc2', TRUE],
+      [$simple_board, 'Pf5xe6', TRUE], [$simple_board, 'Pe5xd4', FALSE], [$simple_board, 'Pe5xf5', FALSE],
+      [$simple_board, 'Pf5-f4', FALSE], [$simple_board, 'Pf5-f6', TRUE], [$simple_board, 'Pf5xg6', FALSE],
+      [$simple_board, 'Pe5-e6', FALSE], [$simple_board, 'Pe5-e4', TRUE], [$simple_board, 'Pe5xd4', FALSE],
     ];
   }
 
@@ -122,8 +129,8 @@ class BoardValidMoveTest extends UnitTestCase {
    * @dataProvider providerPathIsNotBlocked()
    */
   public function testPathIsNotBlocked(Board $board, $square_from, $square_to, $direction, $expected) {
-    $start = (new Square())->setCoordinate($square_from)->getIndex();
-    $end = (new Square())->setCoordinate($square_to)->getIndex();
+    $start = Square::fromCoordinate($square_from)->getIndex();
+    $end = Square::fromCoordinate($square_to)->getIndex();
     $this->assertEquals($expected, $board->pathIsNotBlocked($start, $end, $direction));
   }
 

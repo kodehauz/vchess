@@ -32,13 +32,17 @@ use Drupal\Core\Field\BaseFieldDefinition;
  */
 class ChessPosition extends ContentEntityBase {
   /**
-   * return varchar.
+   * Gets the board in FEN notation.
+   *
+   * @return string.
    */
   public function getBoard() {
     return $this->get('board')->value;
   }
 
   /**
+   * Sets the board FEN notation.
+   *
    * @return $this
    */
   public function setBoard($value){
@@ -47,14 +51,22 @@ class ChessPosition extends ContentEntityBase {
   }
 
   /**
-   * return char.
+   * Gets the available castling options.
+   *
+   * @return string.
    */
   public function getCastling() {
     return $this->get('castling')->value;
   }
 
   /**
-   * @todo
+   * Sets the available castling options.
+   *
+   * @param $value
+   *   The castling options e.g. 'KQkq': both 'b' and 'w' can castle both ways.
+   *   'Q': 'w' can only castle queenside, 'b' can't castle again, etc.
+   *
+   * @return $this
    */
   public function setCastling($value) {
     $this->set('castling', $value);
@@ -62,56 +74,76 @@ class ChessPosition extends ContentEntityBase {
   }
 
   /**
-   * return char.
+   * Gets the en-passant square.
+   *
+   * The en-passant square is the square immediately behind a pawn that has made
+   * an en-passant move. '-' if no en-passant was played in the last move.
+   *
+   * @return string.
    */
-  public function getEnPassant() {
-    return $this->get('en_passant')->value;
+  public function getEnPassantSquare() {
+    return $this->get('en_passant_square')->value;
   }
 
   /**
-   * @todo
+   * Sets the en-passant square.
+   *
+   * @param $value
+   *   The en-passant square.
+   *
+   * @return $this
    */
-  public function setEnPassant($value) {
-    $this->set('en_passant', $value);
+  public function setEnPassantSquare($value) {
+    $this->set('en_passant_square', $value);
     return $this;
   }
 
   /**
-   * return varchar.
+   * Gets the position label.
+   *
+   * @return string.
    */
-  public function getTitle() {
-    return $this->get('title')->value;
+  public function getLabel() {
+    return $this->get('label')->value;
   }
 
   /**
-   * @todo
+   * Sets the position label.
+   *
+   * @param $value
+   *   The name of the position label to set.
+   *
+   * @return $this
    */
-  public function setTitle($value) {
-    $this->set('title', $value);
+  public function setLabel($value) {
+    $this->set('label', $value);
     return $this;
   }
 
   /**
-   * return text.
+   * Gets the description of the board position.
+   *
+   * @return string
    */
   public function getDescription() {
     return $this->get('description')->value;
   }
 
   /**
-   * @todo
+   * Sets the description of the board position.
+   *
+   * @param $value
+   *   The description.
+   *
+   * @return $this
    */
   public function setDescription($value) {
     $this->set('description', $value);
     return $this;
   }
 
-/**
-   * Define the database tables required for this module.
-   *
-   * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
-   *
-   * @return array|\Drupal\Core\Field\FieldDefinitionInterface[]
+  /**
+   * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields = parent::baseFieldDefinitions($entity_type);
@@ -128,22 +160,23 @@ class ChessPosition extends ContentEntityBase {
       ->setSetting('max_length', 5)
       ->setRequired(TRUE);
 
-    $fields['en_passant'] = BaseFieldDefinition::create('string')
-      ->setLabel(t('En_passant'))
-      ->setDescription(t('ep (en passant) target square. If there is no ep target square, \' . \'
-this is "-". If a pawn has just made a 2-square move, this is the position "behind" the pawn. This is recorded regardless of whether there is a pawn in position to make an ep capture.\''))
+    $fields['en_passant_square'] = BaseFieldDefinition::create('string')
+      ->setLabel(t('En passant square'))
+      ->setDescription(t('EP (en passant) target square. If there is no ep target square, '
+        . 'this is "-". If a pawn has just made a 2-square move, this is the position "behind" the pawn. This is recorded regardless of whether there is a pawn in position to make an EP capture.'))
       ->setDefaultValue('-')
       ->setSetting('max_length', 1)
       ->setRequired(TRUE);
 
-    $fields['title'] = BaseFieldDefinition::create('string')
-      ->setLabel(t(''))
-      ->setDescription(t('A short descriptive title'))
+    $fields['label'] = BaseFieldDefinition::create('string')
+      ->setLabel(t('Label'))
+      ->setDescription(t('A short descriptive label'))
       ->setSetting('max_length', 128)
       ->setRequired(TRUE);
 
     $fields['description'] = BaseFieldDefinition::create('string')
-      ->setLabel(t(''))
+      ->setLabel(t('Description'))
+      ->setSetting('max_length', 255)
       ->setDescription(t('A description of the key features of the position'))
       ->setRequired(TRUE);
 
@@ -151,10 +184,10 @@ this is "-". If a pawn has just made a 2-square move, this is the position "behi
   }
 
   /**
-   * Get positions
+   * Get positions keyed by the FEN board notation with the labels as values.
    *
    * Load an array with the positions data, in the format:
-   *   array("Title 1" => "FEN board 1", "Title 2" => "FEN board 2", ...);
+   *   array("FEN board 1" => "Title 1", "FEN board 2" => "Title 2", ...);
    */
   public static function getPositionLabels() {
     $positions = [];
@@ -163,7 +196,7 @@ this is "-". If a pawn has just made a 2-square move, this is the position "behi
     $results = ChessPosition::loadMultiple();
 
     foreach ($results as $position) {
-      $positions[$position->getBoard()] = $position->getTitle();
+      $positions[$position->getBoard()] = $position->getLabel();
     }
 
     return $positions;

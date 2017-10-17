@@ -7,6 +7,7 @@ use Drupal\KernelTests\KernelTestBase;
 use Drupal\user\Entity\User;
 
 /**
+ * @group vchess
  * @group gamer_statistics
  * @coversDefaultClass \Drupal\gamer\Entity\GamerStatistics
  */
@@ -21,19 +22,20 @@ class GamerStatisticsTest extends KernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('vchess_game');
     $this->installEntitySchema('gamer_statistics');
+    $this->installConfig('gamer');
   }
 
   public function testGetterSetters() {
     $owner = User::create()->setUsername($this->randomMachineName());
     $owner->save();
 
-    $current = rand(1, 10);
-    $won = rand(1, 10);
-    $drawn = rand(1, 10);
-    $lost = rand(1, 10);
-    $rating = rand(1200, 22200);
-    $played = rand(1, 10);
-    $rchanged = rand(1, 10);
+    $current = mt_rand(1, 10);
+    $won = mt_rand(1, 10);
+    $drawn = mt_rand(1, 10);
+    $lost = mt_rand(1, 10);
+    $rating = mt_rand(1200, 22200);
+    $played = mt_rand(1, 10);
+    $rchanged = mt_rand(1, 10);
 
     /** @var \Drupal\gamer\Entity\GamerStatistics $game */
     $game = GamerStatistics::create()
@@ -60,15 +62,13 @@ class GamerStatisticsTest extends KernelTestBase {
   }
 
   public function testLoadForUser() {
-    $user = User::create([
-      'name' => $this->randomString()
-    ]);
+    $user = User::create(['name' => $this->randomString()]);
     $user->save();
 
     $loaded_stats = GamerStatistics::loadForUser($user);
-    // User default rating is 1200
+    // User default rating is 1200.
     $this->assertEquals(1200, $loaded_stats->getRating());
-    $this->assertEquals($user->id(), $loaded_stats->getOwner());
+    $this->assertEquals($user, $loaded_stats->getOwner());
   }
 
 }

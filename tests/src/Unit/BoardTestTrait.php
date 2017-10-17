@@ -78,7 +78,7 @@ trait BoardTestTrait {
   protected function makeSquares(array $coordinates) {
     $squares = [];
     foreach ($coordinates as $coordinate) {
-      $squares[] = (new Square())->setCoordinate($coordinate);
+      $squares[] = Square::fromCoordinate($coordinate);
     }
     return $squares;
   }

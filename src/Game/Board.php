@@ -157,7 +157,7 @@ class Board {
     
     foreach ($this->board as $coordinate => $piece) {
       if ($piece->getType() === $type && $piece->getColor() === $color) {
-        $squares[] = (new Square())->setCoordinate($coordinate);
+        $squares[] = Square::fromCoordinate($coordinate);
       }
     }
     
@@ -181,7 +181,7 @@ class Board {
 
     foreach ($this->board as $coordinate => $piece) {
       if ($piece->getColor() === $color) {
-        $squares[] = (new Square())->setCoordinate($coordinate);
+        $squares[] = Square::fromCoordinate($coordinate);
       }
     }
 
@@ -273,7 +273,7 @@ class Board {
     $squares = [];
 
     for ($rank = 1; $rank <= 8; $rank++) {
-      $squares[] = (new Square())->setCoordinate($file . $rank);
+      $squares[] = Square::fromCoordinate($file . $rank);
     }
 
     return $squares;
@@ -372,7 +372,7 @@ class Board {
    * @return boolean
    */
   public function squareAtCoordinateIsEmpty($coordinate) {
-    return $this->squareIsEmpty((new Square)->setCoordinate($coordinate));
+    return $this->squareIsEmpty(Square::fromCoordinate($coordinate));
   }
 
   /**
@@ -394,7 +394,7 @@ class Board {
   }
 
   /**
-   * Convert board in array format (for use in the program) into FEN string.
+   * Converts board in array format (for use in the program) into FEN string.
    *
    * It is the FEN string that is saved in the database. E.g. after 1.e4 the FEN
    * string will be:
@@ -855,7 +855,7 @@ class Board {
   }
   
   /**
-   * Get the piece on a given square.
+   * Gets the piece on a given square.
    *
    * @param \Drupal\vchess\Game\Square $square
    *   The square e.g. "a1".
@@ -873,7 +873,7 @@ class Board {
   }
 
   /**
-   * Move a piece from one square to another.
+   * Moves a piece from one square to another.
    * 
    * No checking is done here as to the validity of the move.
    */
@@ -919,7 +919,7 @@ class Board {
   }
   
   /**
-   * Promote a pawn.  This is effectively a move of a pawn with a change
+   * Promotes a pawn.  This is effectively a move of a pawn with a change
    * of piece type.
    */
   public function promotePawn(Square $from_square, Square $to_square, Piece $new_piece) {
@@ -932,60 +932,135 @@ class Board {
   }
   
   /**
-   * Check whether pawn at $pawn_square attacks the
-   * square $to_square, i.e. the diagonally attacked square
+   * Checks whether pawn at $pawn_square attacks the square $to_square.
    *
    * Note that it is not necessary for a piece to be on the
-   * destination square for that square to be attacked
+   * destination square for that square to be attacked.
    *
-   * @param $pawn_square 
+   * @param \Drupal\vchess\Game\Square $pawn_square
    *   Square of pawn
    *   
-   * @param $to_square 
-   *   Square of attacked square
+   * @param \Drupal\vchess\Game\Square $to_square
+   *   Square of attacked square.
+   *
+   * @return bool
    *   
-   * @see pieceAttacks()
+   * @see \Drupal\vchess\Game\Board::pieceAttacks()
    */
   public function pawnAttacks(Square $pawn_square, Square $to_square) {
-    $attacks = FALSE;
-  
-    $piece_color = $this->getPiece($pawn_square)->getColor();
+    $pawn_color = $this->getPiece($pawn_square)->getColor();
   
     // Convert coord like "d4" into col=4 rank=4
-    $piece_col = $pawn_square->getColumn(); // e.g. d -> 4
-    $piece_rank = (int) $pawn_square->getRank();
+    $pawn_col = $pawn_square->getColumn(); // e.g. d -> 4
+    $pawn_rank = (int) $pawn_square->getRank();
   
     $dest_col = $to_square->getColumn();  // e.g. e -> 5
     $dest_rank = (int) $to_square->getRank();
   
-    if ($piece_color === 'w') {
-      if ($dest_rank === $piece_rank + 1
-          && ($piece_col === ($dest_col - 1) || $piece_col === ($dest_col + 1))) {
-        $attacks = TRUE;
+    if ($pawn_color === 'w') {
+      if ($dest_rank === $pawn_rank + 1
+          && ($pawn_col === ($dest_col - 1) || $pawn_col === ($dest_col + 1))) {
+        return TRUE;
       }
     }
-    elseif ($piece_color === 'b') {
-      if ($dest_rank === $piece_rank - 1
-          && ($piece_col === ($dest_col - 1) || $piece_col === ($dest_col + 1))) {
-        $attacks = TRUE;
+    elseif ($pawn_color === 'b') {
+      if ($dest_rank === $pawn_rank - 1
+          && ($pawn_col === ($dest_col - 1) || $pawn_col === ($dest_col + 1))) {
+        return TRUE;
       }
     }
   
-    return $attacks;
+    return FALSE;
   }
-  
+
   /**
-   * Check whether a given piece may legally move to the given square
+   * Performs a castling move.
+   *
+   * @param \Drupal\vchess\Game\Square $from_square
+   *   The square from which the king is castling.
+   * @param \Drupal\vchess\Game\Square $to_square
+   *   The square to which the king is castling.
+   *
+   * @return bool
+   */
+  public function performCastling(Square $from_square, Square $to_square) {
+    if (!$this->isValidCastlingMove($from_square, $to_square)) {
+      return FALSE;
+    }
+
+    // Confirm that there is nothing between king and rook.
+    $rook_file = $to_square->getFile() === 'g' ? 'h' : 'a';
+    $rook_square = Square::fromCoordinate($rook_file . $from_square->getRank());
+    $rook_piece = $this->getPiece($rook_square);
+    $king_piece = $this->getPiece($from_square);
+
+    if ($rook_piece->getType() !== 'R' || $rook_piece->getColor() !== $king_piece->getColor()) {
+      return FALSE;
+    }
+
+    $king_from = $from_square->getIndex();
+    $king_to = $to_square->getIndex();
+    $rook_from = $rook_square->getIndex();
+    $change = ($rook_from - $king_from);
+    $change /= abs($change);
+    $rook_to_square = Square::fromIndex($king_from + $change);
+    if (!$this->pathIsNotBlocked($king_from + $change, $rook_from, $change)) {
+      return FALSE;
+    }
+
+    // Ensure the squares between the king's current position and where he will
+    // move to are not under attack.
+    $opponent = $king_piece->getColor() === 'w' ? 'b' : 'w';
+    for ($i = $king_from; $i <= $king_to; $i += $change) {
+      $square = Square::fromIndex($i);
+      if ($this->squareIsUnderAttack($square, $opponent)) {
+        return FALSE;
+      }
+    }
+    // White King move.
+    $this->movePiece($from_square, $to_square);
+    // Rook move.
+    $this->movePiece($rook_square, $rook_to_square);
+    return TRUE;
+  }
+
+  /**
+   * Confirms that the move is a valid castling move.
+   *
+   * @param \Drupal\vchess\Game\Square $from
+   *   The square from which the king is castling.
+   * @param \Drupal\vchess\Game\Square $to
+   *   The square to which the king is castling.
+   *
+   * @return bool
+   */
+  public function isValidCastlingMove(Square $from, Square $to) {
+    $move = $this->getPiece($from)->getType() . $from->getCoordinate() . '-' . $to->getCoordinate();
+    return $move === 'Ke1-g1' || $move === 'Ke8-g8' || $move === 'Ke1-c1' || $move === 'Ke8-c8';
+  }
+
+  /**
+   * Checks whether a given piece may legally move to the given square.
    * 
-   * @param $from_square
+   * @param \Drupal\vchess\Game\Square $from_square
    *   Square where piece is trying to move from
-   * @param $to_square
+   * @param \Drupal\vchess\Game\Square $to_square
    *   Square where piece is trying to move to
-   * 
+   *
+   * @return bool
    */
   public function moveIsOk(Square $from_square, Square $to_square) {
     if ($this->getPiece($from_square)->getType() === 'P') {
-      return $this->pawnMayMoveToSquare($from_square, $to_square);
+      if ($this->pawnMayMoveToSquare($from_square, $to_square)) {
+        return TRUE;
+      }
+      else {
+        // Check capturing positions including en-passant.
+        $opponent = $this->getPiece($from_square)->getColor() === 'w' ? 'b' : 'w';
+        return ($this->getPiece($to_square)->getColor() === $opponent
+            || $to_square->getCoordinate() === $this->enPassantSquare)
+            && $this->pawnAttacks($from_square, $to_square);
+      }
     }
     else {
       return $this->nonPawnMayMoveToSquare($from_square, $to_square);
@@ -1027,11 +1102,11 @@ class Board {
    * @return bool
    */
   public function isStalemate($player) {
-    // Look at each square to find each of the opponent pieces
+    // Look at each square to find each of the opponent pieces.
     $pieces_squares = $this->getSquaresOfPieceColor($player);
     foreach ($pieces_squares as $piece_square) {
-      // Can the piece move theoretically thus is there
-      // at least one square free for one piece?
+      // Can the piece move theoretically thus is there at least one square free
+      // for one piece?
       $valid_moves = $this->getValidMoves($piece_square);
       if (count($valid_moves) > 0) {
         return FALSE;
@@ -1098,16 +1173,23 @@ class Board {
         break;
       case 'P':
         // See if the move 1 square in front is possible.
-        if ($this->moveIsOk($piece_square, $square_in_front = $this->getSquareInFront($piece_square))) {
+        $square_in_front = $this->getSquareInFront($piece_square);
+        if ($this->moveIsOk($piece_square, $square_in_front)) {
           $valid_moves[] = $this->getLongMove($piece_square, $square_in_front);
         }
         // See if the move 2 squares in front is possible.
         if ($this->moveIsOk($piece_square, $square_2_in_front = $this->getSquareInFront($piece_square, 2))) {
           $valid_moves[] = $this->getLongMove($piece_square, $square_2_in_front);
         }
-        // See if an en passant capture is possible.
-        if ($this->isEnPassant() && $this->moveIsOk($piece_square, $en_passant_square = Square::fromCoordinate($this->getEnPassantSquare()))) {
-          $valid_moves[] = $this->getLongMove($piece_square, $en_passant_square);
+        // Check the two diagonally forward squares (which could include an
+        // en-passant square).
+        $square_in_front->setColumn($square_in_front->getColumn() - 1);
+        if ($this->moveIsOk($piece_square, $square_in_front)) {
+          $valid_moves[] = $this->getLongMove($piece_square, $square_in_front);
+        }
+        $square_in_front->setColumn($square_in_front->getColumn() + 2);
+        if ($this->moveIsOk($piece_square, $square_in_front)) {
+          $valid_moves[] = $this->getLongMove($piece_square, $square_in_front);
         }
         break;
     }
@@ -1119,22 +1201,27 @@ class Board {
    * Calculate the long move notation given two squares.
    */
   public function getLongMove(Square $from_square, Square $to_square) {
+    $type = $this->squareIsEmpty($to_square) ? '-' : 'x';
     return $this->getPiece($from_square)->getType() .
-      $from_square->getCoordinate() . "-" . $to_square->getCoordinate();
+      $from_square->getCoordinate() . $type . $to_square->getCoordinate();
   }
   
   /**
-   * Check whether pawn at $from_square may move to $to_square.
+   * Checks whether pawn at $from_square may move to $to_square.
+   *
+   * @param \Drupal\vchess\Game\Square $from_square
+   *   The square from which the pawn is moving.
+   * @param \Drupal\vchess\Game\Square $to_square
+   *   The square to which the pawn is moving.
+   *
    * First move may be two squares instead of just one.
    *
-   * @return
-   *   TRUE if the pawn may move to the given square
-   *   FALSE if the destination square is occupied or if a square
-   *     on the way is occupied for the first 2-square move
+   * @return bool
+   *   - true: if the pawn may move to the given square.
+   *   - false: if the destination square is occupied or if a square on the way
+   *     is occupied for the first 2-square move.
    */
   protected function pawnMayMoveToSquare(Square $from_square, Square $to_square) {
-    $move_ok = FALSE;
-  
     if ($this->squareIsEmpty($to_square)) {
       $piece = $this->getPiece($from_square);
       $piece_file = $from_square->getFile(); // e.g. e
@@ -1143,39 +1230,39 @@ class Board {
       $dest_rank = (int) $to_square->getRank();  // e.g. 4
   
       // Check pawn stays on same file.
-      // Captures are checked in pawn_attacks()
+      // Captures are checked in ::pawnAttacks()
       if ($piece_file !== $dest_file) {
-        $move_ok = FALSE;
+        return FALSE;
       }
-      elseif ($piece->getColor() === 'w') {
-        // white pawn
+      else if ($piece->getColor() === 'w') {
+        // White pawn.
         if ($piece_rank === 2 && $dest_rank === 4) {
-          // Pawn moving 2 squares, so check if intermediate square is empty
-          $intermediate_coord = (new Square())->setCoordinate($piece_file . '3');
+          // Pawn moving 2 squares, so check if intermediate square is empty.
+          $intermediate_coord = Square::fromCoordinate($piece_file . '3');
           if ($this->squareIsEmpty($intermediate_coord)) {
-            $move_ok = TRUE;
+            return TRUE;
           }
         }
-        elseif ($dest_rank === ($piece_rank + 1)) {
-          $move_ok = TRUE;
+        else if ($dest_rank === ($piece_rank + 1)) {
+          return TRUE;
         }
       }
-      else {
+      else if ($piece->getColor() === 'b') {
         // black pawn
         if ($piece_rank === 7 && $dest_rank === 5) {
-          // Pawn moving 2 squares, so check if intermediate square is empty
-          $intermediate_coord = (new Square())->setCoordinate($piece_file . "6");
+          // Pawn moving 2 squares, so check if intermediate square is empty.
+          $intermediate_coord = Square::fromCoordinate($piece_file . '6');
           if ($this->squareIsEmpty($intermediate_coord)) {
-            $move_ok = TRUE;
+            return TRUE;
           }
         }
         elseif ($dest_rank === ($piece_rank - 1)) {
-          $move_ok = TRUE;
+          return TRUE;
         }
       }
     }
   
-    return $move_ok;
+    return FALSE;
   }
   
   /**
