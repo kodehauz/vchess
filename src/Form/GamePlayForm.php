@@ -115,6 +115,9 @@ class GamePlayForm extends FormBase {
           'callback' => '::refreshBoard',
           'wrapper' => 'vchess-container',
         ],
+        '#attributes' => [
+          'class' => ['btn btn-default']
+        ],
       ];
     }
 
@@ -122,6 +125,9 @@ class GamePlayForm extends FormBase {
       '#type' => 'submit', // For now!
       '#value' => $this->t('Flip board'),
       '#name' => 'flip_button',
+      '#attributes' => [
+        'class' => ['btn btn-primary']
+        ],
     ];
 
     if ($game->isMoveMade()
@@ -131,6 +137,9 @@ class GamePlayForm extends FormBase {
         '#type' => 'submit',
         '#value' => $this->t('Resign'),
         '#name' => 'resign_button',
+        '#attributes' => [
+          'class' => ['btn btn-danger']
+        ],
       ];
     }
 
@@ -138,7 +147,10 @@ class GamePlayForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Make move'),
 //    '#attributes' => ['class' => 'invisible'],
-      '#attributes' => ['style' => ['visibility:hidden;']],
+      '#attributes' => [
+        'style' => ['visibility:hidden;'],
+        'class' => ['btn btn-primary']
+      ],
       '#name' => 'move_button',
     ];
 

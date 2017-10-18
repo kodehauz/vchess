@@ -63,16 +63,20 @@ class GamerController extends ControllerBase {
       $stats->getLost(), $stats->getRating(), $stats->getRchanged(), $stats->getCurrent()));
 
     return [
-      'title' => [
-        '#type' => 'markup',
-        '#markup' => 'Statistics for <b>' . $user->getDisplayName() . '</b>:'
-      ],
-      'table' => [
+//      'title' => [
+//        '#type' => 'markup',
+//        '#markup' => 'Statistics for <b>' . $user->getDisplayName() . '</b>:'
+//      ],
+//      'table' => [
         '#type'   => 'table',
         '#header' => $header,
+        '#caption' => t('Statistics for <b>' . $user->getDisplayName() . '</b>:'),
         '#rows'   => $rows,
         '#empty'  => 'Nothing to display.',
-      ]
+        '#attributes' => [
+          'class' => ['table stats-table table-striped']
+        ],
+//      ]
     ];
   }
 

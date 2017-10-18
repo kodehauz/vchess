@@ -175,6 +175,9 @@ class GameController extends ControllerBase {
       '#caption' => t('Current Games'),
       '#rows' => $rows,
       '#empty' => $empty,
+      '#attributes' => [
+        'class' => ['table current-games-table table-responsive table-striped']
+      ],
     ];
   }
 
@@ -242,6 +245,9 @@ class GameController extends ControllerBase {
       '#caption' => t('Challenges'),
       '#rows' => $rows,
       '#empty' => $empty,
+      '#attributes' => [
+        'class' => ['table challenges-table table-striped']
+      ],
     ];
   }
 
@@ -486,16 +492,22 @@ class GameController extends ControllerBase {
       '#type' => 'link',
       '#title' => $this->t('Create challenge'),
       '#url' => Url::fromRoute('vchess.create_challenge'),
+      '#prefix' => '<div class="btn btn-success">',
+      '#suffix' => '</div>',
     ];
     $links['create_random_game'] = [
       '#type' => 'link',
       '#title' => $this->t('New random game'),
       '#url' => Url::fromRoute('vchess.random_game_form'),
+      '#prefix' => '<div class="btn btn-default">',
+      '#suffix' => '</div>',
     ];
     $links['create_opponent_game'] = [
       '#type' => 'link',
       '#title' => $this->t('New opponent game'),
       '#url' => Url::fromRoute('vchess.opponent_game_form'),
+      '#prefix' => '<div class="btn btn-primary">',
+      '#suffix' => '</div>',
     ];
     return $links;
   }
