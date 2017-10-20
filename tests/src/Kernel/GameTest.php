@@ -2,12 +2,9 @@
 
 namespace Drupal\Tests\vchess\Kernel;
 
-use Drupal\gamer\GamerController;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\user\Entity\User;
-use Drupal\user\UserInterface;
 use Drupal\vchess\Entity\Game;
-use Drupal\vchess\Game\Board;
 use Drupal\vchess\Game\GamePlay;
 
 /**

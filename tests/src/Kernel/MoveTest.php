@@ -24,8 +24,8 @@ class MoveTest extends KernelTestBase {
   }
 
   public function testGetterSetters() {
-    $game_id = rand(1, 10);
-    $move_no = rand(1, 10);
+    $game_id = mt_rand(1, 10);
+    $move_no = mt_rand(1, 10);
     $longmove = $this->randomString();
     $algebraic = $this->randomString();
 

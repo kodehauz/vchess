@@ -71,7 +71,11 @@ class GamePlay {
   // p_mayarchive: player may move game to archive
   
   /**
-   * Game constructor
+   * Game constructor.
+   *
+   * @param Game|null $game
+   *   A game to initialize GamePlay with. Leave blank to start with standard
+   *   board.
    */
   public function __construct(Game $game = NULL) {
     if ($game === NULL) {
@@ -116,89 +120,7 @@ class GamePlay {
     if ($this->game->getStatus() === static::STATUS_IN_PROGRESS) {
       return $this->game->getTimeStarted();
     }
-    else {
-      return FALSE;
-    }
-  }
-
-  /**
-   * Deal with the case that the player has lost on time
-   */
-  protected function handleLostOnTime() {
-    if ($this->game->getTurn() == 'w') {
-      $this->game->setStatus(static::STATUS_BLACK_WIN)->save();
-    }
-    else {
-      $this->game->setStatus(static::STATUS_WHITE_WIN)->save();
-    }
-  }
-
-  /**
-   * Set the players for a new game.
-   *
-   * It is at this stage that the game really begins playing.
-   *
-   * @param UserInterface $white_user
-   *   White player user entity.
-   * @param UserInterface $black_user
-   *   Black player user entity.
-   *
-   * @return int
-   *   Game id, $gid.
-   */
-  public function setPlayers(UserInterface $white_user, UserInterface $black_user) {
-    // Build new game context
-    $this->game
-      ->setWhiteUser($white_user)
-      ->setBlackUser($black_user)
-      ->setStatus(static::STATUS_IN_PROGRESS)
-      ->save();
-    return $this->game->id();
-  }
-
-  /**
-   * Set a single player.
-   *
-   * Note that it is an error to set a player when there are already 2 players
-   * assigned to the game
-   */
-  public function setPlayer(UserInterface $user) {
-//     watchdog("VChess", "In game.inc for game %gid, at start of set_player() setting player uid=%uid." .
-//         " Currently white_uid=%white_uid and black_uid=%black_uid",
-//         array('%gid' => $this->gid(),
-//             '%uid' => $uid,
-//             '%white_uid' => $this->white_uid,
-//             '%black_uid' => $this->black_uid));
-
-    if ($this->game->getWhiteUser() === NULL && $this->game->getBlackUser() === NULL) {
-      if (rand(1, 100) < 50) {
-        $this->game
-          ->setWhiteUser($user)
-          ->save();
-      }
-      else {
-        $this->game
-          ->setBlackUser($user)
-          ->save();
-      }
-    }
-    else {
-      if ($this->game->getWhiteUser() == NULL) {
-        $this->game
-          ->setWhiteUser($user)
-          ->setStatus(static::STATUS_IN_PROGRESS)
-          ->save();
-      }
-      elseif ($this->game->getBlackUser() == NULL) {
-        $this->game
-          ->setBlackUser($user)
-          ->setStatus(static::STATUS_IN_PROGRESS)
-          ->save();
-      }
-      else {
-        \Drupal::logger('VChess')->error(t( "Attempt to set a player when both players are already assigned"));
-      }
-    }
+    return FALSE;
   }
 
   /**
@@ -345,15 +267,11 @@ class GamePlay {
    * Resigns a particular game.
    */
   public function resign(UserInterface $user) {
-    if ($this->playerColor($uid) === 'w') {
-      $this->game
-        ->setStatus(static::STATUS_BLACK_WIN)
-        ->save();
+    if ($this->playerColor($user) === 'w') {
+      $this->game->setStatus(static::STATUS_BLACK_WIN)->save();
     }
     else {
-      $this->game
-        ->setStatus(static::STATUS_WHITE_WIN)
-        ->save();
+      $this->game->setStatus(static::STATUS_WHITE_WIN)->save();
     }
   }
   
@@ -384,7 +302,7 @@ class GamePlay {
       return 'b';
     }
   
-    return "";
+    return '';
   }
   
   /**
@@ -462,25 +380,6 @@ class GamePlay {
     }
   }
 
-  protected function castleMove(Move $move) {
-    $error = '';
-    switch ($move->getLongMove()) {
-      case 'Ke1-g1':
-        $error = $this->castle('w', 'e1', 'g1', 'h1', 'f1', ['f1', 'g1']);
-        break;
-      case 'Ke1-c1':
-        $error = $this->castle('w', 'e1', 'c1', 'a1', 'd1', ['b1', 'c1', 'd1']);
-        break;
-      case 'Ke8-g8':
-        $error = $this->castle('b', 'e8', 'g8', 'h8', 'f8', ['f8', 'g8']);
-        break;
-      case 'Ke8-c8':
-        $error = $this->castle('b', 'e8', 'c8', 'a8', 'd8', ['b8', 'c8', 'd8']);
-        break;
-    }
-    return $error;
-  }
-  
   /**
    * Verify move, execute it and modify game.
    *
@@ -501,182 +400,181 @@ class GamePlay {
       $errors[] = 'It is not your turn!';
       return FALSE;
     }
-    else {
-      $move_ok = TRUE;
-      $messages = [];
-      $en_passant_set = FALSE;
-      $clone_board = (new Board())
-        ->setupPosition($this->board->getFenString())
-        ->setEnPassantSquare($this->board->getEnPassantSquare());
 
-      if ($this->isCastlingMove($move->getLongMove())) {
-        $error = $this->castleMove($move);
-        if ($error !== '') {
-          $errors[] = $error;
-          return FALSE;
-        }
+    $move_ok = TRUE;
+    $messages = [];
+    $en_passant_set = FALSE;
+    $clone_board = (new Board())
+      ->setupPosition($this->board->getFenString())
+      ->setEnPassantSquare($this->board->getEnPassantSquare());
+
+    // @todo Propagating errors here.
+    if ($this->board->isValidCastlingMove($move->squareFrom(), $move->squareTo())) {
+      $errors[] = $this->castle($this->playerColor($user), $move->squareFrom(), $move->squareTo());
+      return TRUE;
+    }
+
+    if ($move->getType() === '-') {
+      // Validate piece and position.
+      // Move is e.g. "Nb1-c3"
+      $piece = (new Piece())
+        ->setType($move->getSourcePieceType())
+        ->setColor($this->game->getTurn());
+
+      if ($piece->getType() === 'P' && $move->squareTo()->getCoordinate() === $this->board->getEnPassantSquare()) {
+        // Perform en passant pawn capture.
+        $this->board->performEnPassantCapture($move->squareFrom(), $move->squareTo());
       }
-      elseif ($move->getType() === '-') {
-        // Validate piece and position.
-        // Move is e.g. "Nb1-c3"
-        $piece = (new Piece())
-          ->setType($move->getSourcePieceType())
-          ->setColor($this->game->getTurn());
-
-        if ($piece->getType() === 'P' && $move->squareTo()->getCoordinate() === $this->board->getEnPassantSquare()) {
-          // Perform en passant pawn capture.
-          $this->board->performEnPassantCapture($move->squareFrom(), $move->squareTo());
-        }
-        elseif (!$this->board->moveIsOk($move->squareFrom(), $move->squareTo())) {
-          $move_ok = FALSE;
-        }
-        else {
-          // If pawn moved 2 squares, then record the en_passant square
-          // (the square behind the pawn which has just moved)
-          if ($this->board->pawnMoved2Squares($move->squareFrom(), $move->squareTo())) {
-            $file = $move->squareTo()->getFile();
-            if ($move->squareTo()->getRank() == 4) {
-              // White has moved something like "Ph2-h4"
-              // so target will be "h3"
-              $this->board->setEnPassantSquare($file . "3");
-            }
-            else {
-              // Black has moved something like "Ph7-h5"
-              // so target will be "h6"
-              $this->board->setEnPassantSquare($file . "6");
-            }
-
-            $en_passant_set = TRUE;
-          } 
-          
-          // If pawn reached last rank, promote it
-          $pawn_promoted = $this->handlePawnPromotion($move);
-        
-          if (!$pawn_promoted) {
-            // Perform normal move
-            $this->board->movePiece($move->squareFrom(), $move->squareTo());
-          }
-        }
+      elseif (!$this->board->moveIsOk($move->squareFrom(), $move->squareTo())) {
+        $move_ok = FALSE;
       }
-      elseif ($move->getType() === 'x') {
-        if ($this->board->squareIsEmpty($move->squareTo())) {
-          // En passant of pawn?
-          if ($move->getSourcePieceType() === 'P') {
-            $move_ok = TRUE;
+      else {
+        // If pawn moved 2 squares, then record the en_passant square
+        // (the square behind the pawn which has just moved)
+        if ($this->board->pawnMoved2Squares($move->squareFrom(), $move->squareTo())) {
+          $file = $move->squareTo()->getFile();
+          if ($move->squareTo()->getRank() == 4) {
+            // White has moved something like "Ph2-h4"
+            // so target will be "h3"
+            $this->board->setEnPassantSquare($file . '3');
           }
           else {
-            $errors[] = new TranslatableMarkup('ERROR: @square is empty!',
-              ['@square' => $move->squareTo()->getCoordinate()]);
-            $move_ok = FALSE;
+            // Black has moved something like "Ph7-h5"
+            // so target will be "h6"
+            $this->board->setEnPassantSquare($file . '6');
           }
+
+          $en_passant_set = TRUE;
         }
-        elseif ($this->board->getPiece($move->squareTo())->getColor() === $this->game->getTurn()) {
-          $errors[] = new TranslatableMarkup('ERROR: You cannot attack own chessman at @square!',
-            ['@square' => $move->squareTo()->getCoordinate()]);
-          $move_ok = FALSE;
-        }
-        elseif (!$this->board->pieceAttacks($move->squareFrom(), $move->squareTo())) {
-          $errors[] = new TranslatableMarkup('ERROR: You cannot take the piece on @square!',
-            ['@square' => $move->squareTo()->getCoordinate()]);
-          $move_ok = FALSE;
-        }
-        
+
         // If pawn reached last rank, promote it
         $pawn_promoted = $this->handlePawnPromotion($move);
-        
-        if ($move_ok && !$pawn_promoted) {
-          // Perform normal capture
+
+        if (!$pawn_promoted) {
+          // Perform normal move
           $this->board->movePiece($move->squareFrom(), $move->squareTo());
         }
       }
-    
-      // If OWN king is still in check, then invalid move
-      if ($this->board->isInCheck($move->getColor())) {
-        $errors[] = new TranslatableMarkup('ERROR: King is in check.');
-        $move_ok = FALSE;        
-      }
-
-      $move->calculateAlgebraic($this->game->getTurn(), $clone_board);
-      
-      // If move was executed update game state.
-      if ($move_ok) {
-        $messages[] = new TranslatableMarkup('Your last move: @move', ['@move' => $move->getAlgebraic()]);
-
-        // If it is a Rook or King move, invalidate castling as necessary.
-        $piece_type = $this->board->getPiece($move->squareTo())->getType();
-        if ($piece_type === 'K') {
-          $this->setCastlingForColor($this->game->getTurn(), FALSE);
-        }
-        else if ($piece_type === 'R') {
-          if ($move->squareFrom()->getFile() === 'a') {
-            $this->setCastling($this->game->getTurn(), 'Q', FALSE);
-          }
-          else if ($move->squareFrom()->getFile() === 'h') {
-            $this->setCastling($this->game->getTurn(), 'K', FALSE);
-          }
-        }
-
-        // If this wasn't a 2-square pawn move, we need to reset
-        // the en_passant square.
-        if (!$en_passant_set) {
-          $this->board->resetEnPassantSquare();
-        }
-        
-        // Check checkmate/stalemate.
-        $opponent = $this->game->getPlayerColor($user) === 'w' ? 'b' : 'w';
-        if ($this->board->isInCheck($opponent)) {
-          // If this is checkmate finish the game, otherwise add '+' to the move.
-          if ($this->board->isInCheckmate($opponent)) {
-            if ($this->game->getTurn() === 'w') {
-              $this->setStatus(static::STATUS_WHITE_WIN);
-            }
-            else {
-              $this->setStatus(static::STATUS_BLACK_WIN);
-            }
-            $messages[] = '... CHECKMATE!';
-          }
-        }
-        elseif ($this->board->isStalemate($opponent)) {
-          $this->setStatus(static::STATUS_DRAW);
-          $messages[] = '... STALEMATE!';
-        }
-        
-        // Update game board position and castling status.
-        $this->game->setBoard($this->board->getFenString());
-        $this->game->setCastling($this->getCastlingString());
-
-        // Append move to scoresheet.
-        $this->game->getScoresheet()->appendMove($move);
-
-        // Update whose turn it is.  Even if mate has occurred, it
-        // is still logically the opponents move, even if they have
-        // no valid move that they can make
-        if ($this->game->getTurn() === 'b') {
-          $this->game->setTurn('w');
+    }
+    elseif ($move->getType() === 'x') {
+      if ($this->board->squareIsEmpty($move->squareTo())) {
+        // En passant of pawn?
+        if ($move->getSourcePieceType() === 'P') {
+          $move_ok = TRUE;
         }
         else {
-          $this->game->setTurn('b');
+          $errors[] = new TranslatableMarkup('ERROR: @square is empty!',
+            ['@square' => $move->squareTo()->getCoordinate()]);
+          $move_ok = FALSE;
         }
-
-        // Add comment to head of chatter. Right now we have only two
-        // chatter items. Strip backslashes and replace newlines to get
-        // a single line.
-        if (empty($comment)) {
-          $comment = '(silence)';
-        }
-        else {
-          $comment = str_replace("\\", '', strip_tags($comment));
-          $comment = str_replace("\n", '<br />', $comment);
-        }
-        $comment = '<u>' . $user->id() . '</u>: ' . $comment;
-        //    $game['chatter'][1] = $game['chatter'][0];
-        //    $game['chatter'][1] = "Hugh hard coding for now";
-        //    $game['chatter'][0] = $comment;
       }
-      else {
-        $errors[] = 'ERROR: ' . $move->getAlgebraic() . ' is not a legal move!  ';
+      elseif ($this->board->getPiece($move->squareTo())->getColor() === $this->game->getTurn()) {
+        $errors[] = new TranslatableMarkup('ERROR: You cannot attack own chessman at @square!',
+          ['@square' => $move->squareTo()->getCoordinate()]);
+        $move_ok = FALSE;
+      }
+      elseif (!$this->board->pieceAttacks($move->squareFrom(), $move->squareTo())) {
+        $errors[] = new TranslatableMarkup('ERROR: You cannot take the piece on @square!',
+          ['@square' => $move->squareTo()->getCoordinate()]);
+        $move_ok = FALSE;
+      }
+
+      // If pawn reached last rank, promote it
+      $pawn_promoted = $this->handlePawnPromotion($move);
+
+      if ($move_ok && !$pawn_promoted) {
+        // Perform normal capture
+        $this->board->movePiece($move->squareFrom(), $move->squareTo());
       }
     }
+
+    // If OWN king is still in check, then invalid move
+    if ($this->board->isInCheck($move->getColor())) {
+      $errors[] = new TranslatableMarkup('ERROR: King is in check.');
+      $move_ok = FALSE;
+    }
+
+    $move->calculateAlgebraic($this->game->getTurn(), $clone_board);
+
+    // If move was executed update game state.
+    if ($move_ok) {
+      $messages[] = new TranslatableMarkup('Your last move: @move', ['@move' => $move->getAlgebraic()]);
+
+      // If it is a Rook or King move, invalidate castling as necessary.
+      $piece_type = $this->board->getPiece($move->squareTo())->getType();
+      if ($piece_type === 'K') {
+        $this->setCastlingForColor($this->game->getTurn(), FALSE);
+      }
+      else if ($piece_type === 'R') {
+        if ($move->squareFrom()->getFile() === 'a') {
+          $this->setCastling($this->game->getTurn(), 'Q', FALSE);
+        }
+        else if ($move->squareFrom()->getFile() === 'h') {
+          $this->setCastling($this->game->getTurn(), 'K', FALSE);
+        }
+      }
+
+      // If this wasn't a 2-square pawn move, we need to reset
+      // the en_passant square.
+      if (!$en_passant_set) {
+        $this->board->resetEnPassantSquare();
+      }
+
+      // Check checkmate/stalemate.
+      $opponent = $this->game->getPlayerColor($user) === 'w' ? 'b' : 'w';
+      if ($this->board->isInCheck($opponent)) {
+        // If this is checkmate finish the game, otherwise add '+' to the move.
+        if ($this->board->isInCheckmate($opponent)) {
+          if ($this->game->getTurn() === 'w') {
+            $this->setStatus(static::STATUS_WHITE_WIN);
+          }
+          else {
+            $this->setStatus(static::STATUS_BLACK_WIN);
+          }
+          $messages[] = '... CHECKMATE!';
+        }
+      }
+      elseif ($this->board->isStalemate($opponent)) {
+        $this->setStatus(static::STATUS_DRAW);
+        $messages[] = '... STALEMATE!';
+      }
+
+      // Update game board position and castling status.
+      $this->game->setBoard($this->board->getFenString());
+      $this->game->setCastling($this->getCastlingString());
+
+      // Append move to scoresheet.
+      $this->game->getScoresheet()->appendMove($move);
+
+      // Update whose turn it is.  Even if mate has occurred, it
+      // is still logically the opponents move, even if they have
+      // no valid move that they can make
+      if ($this->game->getTurn() === 'b') {
+        $this->game->setTurn('w');
+      }
+      else {
+        $this->game->setTurn('b');
+      }
+
+      // Add comment to head of chatter. Right now we have only two
+      // chatter items. Strip backslashes and replace newlines to get
+      // a single line.
+      if (empty($comment)) {
+        $comment = '(silence)';
+      }
+      else {
+        $comment = str_replace("\\", '', strip_tags($comment));
+        $comment = str_replace("\n", '<br />', $comment);
+      }
+      $comment = '<u>' . $user->id() . '</u>: ' . $comment;
+      //    $game['chatter'][1] = $game['chatter'][0];
+      //    $game['chatter'][1] = "Hugh hard coding for now";
+      //    $game['chatter'][0] = $comment;
+    }
+    else {
+      $errors[] = 'ERROR: ' . $move->getAlgebraic() . ' is not a legal move!  ';
+    }
+
     return empty($errors);
   }
 
@@ -685,19 +583,18 @@ class GamePlay {
    *
    * @param string $turn
    *   Whose turn to play, either 'w' or 'b'.
-   * @param string $king_from
-   *   The coordinate of the king, e.g. "e1"
-   * @param array $castling_coords
-   *   Array of the coords of all the squares involved, from
-   * left to right, e.g. array("e1", "f1", "g1", "h1"
+   * @param \Drupal\vchess\Game\Square $king_from
+   *   The coordinate of the king, e.g. "e1".
+   * @param \Drupal\vchess\Game\Square $king_to
+   *   The coordinate the king is going, e.g. "g1".
    *
    * @return string
    *
    */
-  public function castle($turn, $king_from, $king_to, $rook_from, $rook_to, $gap_coords) {
+  public function castle($turn, Square $king_from, Square $king_to) {
     $error = '';
 
-    if (count($gap_coords) === 2) {
+    if ($king_to->getColumn() - $king_from->getColumn() === 2) {
       $side = 'K';
       if (!$this->getCastling($turn, $side)) {
         $error = static::ERROR_CANNOT_CASTLE_SHORT;
@@ -779,7 +676,7 @@ class GamePlay {
   /**
    * Undo last move (only possible if game is not over yet).
    */
-  function handle_undo($uid) {
+  public function handleUndo($uid) {
 
   }
 
@@ -799,22 +696,6 @@ class GamePlay {
       }
     }
     return 0;
-  }
-
-  /**
-   * Check through all the current games to see if any have been lost on time
-   *
-   * If games are found which are lost on time, then the game is finished and
-   * the player statistics are updated
-   */
-  public static function checkForLostOnTimeGames() {
-    $games = Game::loadAllCurrentGames();
-
-    foreach ($games as $game) {
-      if ($game->isLostOnTime()) {
-        GamerStatistics::updatePlayerStatistics($game);
-      }
-    }
   }
 
 }

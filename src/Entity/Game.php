@@ -62,13 +62,15 @@ class Game extends ContentEntityBase {
 
   /**
    * Gets the last move for this game.
+   *
+   * @return \Drupal\vchess\Entity\Move
    */
   public function getLastMove() {
     return $this->getScoresheet()->getLastMove();
   }
 
   /**
-   * Get the number of the current move.
+   * Gets the number of the next move to be played.
    *
    * The move number will be the number of the move which is currently not yet complete.
    * Each move has a white move and a black move.
@@ -81,30 +83,36 @@ class Game extends ContentEntityBase {
    * move_no = 1 (i.e. waiting for move 1 of black)
    * After 1. e4 Nf6
    * move_no = 2 (i.e. waiting for move 2)
+   *
+   * @return int
    */
   public function getMoveNumber() {
     return $this->getScoresheet()->getNextMoveNumber();
   }
 
   /**
-   * See if the game is started yet
+   * Checks if the game is started yet.
    *
-   * @return
+   * @return bool
    *   TRUE if a move has already been made
    */
   public function isMoveMade() {
     // @todo: need to check this.
-    return !($this->getMoveNumber() == 1 && $this->getTurn() === "w");
-  }
-
-  public function appendMove(Move $move) {
-    $this->getScoresheet()->appendMove($move);
+    return !($this->getMoveNumber() === 1 && $this->getTurn() === 'w');
   }
 
   /**
-   * Calculate time left in seconds till next move must be made
+   * @return $this
+   */
+  public function appendMove(Move $move) {
+    $this->getScoresheet()->appendMove($move);
+    return $this;
+  }
+
+  /**
+   * Calculates time left in seconds till next move must be made.
    *
-   * @return
+   * @return int
    *   Number of seconds till next move must be made
    */
   public function calculateTimeLeft() {
@@ -129,18 +137,19 @@ class Game extends ContentEntityBase {
 
     $secs_per_move = $this->getTimePerMove() * $secs_per_unit;
 
-    if ($this->status == GamePlay::STATUS_IN_PROGRESS) {
-      $current_time = gmmktime();  // All dates are kept as GMT
+    if ($this->status === GamePlay::STATUS_IN_PROGRESS) {
+      // All dates are kept as GMT
+      $current_time = time();
       //        $other_time = gmdate("Y-m-d H:i:s");
       //        $just_time = time();
       //        drupal_set_message("current time:" . date("Y-m-d H:i:s", $current_time));
       //        drupal_set_message("other time:" . $other_time);
       //        drupal_set_message("time: " . date("Y-m-d H:i:s", $just_time));
       if ($this->isMoveMade()) {
-        $move_time = strtotime($this->lastMove()->timestamp());
+        $move_time = strtotime($this->getLastMove()->getTimestamp());
       }
       else {
-        $move_time = strtotime($this->timeStarted());
+        $move_time = strtotime($this->getTimeStarted());
       }
       $elapsed = $current_time - $move_time;
       $time_left = $secs_per_move - $elapsed;
@@ -150,30 +159,6 @@ class Game extends ContentEntityBase {
     }
 
     return $time_left;
-  }
-
-  /**
-   * Check if the game has been lost on time
-   *
-   * This checks if the time since the last move was made is
-   * now more than the time allowed for the game
-   *
-   * @return
-   *   TRUE if the game has been lost on time
-   */
-  public function isLostOnTime() {
-    if ($this->calculateTimeLeft() <= 0) {
-      $lost_on_time = TRUE;
-
-      if ($this->getStatus() === static::STATUS_IN_PROGRESS) {
-        $this->handleLostOnTime();
-      }
-    }
-    else {
-      $lost_on_time = FALSE;
-    }
-
-    return $lost_on_time;
   }
 
   /**
@@ -195,19 +180,17 @@ class Game extends ContentEntityBase {
    *   'w' (white), 'b' (black) or '' (not in the game).
    */
   public function getPlayerColor(UserInterface $user) {
-    if ($user->id() === $this->getWhiteUser()->id()) {
+    if ($this->getWhiteUser() && $user->id() === $this->getWhiteUser()->id()) {
       return 'w';
     }
-    else if ($user->id() === $this->getBlackUser()->id()) {
+    if ($this->getBlackUser() && $user->id() === $this->getBlackUser()->id()) {
       return 'b';
     }
-    else {
-      return '';
-    }
+    return '';
   }
 
   /**
-   * See if the given user is one of the players.
+   * Checks if the given user is one of the players.
    *
    * @param \Drupal\user\UserInterface $user
    *   The user to test.
@@ -216,11 +199,12 @@ class Game extends ContentEntityBase {
    *   TRUE if the given user is one of the players.
    */
   public function isUserPlaying(UserInterface $user) {
-    return $this->getBlackUser()->id() == $user->id() || $this->getWhiteUser()->id() == $user->id();
+    return ($this->getBlackUser() && $this->getBlackUser()->id() === $user->id())
+      || ($this->getWhiteUser() && $this->getWhiteUser()->id() === $user->id());
   }
 
   /**
-   * See if it's the given players move.
+   * Checks if it is the given players move.
    *
    * @param \Drupal\user\UserInterface $user
    *   The user to test.
@@ -263,19 +247,104 @@ class Game extends ContentEntityBase {
   }
 
   /**
-   * Get the player who is the current challenger
+   * Sets the player who initiated the challenge.
+   *
+   * @return $this
+   */
+  public function setChallenger(UserInterface $user) {
+    assert($this->isUserPlaying($user));
+    $this->set('challenger', $user->id() === $this->getWhiteUser()->id() ? 'w' : 'b');
+    return $this;
+  }
+
+  /**
+   * Gets the player who is the current challenger.
+   *
+   * @return \Drupal\user\UserInterface
    */
   public function getChallenger() {
-    $uid = 0;
-
-    if ($this->getWhiteUser() != NULL && $this->getBlackUser() == NULL) {
-      $uid = $this->getWhiteUser()->id();
+    if ($this->getWhiteUser() !== NULL && $this->getBlackUser() === NULL) {
+      return $this->getWhiteUser();
     }
-    elseif ($this->getBlackUser() != NULL && $this->getWhiteUser() == NULL) {
-      $uid = $this->getBlackUser()->id();
+    else if ($this->getBlackUser() !== NULL && $this->getWhiteUser() === NULL) {
+      return $this->getBlackUser();
+    }
+    else {
+      return $this->get('challenger') === 'w' ? $this->getWhiteUser() : $this->getBlackUser();
+    }
+  }
+
+  /**
+   * Sets a single user randomly to either be the black or white player.
+   *
+   * If the white or black player is already set, then the remaining slot is
+   * taken. If the two players are already set, then do nothing and return false.
+   *
+   * Note that it is an error to set a player when there are already 2 players
+   * assigned to the game.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *
+   * @return string
+   *   'w' or 'b': depending on which color was set, or '' if it couldn't be set.
+   */
+  public function setPlayerRandomly($user) {
+//     watchdog("VChess", "In game.inc for game %gid, at start of set_player() setting player uid=%uid." .
+//         " Currently white_uid=%white_uid and black_uid=%black_uid",
+//         array('%gid' => $this->gid(),
+//             '%uid' => $uid,
+//             '%white_uid' => $this->white_uid,
+//             '%black_uid' => $this->black_uid));
+
+    if ($this->getWhiteUser() === NULL && $this->getBlackUser() === NULL) {
+      if (mt_rand(1,100) < 50) {
+        $this->setWhiteUser($user);
+        return 'w';
+      }
+      else {
+        $this->setBlackUser($user);
+        return 'b';
+      }
+    }
+    else if ($this->getWhiteUser() === NULL) {
+      $this->setWhiteUser($user);
+      return 'w';
+    }
+    else if ($this->getBlackUser() === NULL) {
+      $this->setBlackUser($user);
+      return 'b';
+    }
+    else {
+      \Drupal::logger('VChess')->error(t( "Attempt to set a player when both players are already assigned"));
+      return '';
     }
 
-    return GamerStatistics::loadForUser(User::load($uid));
+//     watchdog("VChess", "in game.inc for game %gid, at end of set_player() setting " .
+//         " player uid=%uid.  Now white_uid=%white_uid and black_uid=%black_uid",
+//         array('%gid' => $this->gid(),
+//             '%uid' => $uid,
+//             '%white_uid' => $this->white_uid,
+//             '%black_uid' => $this->black_uid));
+
+  }
+
+  /**
+   * Sets the players for a new game.
+   *
+   * It is at this stage that the game really begins playing.
+   *
+   * @param UserInterface $white_user
+   *   White player user entity.
+   * @param UserInterface $black_user
+   *   Black player user entity.
+   *
+   * @return $this.
+   */
+  public function setPlayers(UserInterface $white_user, UserInterface $black_user) {
+    $this
+      ->setWhiteUser($white_user)
+      ->setBlackUser($black_user);
+    return $this;
   }
 
   /**
@@ -292,29 +361,41 @@ class Game extends ContentEntityBase {
   }
 
   /**
-   * Get the game speed, which is the combination of the time_per_move
+   * Gets the game speed, which is the combination of the time_per_move
    * and the time_units, e.g. "3 days"
    *
-   * @return
+   * @return string
    *   Returns the speed per move, e.g. "3 days"
    */
   public function getSpeed() {
     return $this->getTimePerMove() . ' ' . $this->getTimeUnits();
   }
 
+  /**
+   * @return string
+   */
   public function getTurn() {
     return $this->get('turn')->value;
   }
 
+  /**
+   * @return $this
+   */
   public function setTurn($value) {
     $this->set('turn', $value);
     return $this;
   }
 
+  /**
+   * @return string
+   */
   public function getStatus() {
     return $this->get('status')->value;
   }
 
+  /**
+   * @return $this
+   */
   public function setStatus($value) {
     if (!in_array($value, static::$gameStatus)) {
       throw new \InvalidArgumentException('Value must be one of ' . implode(', ', static::$gameStatus));
@@ -383,6 +464,9 @@ class Game extends ContentEntityBase {
     return $this;
   }
 
+  /**
+   * @return string
+   */
   public function getCastling() {
     return $this->get('castling')->value;
   }
@@ -409,15 +493,24 @@ class Game extends ContentEntityBase {
     return $this;
   }
 
+  /**
+   * @return string
+   */
   public function getEnPassantSquare() {
     return $this->get('en_passant_square')->value;
   }
 
+  /**
+   * @return $this
+   */
   public function setEnPassantSquare($value) {
     $this->set('en_passant_square', $value);
     return $this;
   }
 
+  /**
+   * @return int
+   */
   public function getTimePerMove() {
     return $this->get('time_per_move')->value;
   }
@@ -440,10 +533,16 @@ class Game extends ContentEntityBase {
     return $this;
   }
 
+  /**
+   * @return string
+   */
   public function getTimeUnits() {
     return $this->get('time_units')->value;
   }
 
+  /**
+   * @return $this
+   */
   public function setTimeUnits($value) {
     if (!in_array($value, static::$gameTime, TRUE)) {
       throw new \InvalidArgumentException('Value must be one of ' . implode(', ', static::$gameTime));
@@ -452,10 +551,16 @@ class Game extends ContentEntityBase {
     return $this;
   }
 
+  /**
+   * @return int
+   */
   public function getTimeStarted() {
     return $this->get('time_started')->value;
   }
 
+  /**
+   * @return $this
+   */
   public function setTimeStarted($value) {
     $this->set('time_started', $value);
     return $this;
@@ -491,6 +596,13 @@ class Game extends ContentEntityBase {
       ->setLabel('Black player')
       ->setDescription(t('User ID of black player'))
       ->setSetting('target_type', 'user');
+
+    $fields['challenger'] = BaseFieldDefinition::create('string')
+      ->setLabel('Challenger')
+      ->setDescription(t('The color of the player who initiated the challenge'))
+      ->setSetting('max_length', 2)
+      ->addConstraint('AllowedValues', ['choices' => ['w', 'b']])
+      ->setRequired(TRUE);
 
     $fields['label'] = BaseFieldDefinition::create('string')
       ->setLabel('Label')
@@ -533,13 +645,51 @@ class Game extends ContentEntityBase {
 
     return $fields;
   }
+  /**
+   * Deals with the case that the player has lost on time.
+   *
+   * @return $this
+   */
+  protected function handleLostOnTime() {
+    if ($this->getTurn() === 'w') {
+      $this->setStatus(GamePlay::STATUS_BLACK_WIN)->save();
+    }
+    else {
+      $this->setStatus(GamePlay::STATUS_WHITE_WIN)->save();
+    }
+    return $this;
+  }
+
+  /**
+   * Checks if the game has been lost on time.
+   *
+   * This checks if the time since the last move was made is
+   * now more than the time allowed for the game
+   *
+   * @return bool
+   *   TRUE if the game has been lost on time.
+   */
+  public function isLostOnTime() {
+    if ($this->calculateTimeLeft() <= 0) {
+      $lost_on_time = TRUE;
+
+      if ($this->getStatus() === GamePlay::STATUS_IN_PROGRESS) {
+        $this->handleLostOnTime();
+      }
+    }
+    else {
+      $lost_on_time = FALSE;
+    }
+
+    return $lost_on_time;
+  }
+
 
   /**
    * {@inheritdoc}
    */
   public function preSave(EntityStorageInterface $storage) {
     if (empty($this->label())) {
-
       // If label has not been set, then use the players' names.
       if ($white = $this->getWhiteUser()) {
         $white_name = $white->getDisplayName();
@@ -554,6 +704,12 @@ class Game extends ContentEntityBase {
         $black_name = 'Unknown';
       }
       $this->setLabel($white_name . ' vs. ' . $black_name);
+    }
+
+    // Ensure that games without complete users are marked as awaiting players.
+    // To avoid fails.
+    if ($this->getBlackUser() === NULL || $this->getWhiteUser() === NULL) {
+      $this->set('status', GamePlay::STATUS_AWAITING_PLAYERS);
     }
     parent::preSave($storage);
   }
@@ -689,24 +845,56 @@ class Game extends ContentEntityBase {
       ->condition('status', GamePlay::STATUS_IN_PROGRESS)
       ->sort('time_started', 'DESC')
       ->execute();
-    return Game::loadMultiple($ids);
+    return static::loadMultiple($ids);
   }
 
   /**
-   * Loads a list of all challenges - i.e. games without complete players.
+   * Loads a list of all challenges for a particular user or all users.
+   *
+   * @param \Drupal\user\UserInterface|null $user
+   *   The user for which challenges are to be loaded or null to load for all
+   *   users.
+   * @return \Drupal\vchess\Entity\Game[]
+   *   An array of challenges awaiting players.
+   */
+  public static function loadChallenges(UserInterface $user = NULL) {
+    $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getQuery();
+    $query
+      ->condition('status', GamePlay::STATUS_AWAITING_PLAYERS)
+      ->sort('time_started', 'ASC');
+
+    if ($user) {
+      $user_condition = $query->orConditionGroup()
+        ->condition('white_uid', $user->id())
+        ->condition('black_uid', $user->id());
+      $query->condition($user_condition);
+    }
+
+    return static::loadMultiple($query->execute());
+  }
+
+  /**
+   * Loads a list of all challenges not raised by this user.
+   *
+   * A challenge is a game without complete players.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The user to be excluded from the listing of challenges.
    *
    * @return \Drupal\vchess\Entity\Game[]
    *   An array of challenges awaiting players.
    */
-  public static function loadChallenges() {
+  public static function loadChallengesWithout(UserInterface $user) {
     $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getQuery();
-
+    $user_condition = $query->orConditionGroup()
+      ->condition('white_uid', $user->id(), '<>')
+      ->condition('black_uid', $user->id(), '<>');
     $ids = $query
       ->condition('status', GamePlay::STATUS_AWAITING_PLAYERS)
+      ->condition($user_condition)
       ->sort('time_started', 'ASC')
       ->execute();
-
-    return Game::loadMultiple($ids);
+    return static::loadMultiple($ids);
   }
 
 }

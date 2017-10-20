@@ -48,13 +48,60 @@ class GamePlayForm extends FormBase {
     $form['#prefix'] = '<div id="vchess-container">';
     $form['#suffix'] = '</div>';
 
+    switch ($game->getStatus()) {
+      case GamePlay::STATUS_IN_PROGRESS:
+        // No message needs to be set.
+        break;
+
+      case GamePlay::STATUS_AWAITING_PLAYERS:
+        drupal_set_message('This game is awaiting 1 or more players.');
+        break;
+
+      case GamePlay::STATUS_WHITE_WIN:
+        drupal_set_message('This game was won by white.');
+        break;
+
+      case GamePlay::STATUS_BLACK_WIN:
+        drupal_set_message('This game was won by black.');
+        break;
+
+      case GamePlay::STATUS_DRAW:
+        drupal_set_message('This game was drawn.');
+        break;
+
+    }
+
+    // Determine the game players, take note that this form will also display
+    // challenge games without complete players.
+    $t_args = [];
+    if ($game->getWhiteUser()) {
+      $t_args['@white'] = $game->getWhiteUser()->getDisplayName();
+    }
+    else {
+      // @todo: Nested TranslatableMarkup objects.
+      $t_args['@white'] = $this->t('TBD');
+    }
+
+    if ($game->getBlackUser()) {
+      $t_args['@black'] = $game->getBlackUser()->getDisplayName();
+    }
+    else {
+      // @todo: Nested TranslatableMarkup objects.
+      $t_args['@black'] = $this->t('TBD');
+    }
+
     // Display game heading, e.g. "white: admin - black: hugh"
     $form['header'] = [
-      '#markup' => '<div style="text-align:center;">white: <b>'
-        . $game->getWhiteUser()->getDisplayName()
-        . '</b> -   black: <b>'
-        . $game->getBlackUser()->getDisplayName() . '</b>'
-        . '</div>',
+      'white' => [
+        '#markup' => $this->t('White: <b>@white</b>', $t_args),
+        '#prefix' => '<div class="chess-player-label white">',
+        '#suffix' => '</div>',
+      ],
+      'black' => [
+        '#markup' => $this->t('Black: <b>@black</b>', $t_args),
+        '#prefix' => '<div class="chess-player-label black">',
+        '#suffix' => '</div>',
+      ],
     ];
 
     $form['board'] = [
@@ -80,15 +127,6 @@ class GamePlayForm extends FormBase {
      * result $cmdres if set or last move if any. Fill move edit with $move
      * if set (to restore move when notes were saved).
      */
-    
-//    $form['commands'] = [
-//      '#prefix' => '<div id="board-commands">',
-//      'command_form' => \Drupal::formBuilder()->getForm(GamePlayForm::class, $game),
-//      '#suffix' => '</div>',
-//    ];
-
-//    $move = "";
-
     $form['cmd'] = [
       '#type' => 'hidden',
       '#default_value' => '',
@@ -102,6 +140,17 @@ class GamePlayForm extends FormBase {
     $form['privnotes'] = [
       '#type' => 'value',
       '#default_value' => '',
+    ];
+
+    $form['move_button'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Make move'),
+//    '#attributes' => ['class' => 'invisible'],
+      '#attributes' => [
+        'style' => ['visibility:hidden;'],
+        'class' => ['btn btn-primary']
+      ],
+      '#name' => 'move_button',
     ];
 
     if ($game->isMoveMade()
@@ -142,17 +191,6 @@ class GamePlayForm extends FormBase {
         ],
       ];
     }
-
-    $form['move_button'] = [
-      '#type' => 'submit',
-      '#value' => $this->t('Make move'),
-//    '#attributes' => ['class' => 'invisible'],
-      '#attributes' => [
-        'style' => ['visibility:hidden;'],
-        'class' => ['btn btn-primary']
-      ],
-      '#name' => 'move_button',
-    ];
 
     $form['move'] = [
       '#type' => 'hidden',
@@ -205,21 +243,11 @@ class GamePlayForm extends FormBase {
    * Resign from a particular game.  This is the form handler for the resignation button.
    */
   protected function resignGame(array &$form, FormStateInterface $form_state) {
-    $user = $this->currentUser();
-
+    $user = User::load($this->currentUser()->id());
     $gameplay = new GamePlay($this->game);
     $gameplay->resign($user);
     $this->game->save();
-
-    if ($this->game->getStatus() == GamePlay::STATUS_BLACK_WIN) {
-      $score = GamerStatistics::GAMER_BLACK_WIN; // white resigned
-    }
-    else {
-      $score = GamerStatistics::GAMER_WHITE_WIN; // black resigned
-    }
-
-    GamerStatistics::updateUserStatistics($this->game->getWhiteUser(), $this->game->getBlackUser(), $score);
-
+    GamerStatistics::updatePlayerStatistics($this->game);
     drupal_set_message($this->t('You have now resigned.'));
   }
 
@@ -256,27 +284,12 @@ class GamePlayForm extends FormBase {
 
         // Ensure that the other player is informed
 //      rules_invoke_event('vchess_move_made', $game->white_player(), $game->black_player());
-        $opponent = $game->getOpponent($user);
 
 //        rules_invoke_event('vchess_move_made', $opponent,
 //          $gid, $game->last_move()->algebraic());
 
         if ($game->getStatus() !== GamePlay::STATUS_IN_PROGRESS) {
-          switch ($game->getStatus()) {
-            case GamePlay::STATUS_WHITE_WIN:
-              $score = GamerStatistics::GAMER_WHITE_WIN;
-              break;
-            case GamePlay::STATUS_BLACK_WIN:
-              $score = GamerStatistics::GAMER_BLACK_WIN;
-              break;
-            case GamePlay::STATUS_DRAW:
-              $score = GamerStatistics::GAMER_DRAW;
-              break;
-            default:
-              $score = 0;
-          }
-
-          GamerStatistics::updateUserStatistics($game->getWhiteUser(), $game->getBlackUser(), $score);
+          GamerStatistics::updatePlayerStatistics($game);
         }
 
         // Send a notification if email address was supplied.

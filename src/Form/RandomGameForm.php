@@ -4,9 +4,9 @@ namespace Drupal\vchess\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\gamer\GamerController;
 use Drupal\user\Entity\User;
 use Drupal\vchess\Entity\Game;
+use Drupal\vchess\GameManager;
 
 /**
  * Form to start a chess game against a random opponent.
@@ -56,10 +56,10 @@ class RandomGameForm extends FormBase {
       ->condition('uid', $user->id(), '!=')
       ->execute());
 
-    $random_uid = $possible_opponents[rand(0, count($possible_opponents) - 1)];
+    $random_uid = $possible_opponents[mt_rand(0, count($possible_opponents) - 1)];
     $opponent = User::load($random_uid);
 
-    if (rand(0, 1)) {
+    if (mt_rand(0, 1)) {
       // Current user plays white and opponent plays black
       $white_user = $user;
       $black_user = $opponent;
@@ -76,7 +76,7 @@ class RandomGameForm extends FormBase {
     $game->save();
 
     // @todo: Check out this method.
-    GamerController::startGame($white_user, $black_user);
+    GameManager::startGame($white_user, $black_user);
 
     drupal_set_message($this->t('Game %label has been created.', ['%label' => $game->label()]));
     $form_state->setRedirect('vchess.game', ['vchess_game' => $game->id()]);

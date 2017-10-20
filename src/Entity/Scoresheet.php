@@ -28,7 +28,7 @@ class Scoresheet {
    * 
    * @param Game $game
    */
-  function __construct($game_id) {
+  public function __construct($game_id) {
     $this->gameId = $game_id;
     $this->loadMoves();
   }
@@ -88,7 +88,7 @@ class Scoresheet {
     }
     else {
       if (array_key_exists('b', $this->moves[$move_no])) {
-        $move_no += 1;
+        $move_no++;
       }
     }
   
@@ -164,7 +164,7 @@ class Scoresheet {
    * @return \Drupal\vchess\Entity\Move
    *   The last move that was added.
    */
-  function getLastMove() {
+  public function getLastMove() {
     $move_no = count($this->moves);
     
     if ($move_no < 1) {

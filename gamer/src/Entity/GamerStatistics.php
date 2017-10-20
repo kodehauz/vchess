@@ -29,7 +29,7 @@ use Drupal\vchess\Game\GamePlay;
  */
 class GamerStatistics extends ContentEntityBase {
 
-    // Define game statuses
+  // Define game status strings.
   const GAMER_WHITE_WIN = '1-0';
   const GAMER_BLACK_WIN = '0-1';
   const GAMER_DRAW = '1/2-1/2';
@@ -42,7 +42,7 @@ class GamerStatistics extends ContentEntityBase {
   }
 
   /**
-   * @todo
+   * @return $this
    */
   public function setOwner($value) {
     $this->set('owner', $value);
@@ -57,7 +57,7 @@ class GamerStatistics extends ContentEntityBase {
   }
 
   /**
-   * @todo
+   * @return $this
    */
   public function setCurrent($value) {
     $this->set('current', $value);
@@ -72,7 +72,7 @@ class GamerStatistics extends ContentEntityBase {
   }
 
   /**
-   * @todo
+   * @return $this
    */
   public function setWon($value) {
     $this->set('won', $value);
@@ -87,7 +87,7 @@ class GamerStatistics extends ContentEntityBase {
   }
 
   /**
-   * @todo
+   * @return $this
    */
   public function setDrawn($value) {
     $this->set('drawn', $value);
@@ -102,7 +102,7 @@ class GamerStatistics extends ContentEntityBase {
   }
 
   /**
-   * @todo
+   * @return $this
    */
   public function setLost($value) {
     $this->set('lost', $value);
@@ -117,7 +117,7 @@ class GamerStatistics extends ContentEntityBase {
   }
 
   /**
-   * @todo
+   * @return $this
    */
   public function setRating($value) {
     $this->set('rating', $value);
@@ -132,7 +132,7 @@ class GamerStatistics extends ContentEntityBase {
   }
 
   /**
-   * @todo
+   * @return $this
    */
   public function setPlayed($value) {
     $this->set('played', $value);
@@ -147,7 +147,7 @@ class GamerStatistics extends ContentEntityBase {
   }
 
   /**
-   * @todo
+   * @return $this
    */
   public function setRchanged($value) {
     $this->set('rchange', $value);
@@ -170,6 +170,7 @@ class GamerStatistics extends ContentEntityBase {
       return reset($stats);
     }
     else {
+      // @todo Should this be the case???
       $stats = static::create();
       $stats
         ->setOwner($user)
@@ -180,6 +181,9 @@ class GamerStatistics extends ContentEntityBase {
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields = parent::baseFieldDefinitions($entity_type);
 
@@ -236,66 +240,12 @@ class GamerStatistics extends ContentEntityBase {
 
 
   /**
-   * Update user stats
-   *
-   * The final rating change is truncated to four digits after the comma.
-   *
-   * @param $white_user
-   *   White player user id
-   * @param $black_user
-   *   Black player user id
-   * @param $score
-   *   Score is one of:
-   *   - GAMER_WHITE_WIN
-   *   - GAMER_BLACK_WIN
-   *   - GAMER_DRAW
-   */
-  public static function updateUserStatistics(UserInterface $white_user, UserInterface $black_user, $score) {
-    $white = GamerStatistics::loadForUser($white_user);
-    $black = GamerStatistics::loadForUser($black_user);
-
-    // Update wins/draws/losses
-    if ($score == GamerStatistics::GAMER_WHITE_WIN) {
-      $white->setWon($white->getWon() + 1);
-      $black->setLost($black->getLost() + 1);
-    }
-    elseif ($score == GAMER_DRAW) {
-      $white->setDrawn($white->getDrawn() + 1);
-      $black->setDrawn($white->getDrawn() + 1);
-    }
-    else { // Black won
-      $white->setLost($white->getLost() + 1);
-      $black->setWon($black->getWon() + 1);
-    }
-
-    $white->setCurrent($white->getCurrent() - 1);
-    $black->setCurrent($black->getCurrent() - 1);
-
-    $white->setPlayed($white->getPlayed() + 1);
-    $black->setPlayed($black->getPlayed() + 1);
-
-    // Update rating change according to the winning probability
-    $win_probability = Rating::calculateWinProbability($white->getRating() - $black->getRating());
-    $rchange = round(Rating::calcRatingChangeMultiplier() * ($score - $win_probability));
-
-    // Update rating
-    $white->setRchanged($rchange);
-    $black->setRchanged(-$rchange);
-
-    $white->setRating($white->getRating() + $rchange);
-    $black->setRating($black->getRating() - $rchange);
-
-    $white->save();
-    $black->save();
-  }
-
-  /**
    * Update stats to note that another game is in progress
    *
-   * @param $uid1
-   *   The user id of the first player
-   * @param $uid2
-   *   The user id of the second player
+   * @param \Drupal\user\UserInterface $user1
+   *   The first player user entity.
+   * @param \Drupal\user\UserInterface $user2
+   *   The second player user entity.
    */
   public static function addInProgress(UserInterface $user1, UserInterface $user2) {
     // Load stats. Is always successful (returns zero array if not found).
@@ -314,27 +264,62 @@ class GamerStatistics extends ContentEntityBase {
   }
 
   /**
-   * Update the player statistics
+   * Update the player statistics for a completed game.
+   *
+   * The final rating change for players is truncated to four digits after the
+   * comma.
    *
    * @param $game
    *   The game which has just finished
    */
   public static function updatePlayerStatistics(Game $game) {
+    $white_stats = static::loadForUser($game->getWhiteUser());
+    $black_stats = static::loadForUser($game->getBlackUser());
+
+    // Update games won, lost or drawn.
     switch ($game->getStatus()) {
       case GamePlay::STATUS_WHITE_WIN:
-        $score = GamerStatistics::GAMER_WHITE_WIN;
+        $white_stats->setWon($white_stats->getWon() + 1);
+        $black_stats->setLost($black_stats->getLost() + 1);
         break;
       case GamePlay::STATUS_BLACK_WIN:
-        $score = GamerStatistics::GAMER_BLACK_WIN;
+        $white_stats->setLost($white_stats->getLost() + 1);
+        $black_stats->setWon($black_stats->getWon() + 1);
         break;
       case GamePlay::STATUS_DRAW:
-        $score = GamerStatistics::GAMER_DRAW;
+        $white_stats->setDrawn($white_stats->getDrawn() + 1);
+        $black_stats->setDrawn($black_stats->getDrawn() + 1);
         break;
       default:
         $score = '';
     }
 
-    static::updateUserStatistics($game->getWhiteUser(), $game->getBlackUser(), $score);
+    switch ($game->getStatus()) {
+      case GamePlay::STATUS_WHITE_WIN:
+      case GamePlay::STATUS_BLACK_WIN:
+      case GamePlay::STATUS_DRAW:
+        // Update number of current games.
+        $white_stats->setCurrent($white_stats->getCurrent() - 1);
+        $black_stats->setCurrent($black_stats->getCurrent() - 1);
+
+        $white_stats->setPlayed($white_stats->getPlayed() + 1);
+        $black_stats->setPlayed($black_stats->getPlayed() + 1);
+
+        // Update rating change according to the winning probability
+        $win_probability = Rating::calculateWinProbability($white_stats->getRating() - $black_stats->getRating());
+        $rchange = round(Rating::calcRatingChangeMultiplier() * ($score - $win_probability));
+
+        // Update rating.
+        $white_stats->setRchanged($rchange);
+        $black_stats->setRchanged(-$rchange);
+
+        $white_stats->setRating($white_stats->getRating() + $rchange);
+        $black_stats->setRating($black_stats->getRating() - $rchange);
+
+        $white_stats->save();
+        $black_stats->save();
+        break;
+    }
   }
 
 }

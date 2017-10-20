@@ -47,7 +47,7 @@ vchess.challenges:
     _permission: 'view challenges'
 
 vchess.accept_challenge:
-  path: /vchess/challenge/{challenge}/accept
+  path: /vchess/challenge/{vchess_game}/accept
   defaults:
     _controller: \Drupal\vchess\Controller\GameController::acceptChallenge
     _title: 'Accept Challenge'
@@ -124,7 +124,7 @@ vchess.player:
 vchess.test:
   path: /vchess/test
   defaults:
-    _controller: \Drupal\vchess\Controller\GameController::testVchess
+    _controller: \Drupal\vchess\Controller\TestController::testVchess
     _title: 'Perform a test'
   requirements:
     _permission: 'reset games'

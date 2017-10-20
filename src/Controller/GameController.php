@@ -3,22 +3,18 @@
 namespace Drupal\vchess\Controller;
 
 use Drupal\Component\Render\FormattableMarkup;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Url;
 use Drupal\gamer\Entity\GamerStatistics;
-use Drupal\gamer\GamerController;
 use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
 use Drupal\vchess\Entity\Game;
-use Drupal\vchess\Form\GamePlayForm;
 use Drupal\vchess\Game\GamePlay;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\vchess\GameManager;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Zend\Diactoros\Response\JsonResponse;
 
 class GameController extends ControllerBase {
 
@@ -47,8 +43,23 @@ class GameController extends ControllerBase {
       // Get the list of all challenges.
       $challenges = Game::loadChallenges();
       $build['all_challenges'] = $this->buildChallengesTable($challenges, $user);
+
+      $current_games = Game::countUsersCurrentGames($user);
+      if ($player->getCurrent() !== $current_games) {
+        // Log error if there is a discrepancy.
+        $this->getLogger('vchess')
+          ->error($this->t('Stats for current games from gamer was @gamer_current but vChess calculates @vchess',
+          [
+            '@gamer_current' => $player->getCurrent(),
+            '@vchess' => $current_games,
+          ]));
+
+        $player
+          ->setCurrent($current_games)
+          ->save();
+      }
+      $build['stats'] = $this->playerStatsTable($user);
       $build['links'] = $this->buildNewGameLinks();
-      $build['stats'] = $this->buildPlayerStatsTable($user);
 
       return $build;
     }
@@ -169,6 +180,7 @@ class GameController extends ControllerBase {
       $rows = $this->doNonSqlSort($rows, $sort, $order['sql']);
     }
 
+    $a_game = reset($games);
     return [
       '#type' => 'table',
       '#header' => $header,
@@ -176,7 +188,11 @@ class GameController extends ControllerBase {
       '#rows' => $rows,
       '#empty' => $empty,
       '#attributes' => [
-        'class' => ['table current-games-table table-responsive table-striped']
+        'class' => ['table current-games-table table-responsive table-striped'],
+      ],
+      '#cache' => [
+        'contexts' => $a_game->getEntityType()->getListCacheContexts(),
+        'tags' => $a_game->getEntityType()->getListCacheTags(),
       ],
     ];
   }
@@ -195,16 +211,16 @@ class GameController extends ControllerBase {
   public function buildChallengesTable($games, $named_user) {
     $rows = [];
     $user = User::load(\Drupal::currentUser()->id());
-    $empty = "";
+    $empty = '';
     if (count($games) > 0) {
       foreach ($games as $game) {
-        $challenger = $game->getChallenger();
+        $challenger = GamerStatistics::loadForUser($game->getChallenger());
         if ($challenger->getOwner()->id() !== $user->id() || MAY_PLAY_SELF) {
-          $accept_link = t('<a href=":accept-link">Accept</a>',
-            [':accept-link' => Url::fromRoute('vchess.accept_challenge', ['game' => $game->id()])]);
+          $accept_link = $this->t('<a href=":accept-link">Accept</a>',
+            [':accept-link' => Url::fromRoute('vchess.accept_challenge', ['vchess_game' => $game->id()])->toString()]);
         }
         else {
-          $accept_link = t('Pending');
+          $accept_link = $this->t('Pending');
         }
         $rows[] = [
           'challenger' => new FormattableMarkup('<a href=":challenger-url">@challenger-name</a>', [
@@ -212,8 +228,8 @@ class GameController extends ControllerBase {
             '@challenger-name' => $challenger->getOwner()->getDisplayName()
           ]),
           'rating' => $challenger->getRating(),
-          'speed' => $game->speed(),
-          'gid' => $accept_link,
+          'speed' => $game->getSpeed(),
+          'accept' => $accept_link,
         ];
       }
     }
@@ -239,6 +255,7 @@ class GameController extends ControllerBase {
       $rows = $this->doNonSqlSort($rows, $sort, $order['sql']);
     }
 
+    $a_game = reset($games);
     return [
       '#type' => 'table',
       '#header' => $header,
@@ -246,7 +263,11 @@ class GameController extends ControllerBase {
       '#rows' => $rows,
       '#empty' => $empty,
       '#attributes' => [
-        'class' => ['table challenges-table table-striped']
+        'class' => ['table challenges-table table-striped'],
+      ],
+      '#cache' => [
+        'contexts' => $a_game->getEntityType()->getListCacheContexts(),
+        'tags' => $a_game->getEntityType()->getListCacheTags(),
       ],
     ];
   }
@@ -255,21 +276,31 @@ class GameController extends ControllerBase {
    * Get the stats for a particular player
    */
   protected function buildPlayerStatsTable(UserInterface $user) {
-    $gamer_stats = GamerStatistics::loadForUser($user);
-    $vchess_calculated = Game::countUsersCurrentGames($user);
-    if ($gamer_stats->getCurrent() !== $vchess_calculated) {
-      $this->getLogger('vchess')->error($this->t('Stats for current games from gamer was @gamer_current but vchess calculates @vchess',
-        [
-          '@gamer_current' => $gamer_stats->getCurrent(),
-          '@vchess' => $vchess_calculated,
-        ]));
+  }
 
-      $gamer_stats
-        ->setCurrent($vchess_calculated)
-        ->save();
-    }
+  protected function playerStatsTable(UserInterface $user) {
+    $stats = GamerStatistics::loadForUser($user);
 
-    return GamerController::playerStatsTable($user);
+    $header = array('Played', 'Won', 'Drawn', 'Lost', 'Rating', 'Rating change', 'Current games');
+    $rows = array(array($stats->getPlayed(), $stats->getWon(), $stats->getDrawn(),
+      $stats->getLost(), $stats->getRating(), $stats->getRchanged(), $stats->getCurrent()));
+
+    return [
+      'title' => [
+        '#type' => 'markup',
+        '#markup' => 'Statistics for <b>' . $user->getDisplayName() . '</b>:'
+      ],
+      'table' => [
+        '#type'   => 'table',
+        '#header' => $header,
+        '#rows'   => $rows,
+        '#empty'  => 'Nothing to display.',
+        '#cache' => [
+          'contexts' => Cache::mergeContexts($stats->getEntityType()->getListCacheContexts()),
+          'tags' => Cache::mergeTags($stats->getEntityType()->getListCacheTags(), ['user']),
+        ],
+      ],
+    ];
   }
 
   /**
@@ -281,16 +312,8 @@ class GameController extends ControllerBase {
   public function createDefaultChallenge() {
     $user = User::load(\Drupal::currentUser()->id());
 
-    // Check that user does not already have a challenge pending
-    $pending = 0;
-    $games = Game::loadChallenges();
-    foreach ($games as $game) {
-      if ($game->getChallenger()->id() === $user->id()) {
-        $pending++;
-      }
-    }
-
-    if ($pending <= VCHESS_PENDING_LIMIT) {
+    // Check that user does not already have too many challenges pending.
+    if (count(Game::loadChallenges($user)) <= VCHESS_PENDING_LIMIT) {
       $game = Game::create()
         ->setWhiteUser($user);
       $game->save();
@@ -303,72 +326,15 @@ class GameController extends ControllerBase {
     }
   }
 
-  /**
-   * Accept a challenge to play a particular game.
-   *
-   * @param \Drupal\vchess\Entity\Game $game
-   *   The game pulled from the Request.
-   */
-  public function acceptChallenge(Game $game) {
-    $user = User::load($this->currentUser()->id());
-
-    $this->getLogger(__METHOD__)->info("Player uid=%uid (%uname) has accepted challenge for game %gid. " .
-      "white_uid=%white_uid, black_uid=%black_uid. ",
-        ['%uid' => $user->id(),
-         '%uname' => $user->getDisplayName(),
-         '%gid' => $game->id(),
-         '%white_uid' => $game->getWhiteUser()->id(),
-         '%black_uid' => $game->getBlackUser()->id()]);
-
-    // Check that the game has not already got players (should never happen!)
-    if ($game->getWhiteUser() === NULL || $game->getBlackUser() === NULL) {
-      if ($game->getWhiteUser() === NULL) {
-        $game->setWhiteUser($user);
-      }
-      else {
-        $game->setBlackUser($user);
-      }
-
-      GamerController::startGame($game->getWhiteUser(), $game->getBlackUser());
-
-      $extra = "";
-      $its_your_move = "";
-      if ($game->player_color($user->uid) == 'w') {
-        $opponent_name = $game->black_player()->name();
-        $opponent_user = user_load($game->black_uid());
-        $its_your_move = "Now, it's your move!";
-      }
-      else {
-        $opponent_name = $game->white_player()->name();
-        $opponent_user = user_load($game->white_uid());
-        $extra = "Since you are playing black, you will have to wait for $opponent_name to move.<br />";
-      }
-      $msg = "Congratulations, you have started a game against <b>" . $opponent_name . "</b>.<br />";
-      $msg .= $extra;
-      $msg .= "You can keep an eye on the status of this game and all your games on your <a href='" . url("vchess/my_current_games") .
-        "'>current games page</a>.<br />";
-      $msg .= $its_your_move;
-
-      rules_invoke_event('vchess_challenge_accepted', $opponent_user, $gid);
-
-      drupal_set_message($msg);
-
-      drupal_goto("vchess/game/" . $gid);
+  public function acceptChallenge(Game $vchess_game) {
+    if (GameManager::acceptChallenge($vchess_game)) {
+      $vchess_game
+        ->setStatus(GamePlay::STATUS_IN_PROGRESS)
+        ->save();
+      return new RedirectResponse(Url::fromRoute('vchess.game',
+        ['vchess_game' => $vchess_game->id()])->toString());
     }
-    else {
-      watchdog(__FUNCTION__, "Players are already assigned so challenge cannot be fulfilled. " .
-        "Player uid=%uid (%uname) accepted challenge for game %gid. " .
-        "white_uid=%white_uid, black_uid=%black_uid. ",
-        array('%uid' => $user->uid,
-          '%uname' => $user->name,
-          '%gid' => $gid,
-          '%white_uid' => $game->white_uid(),
-          '%black_uid' => $game->black_uid()
-        ),
-        WATCHDOG_ERROR);
-    }
-
-    return $this->displayGame($game);
+    return new RedirectResponse(Url::fromRoute('vchess.challenges')->toString());
   }
 
   /**
@@ -380,19 +346,14 @@ class GameController extends ControllerBase {
    * @return array
    *   The render array for the game display page.
    */
-  public function displayGame(Game $vchess_game) {
-    return \Drupal::formBuilder()->getForm(GamePlayForm::class, $vchess_game);
-  }
 
   /**
    * menu callback to display all active games
    */
   public function allCurrentGames() {
-    $user = User::load($this->currentUser());
+    $user = User::load($this->currentUser()->id());
+    $out = [];
     if ($user->isAuthenticated()) {
-      $gamefolder = $this->config('vchess.settings')->get('game_files_folder');
-      $res_games = $gamefolder;
-
       if (!$user->getAccountName()) {
         return $this->t('Please, register to play chess');
       }
@@ -400,11 +361,11 @@ class GameController extends ControllerBase {
       // Get the list of possible games to view
       $games = Game::loadAllCurrentGames();
 
-      $out = $this->buildCurrentGamesTable($games, $user);
-      $out .= $this->buildNewGameLinks();
+      $out['current_games'] = $this->buildCurrentGamesTable($games, $user);
+      $out['links'] = $this->buildNewGameLinks();
     }
     else {
-      $out = "Please log in to access this page";
+      $out['#markup'] = $this->t('Please log in to access this page');
     }
 
     return $out;
@@ -420,7 +381,6 @@ class GameController extends ControllerBase {
     $games = Game::loadChallenges();
     $build['challenges'] = $this->buildChallengesTable($games, $user);
     $build['links'] = $this->buildNewGameLinks();
-
     return $build;
   }
 
@@ -454,29 +414,88 @@ class GameController extends ControllerBase {
   /**
    * Display the page for a given player
    *
-   * @param $uid
+   * @param UserInterface $player
+   *   The player.
    */
-  public function displayPlayer($name) {
-    $player = $this->entityTypeManager()->getStorage('user')->loadByProperties(['name' => $name]);
-
-    if ($player = reset($player)) {
-      $html = GamerController::playerStatsTable($player);
-      $html .= $this->usersCurrentGames($player);
-
-      return $html;
+  public function displayPlayer(UserInterface $player) {
+    if ($player) {
+      return [
+        'stats' => $this->playerStatsTable($player),
+        'games' => $this->usersCurrentGames($player),
+      ];
     }
-    else {
-      throw new NotFoundHttpException();
-    }
+    throw new NotFoundHttpException();
   }
 
   /**
    * page callback to display the table of players
    */
   public function displayPlayers() {
-    GamePlay::checkForLostOnTimeGames();
+    $this->checkForLostOnTimeGames();
 
-    return GamerStatistics::players();
+    return $this->playersTable();
+  }
+
+  /**
+   * Checks through all the current games to see if any have been lost on time.
+   *
+   * If games are found which are lost on time, then the game is finished and
+   * the player statistics are updated
+   */
+  protected function checkForLostOnTimeGames() {
+    $games = Game::loadAllCurrentGames();
+    foreach ($games as $game) {
+      if ($game->isLostOnTime()) {
+        GamerStatistics::updatePlayerStatistics($game);
+      }
+    }
+  }
+
+  protected function playersTable() {
+    /** @var \Drupal\user\UserInterface $user */
+    $rows = [];
+    foreach (User::loadMultiple() as $user) {
+      $stats = GamerStatistics::loadForUser($user);
+      $rows[] = [
+        'uid' => $user->id(),
+        'name' => '<a href="'
+          . Url::fromRoute('vchess.player', ['player' => $user->id()])->toString()
+          . '">' . $user->getDisplayName() . '</a>',
+        'rating' => $stats->getRating(),
+        'played' => $stats->getPlayed(),
+        'won' => $stats->getWon(),
+        'lost' => $stats->getLost(),
+        'drawn' => $stats->getDrawn(),
+        'rating_change' => $stats->getRchanged(),
+        // the name tag is used so that the column still sorts correctly
+        'current' => '<a name="' . $stats->getCurrent() . '" href="'
+          . Url::fromRoute('vchess.current_games', ['user' => $user->id()])->toString()
+          . '">' . $stats->getCurrent() . '</a>',
+      ];
+    }
+
+    $header = [
+      ['data' => $this->t('uid'), 'field' => 'uid'],
+      ['data' => $this->t('name'), 'field' => 'name'],
+      ['data' => $this->t('rating'), 'field' => 'rating'],
+      ['data' => $this->t('played'), 'field' => 'played'],
+      ['data' => $this->t('won'), 'field' => 'won'],
+      ['data' => $this->t('lost'), 'field' => 'lost'],
+      ['data' => $this->t('drawn'), 'field' => 'drawn'],
+      ['data' => $this->t('rating change'), 'field' => 'rating_change'],
+      ['data' => $this->t('in progress'), 'field' => 'current'],
+    ];
+
+    return [
+      '#type' => 'table',
+      '#header' => $header,
+      '#rows' => $rows,
+      '#empty' => 'The message to display in an extra row if table does not have any rows.',
+      '#cache' => [
+        'contexts' => Cache::mergeContexts($stats->getEntityType()->getListCacheContexts()),
+        'tags' => Cache::mergeTags($stats->getEntityType()->getListCacheTags(), ['user']),
+      ],
+    ];
   }
 
   /**
@@ -485,10 +504,14 @@ class GameController extends ControllerBase {
   protected function buildNewGameLinks() {
     $links = [
       '#prefix' => '<div class="vchess-game-links">',
-      '#suffix' => '</div>'
+      '#suffix' => '</div>',
+      '#cache' => [
+        'max-age' => Cache::PERMANENT,
+      ],
     ];
-
     $links['create_challenge'] = [
+      '#prefix' => '<div class="create-challenge">',
+      '#suffix' => '</div>',
       '#type' => 'link',
       '#title' => $this->t('Create challenge'),
       '#url' => Url::fromRoute('vchess.create_challenge'),
@@ -496,6 +519,8 @@ class GameController extends ControllerBase {
       '#suffix' => '</div>',
     ];
     $links['create_random_game'] = [
+      '#prefix' => '<div class="create-random-game">',
+      '#suffix' => '</div>',
       '#type' => 'link',
       '#title' => $this->t('New random game'),
       '#url' => Url::fromRoute('vchess.random_game_form'),
@@ -503,6 +528,8 @@ class GameController extends ControllerBase {
       '#suffix' => '</div>',
     ];
     $links['create_opponent_game'] = [
+      '#prefix' => '<div class="create-opponent-game">',
+      '#suffix' => '</div>',
       '#type' => 'link',
       '#title' => $this->t('New opponent game'),
       '#url' => Url::fromRoute('vchess.opponent_game_form'),
@@ -516,50 +543,27 @@ class GameController extends ControllerBase {
   /**
    * Get simple won/lost/drawn stats for a player.
    */
-  protected function buildPlayerStatistics(UserInterface $stats_user) {
-    global $user;
+  protected function buildPlayerStatistics(UserInterface $player) {
+    $user = User::load(\Drupal::currentUser()->id());
+    $stats = GamerStatistics::loadForUser($player);
 
-    $html = "";
-
-    $user = User::load(\Drupal::currentUser());
-    $player = GamerStatistics::load($stats_user->id());
-    //   $stats = gamer_load_user_stats($stats_user->uid);
-
-    if ($stats_user->id() === $user->id()) {
-      $html .= "Here are your basic statistics<br />";
+    if ($player->id() === $user->id()) {
+      $title = $this->t('Here are your basic statistics<br />');
     }
     else {
-      $html .= "Here are the basic statistics for <b>" . $stats_user->name . "</b><br />";
+      $title = $this->t('Here are the basic statistics for <b>@user</b><br />',
+        ['@user' => $player->getDisplayName()]);
     }
 
-    $html .= '<div style="text-align:center;">';
-    $html .= t('won:') . " " . $player->getWon() . " " . t('lost:') . " " . $player->getLost() . " " .
-      t('drawn:') . " " . $player->getDrawn() . '</div>';
-    $html .= "<br />";
-
-    return $html;
-  }
-
-  /**
-   * A single test
-   *
-   * This function is for running individual tests normally found
-   * within the vchess.test file, but without all the heavy setup
-   * and teardown time which those functions need.
-   */
-  public function testVchess() {
-    $html = "";
-
-    GamerController::startGame(1, 1);
-
-    $player = new Player(1);
-    $player->set_current(-25);
-
-    $html .= "time() is: " . date("Y-m-d H:i:s", time()) . "<br />";
-    $html .= "SERVER REQUEST_TIME is: " . date("Y-m-d H:i:s", $_SERVER['REQUEST_TIME']) . "<br />";
-    $html .= "gmdate() is: " . gmdate("Y-m-d H:i:s");
-
-    return $html;
+    return [
+      'title' => $title,
+      'description' => [
+        '#prefix' => '<div style="text-align:center;">',
+        '#markup' => $this->t('Won: @won; Lost: @lost; Drawn: @drawn</div>',
+           ['@won' => $stats->getWon(), '@lost' => $stats->getLost(), '@drawn' => $stats->getDrawn()]),
+        '#suffix' => "<br />",
+      ],
+    ];
   }
 
   /**
@@ -572,23 +576,24 @@ class GameController extends ControllerBase {
    *   A user-friendly string of the time, e.g. "2 days 23 hours 56 mins 34 secs"
    */
   protected function formatUserFriendlyTime($secs) {
-    $vals = array(
+    $vals = [
       GamePlay::TIME_UNITS_DAYS => $secs / 86400 % 7,
       GamePlay::TIME_UNITS_HOURS => $secs / 3600 % 24,
       GamePlay::TIME_UNITS_MINS => $secs / 60 % 60,
-      GamePlay::TIME_UNITS_SECS => $secs % 60);
+      GamePlay::TIME_UNITS_SECS => $secs % 60,
+    ];
 
-    $ret = array();
+    $ret = [];
 
     $added = false;
     foreach ($vals as $k => $v) {
       if ($v > 0 || $added) {
         $added = true;
-        $ret[] = $v . " " . $k;
+        $ret[] = $v . ' ' . $k;
       }
     }
 
-    return join(' ', $ret);
+    return implode(' ', $ret);
   }
 
   /**
@@ -634,7 +639,7 @@ class GameController extends ControllerBase {
     //    1 => "yellow",
     //   );
     // The actual sort order depends on whether this is 'asc' or 'desc'
-    if ($sort == 'asc') {
+    if ($sort === 'asc') {
       asort($temp_array);
     }
     else {
@@ -645,10 +650,12 @@ class GameController extends ControllerBase {
     //   $new_rows[0] = $rows[2];
     //   $new_rows[1] = $rows[0];
     //   $new_rows[2] = $rows[1];
+    $new_rows = [];
     foreach ($temp_array as $index => $data) {
       $new_rows[] = $rows[$index];
     }
 
     return $new_rows;
   }
+
 }
