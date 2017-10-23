@@ -153,22 +153,18 @@ class GamePlayForm extends FormBase {
       '#name' => 'move_button',
     ];
 
-    if ($game->isMoveMade()
-      && !$game->isGameOver()
-      && $game->isUserPlaying($user)) {
-      $form['refresh_button'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Refresh'),
-        '#name' => 'refresh_button',
-        '#ajax' => [
-          'callback' => '::refreshBoard',
-          'wrapper' => 'vchess-container',
-        ],
-        '#attributes' => [
-          'class' => ['btn btn-default']
-        ],
-      ];
-    }
+    $form['refresh_button'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Refresh'),
+      '#name' => 'refresh_button',
+      '#ajax' => [
+        'callback' => '::refreshBoard',
+        'wrapper' => 'vchess-container',
+      ],
+      '#attributes' => [
+        'class' => ['btn btn-default']
+      ],
+    ];
 
     $form['flip_board_button'] = [
       '#type' => 'submit', // For now!

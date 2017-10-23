@@ -42,7 +42,7 @@ class GameController extends ControllerBase {
 
       // Get the list of all challenges.
       $challenges = Game::loadChallenges();
-      $build['all_challenges'] = $this->buildChallengesTable($challenges, $user);
+      $build['all_challenges'] = static::buildChallengesTable($challenges);
 
       $current_games = Game::countUsersCurrentGames($user);
       if ($player->getCurrent() !== $current_games) {
@@ -177,7 +177,7 @@ class GameController extends ControllerBase {
 
     if (count($rows) > 1) {
       // sort the table data accordingly
-      $rows = $this->doNonSqlSort($rows, $sort, $order['sql']);
+      $rows = static::doNonSqlSort($rows, $sort, $order['sql']);
     }
 
     $a_game = reset($games);
@@ -208,7 +208,7 @@ class GameController extends ControllerBase {
    * @return array
    *   A render array.
    */
-  public function buildChallengesTable($games, $named_user) {
+  public static function buildChallengesTable($games) {
     $rows = [];
     $user = User::load(\Drupal::currentUser()->id());
     $empty = '';
@@ -216,11 +216,11 @@ class GameController extends ControllerBase {
       foreach ($games as $game) {
         $challenger = GamerStatistics::loadForUser($game->getChallenger());
         if ($challenger->getOwner()->id() !== $user->id() || MAY_PLAY_SELF) {
-          $accept_link = $this->t('<a href=":accept-link">Accept</a>',
+          $accept_link = t('<a href=":accept-link">Accept</a>',
             [':accept-link' => Url::fromRoute('vchess.accept_challenge', ['vchess_game' => $game->id()])->toString()]);
         }
         else {
-          $accept_link = $this->t('Pending');
+          $accept_link = t('Pending');
         }
         $rows[] = [
           'challenger' => new FormattableMarkup('<a href=":challenger-url">@challenger-name</a>', [
@@ -234,7 +234,7 @@ class GameController extends ControllerBase {
       }
     }
     else {
-      $empty = $this->t('There are currently no waiting challenges. You can <a href=":create-url">create a new challenge here.</a>',
+      $empty = t('There are currently no waiting challenges. You can <a href=":create-url">create a new challenge here.</a>',
         [':create-url' => Url::fromRoute('vchess.create_challenge')->toString()]);
     }
 
@@ -242,7 +242,7 @@ class GameController extends ControllerBase {
       ['data' => t('Challenger'), 'field' => 'challenger'],
       ['data' => t('Rating'), 'field' => 'rating'],
       ['data' => t('Time limit per move'), 'field' => 'speed'],
-      $this->t('Accept'),
+      t('Accept'),
     ];
 
     // getting the current sort and order parameters from the url
@@ -252,7 +252,7 @@ class GameController extends ControllerBase {
 
     if (count($rows) > 1) {
       // sort the table data accordingly
-      $rows = $this->doNonSqlSort($rows, $sort, $order['sql']);
+      $rows = static::doNonSqlSort($rows, $sort, $order['sql']);
     }
 
     $a_game = reset($games);
@@ -263,7 +263,7 @@ class GameController extends ControllerBase {
       '#rows' => $rows,
       '#empty' => $empty,
       '#attributes' => [
-        'class' => ['table challenges-table table-striped'],
+        'class' => ['table', 'challenges-table', 'table-striped'],
       ],
       '#cache' => [
         'contexts' => $a_game->getEntityType()->getListCacheContexts(),
@@ -376,10 +376,9 @@ class GameController extends ControllerBase {
    * Get page of all current challenges
    */
   public function allChallenges() {
-    $user = User::load($this->currentUser()->id());
-    // Get the list of possible games to view
+    // Get the list challenges available.
     $games = Game::loadChallenges();
-    $build['challenges'] = $this->buildChallengesTable($games, $user);
+    $build['challenges'] = static::buildChallengesTable($games);
     $build['links'] = $this->buildNewGameLinks();
     return $build;
   }
@@ -613,7 +612,7 @@ class GameController extends ControllerBase {
    * @return
    *   An array of rows sorted according to the column mentioned
    */
-  protected function doNonSqlSort($rows, $sort, $column) {
+  protected static function doNonSqlSort($rows, $sort, $column) {
     // Example:
     //   $rows = array(
     //     0 => array("fruit" => "apple", "color" => "red"),
