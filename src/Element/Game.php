@@ -75,10 +75,12 @@ class Game extends Table {
     if (!$element['#game'] instanceof GameEntity) {
       return $element;
     }
+
+    $game = $element['#game'];
     $player = $element['#player'];
     $flipped = $element['#flipped'];
     $active = $element['#active'];
-    $board = (new Board())->setupPosition($element['#game']->getBoard());
+    $board = (new Board())->setupPosition($game->getBoard());
 
     global $base_url;
     global $base_path; // e.g. "/chess_drupal-7.14/"
@@ -95,8 +97,8 @@ class Game extends Table {
       'module_url' => $base_path . $module_path,
       'full_url' => $full_module_url,
       'refresh_interval' => $element['#refresh_interval'],
-      'movelist_url' => Url::fromRoute('vchess.movelist_block', ['vchess_game' => $element['#game']->id()])->toString(),
-      'captured_pieces_url' => Url::fromRoute('vchess.captured_pieces_block', ['vchess_game' => $element['#game']->id()])->toString(),
+      'movelist_url' => Url::fromRoute('vchess.movelist_block', ['vchess_game' => $game->id()])->toString(),
+      'captured_pieces_url' => Url::fromRoute('vchess.captured_pieces_block', ['vchess_game' => $game->id()])->toString(),
     ];
 
     $element['#attributes']['class'][] = 'board-main';
@@ -144,9 +146,9 @@ class Game extends Table {
             $cell = '';
           }
         }
-        elseif ($col == 0) {
-          // number on the left
-          if ($orientation == 'w') {
+        elseif ($col === 0) {
+          // Number on the left.
+          if ($orientation === 'w') {
             $i = $rank;
           }
           else {
@@ -164,7 +166,7 @@ class Game extends Table {
         else {
           // normal square
           $square = new Square();
-          if ($orientation == 'w') {
+          if ($orientation === 'w') {
             $square
               ->setColumn($col)
               ->setRow($rank);
@@ -192,8 +194,6 @@ class Game extends Table {
                 '#type' => 'html_tag',
                 '#tag' => 'div',
                 '#attributes' => [
-//                  'src' => $full_module_url . '/images/' . $theme . '/' . $piece_color . $piece_name . '.gif',
-//                  'border' => 0,
                   'class' => "$piece_color-$piece_name $board_theme board-piece",
                 ],
               ],
@@ -219,8 +219,6 @@ class Game extends Table {
                 '#type' => 'html_tag',
                 '#tag' => 'div',
                 '#attributes' => [
-//                  'src' => $full_module_url . '/images/' . $theme . '/empty.gif',
-//                  'border' => 0,
                   'class' => 'empty-square ' . $board_theme,
                 ],
               ],
@@ -242,6 +240,36 @@ class Game extends Table {
       $index += $line_change;
       $element['#rows'][] = $row;
     }
+
+    // Determine the game players, take note that this element will also display
+    // challenge games without complete players.
+    if ($game->getWhiteUser()) {
+      $white_name = $game->getWhiteUser()->getDisplayName();
+    }
+    else {
+      $white_name = t('TBD');
+    }
+
+    if ($game->getBlackUser()) {
+      $black_name = $game->getBlackUser()->getDisplayName();
+    }
+    else {
+      $black_name = t('TBD');
+    }
+
+    // Display game heading, e.g. "white: admin - black: hugh"
+    $white = '<div class="chess-player-label white-player"><span class="label">White</span><span class="name">' . $white_name . '</span></div>';
+    $black = '<div class="chess-player-label black-player"><span class="label">Black</span><span class="name">' . $black_name . '</span></div>';
+
+    if ($orientation === 'w') {
+      $element['#prefix'] = $black;
+      $element['#suffix'] = $white; //[['data' => $white, 'colspan' => '9', 'class' => ['chess-board-footer']]];
+    }
+    else {
+      $element['#prefix'] = $white;
+      $element['#suffix'] = $black;
+    }
+
     // Unset game so we don't end up re-rendering.
     unset($element['#game']);
     return $element;

@@ -188,7 +188,7 @@ class GameController extends ControllerBase {
       '#rows' => $rows,
       '#empty' => $empty,
       '#attributes' => [
-        'class' => ['table current-games-table table-responsive table-striped'],
+        'class' => ['table', 'current-games-table', 'table-responsive', 'table-striped'],
       ],
       '#cache' => [
         'contexts' => $a_game->getEntityType()->getListCacheContexts(),
@@ -468,7 +468,7 @@ class GameController extends ControllerBase {
         'rating_change' => $stats->getRchanged(),
         // the name tag is used so that the column still sorts correctly
         'current' => '<a name="' . $stats->getCurrent() . '" href="'
-          . Url::fromRoute('vchess.current_games', ['user' => $user->id()])->toString()
+          . Url::fromRoute('vchess.user_current_games', ['user' => $user->id()])->toString()
           . '">' . $stats->getCurrent() . '</a>',
       ];
     }
@@ -514,8 +514,6 @@ class GameController extends ControllerBase {
       '#type' => 'link',
       '#title' => $this->t('Create challenge'),
       '#url' => Url::fromRoute('vchess.create_challenge'),
-      '#prefix' => '<div class="btn btn-success">',
-      '#suffix' => '</div>',
     ];
     $links['create_random_game'] = [
       '#prefix' => '<div class="create-random-game">',
@@ -523,8 +521,6 @@ class GameController extends ControllerBase {
       '#type' => 'link',
       '#title' => $this->t('New random game'),
       '#url' => Url::fromRoute('vchess.random_game_form'),
-      '#prefix' => '<div class="btn btn-default">',
-      '#suffix' => '</div>',
     ];
     $links['create_opponent_game'] = [
       '#prefix' => '<div class="create-opponent-game">',
@@ -532,8 +528,6 @@ class GameController extends ControllerBase {
       '#type' => 'link',
       '#title' => $this->t('New opponent game'),
       '#url' => Url::fromRoute('vchess.opponent_game_form'),
-      '#prefix' => '<div class="btn btn-primary">',
-      '#suffix' => '</div>',
     ];
     return $links;
   }

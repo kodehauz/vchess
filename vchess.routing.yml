@@ -55,15 +55,15 @@ vchess.accept_challenge:
     _permission: 'accept challenge'
 
 vchess.my_current_games:
-  path: /vchess/my-current-games
+  path: /vchess/current-games
   defaults:
     _controller: \Drupal\vchess\Controller\GameController::myCurrentGames
     _title: 'My current games'
   requirements:
     _permission: 'my current games'
 
-vchess.current_games:
-  path: /vchess/current_games/{user}
+vchess.user_current_games:
+  path: /vchess/current-games/{user}
   defaults:
     _controller: \Drupal\vchess\Controller\GameController::usersCurrentGames
     _title: 'Current games'
@@ -71,7 +71,7 @@ vchess.current_games:
     _permission: 'basic access'
 
 vchess.all_current_games:
-  path: /vchess/all_current_games
+  path: /vchess/current-games/all
   defaults:
     _controller: \Drupal\vchess\Controller\GameController::allCurrentGames
     _title: 'All current games'

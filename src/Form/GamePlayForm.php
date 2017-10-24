@@ -71,39 +71,6 @@ class GamePlayForm extends FormBase {
 
     }
 
-    // Determine the game players, take note that this form will also display
-    // challenge games without complete players.
-    $t_args = [];
-    if ($game->getWhiteUser()) {
-      $t_args['@white'] = $game->getWhiteUser()->getDisplayName();
-    }
-    else {
-      // @todo: Nested TranslatableMarkup objects.
-      $t_args['@white'] = $this->t('TBD');
-    }
-
-    if ($game->getBlackUser()) {
-      $t_args['@black'] = $game->getBlackUser()->getDisplayName();
-    }
-    else {
-      // @todo: Nested TranslatableMarkup objects.
-      $t_args['@black'] = $this->t('TBD');
-    }
-
-    // Display game heading, e.g. "white: admin - black: hugh"
-    $form['header'] = [
-      'white' => [
-        '#markup' => $this->t('White: <b>@white</b>', $t_args),
-        '#prefix' => '<div class="chess-player-label white">',
-        '#suffix' => '</div>',
-      ],
-      'black' => [
-        '#markup' => $this->t('Black: <b>@black</b>', $t_args),
-        '#prefix' => '<div class="chess-player-label black">',
-        '#suffix' => '</div>',
-      ],
-    ];
-
     $form['board'] = [
       '#prefix' => '<div id="board">',
       '#suffix' => '</div>',
@@ -145,10 +112,8 @@ class GamePlayForm extends FormBase {
     $form['move_button'] = [
       '#type' => 'submit',
       '#value' => $this->t('Make move'),
-//    '#attributes' => ['class' => 'invisible'],
       '#attributes' => [
         'style' => ['visibility:hidden;'],
-        'class' => ['btn btn-primary']
       ],
       '#name' => 'move_button',
     ];
@@ -161,18 +126,12 @@ class GamePlayForm extends FormBase {
         'callback' => '::refreshBoard',
         'wrapper' => 'vchess-container',
       ],
-      '#attributes' => [
-        'class' => ['btn btn-default']
-      ],
     ];
 
     $form['flip_board_button'] = [
       '#type' => 'submit', // For now!
       '#value' => $this->t('Flip board'),
       '#name' => 'flip_button',
-      '#attributes' => [
-        'class' => ['btn btn-primary']
-        ],
     ];
 
     if ($game->isMoveMade()
@@ -182,9 +141,6 @@ class GamePlayForm extends FormBase {
         '#type' => 'submit',
         '#value' => $this->t('Resign'),
         '#name' => 'resign_button',
-        '#attributes' => [
-          'class' => ['btn btn-danger']
-        ],
       ];
     }
 
