@@ -1,6 +1,11 @@
 board:
   css:
     theme:
-      css/board.css: { }
+      css/board.css: {}
   js:
-    js/board.js: { }
+    js/board.js: {}
+
+vchess:
+  css:
+    base:
+      css/vchess.css: {}

@@ -24,19 +24,12 @@ class GameController extends ControllerBase {
   public function mainPage() {
     $user = User::load($this->currentUser()->id());
     if ($user->isAuthenticated()) {
-      $gamefolder =  $this->config('vchess.settings')->get('game_files_folder');
-      $res_games = $gamefolder;
-//
-//      if (!$user->getDisplayName()) {
-//        $txt = t('Please, register to play chess');
-//        return $txt;
-//      }
-
       $player = GamerStatistics::loadForUser($user);
       $build['title'] = [
         '#type' => 'markup',
         '#markup' => new FormattableMarkup('<p>My current rating: <b>@rating</b></p>', ['@rating' => $player->getRating()]),
       ];
+      $build['links'] = $this->buildNewGameLinks();
       $games = Game::loadUsersCurrentGames($user);
       $build['my_games'] = $this->buildCurrentGamesTable($games, $user);
 
@@ -58,15 +51,14 @@ class GameController extends ControllerBase {
           ->setCurrent($current_games)
           ->save();
       }
-      $build['stats'] = $this->playerStatsTable($user);
-      $build['links'] = $this->buildNewGameLinks();
+      $build['stats'] = $this->buildPlayerStatsTable($user);
 
       return $build;
     }
     else {
       return [
         '#type' => 'markup',
-        '#markup' => $this->t("Please log in to access this page"),
+        '#markup' => $this->t('Please log in to access this page.'),
       ];
     }
 
@@ -180,7 +172,7 @@ class GameController extends ControllerBase {
       $rows = static::doNonSqlSort($rows, $sort, $order['sql']);
     }
 
-    $a_game = reset($games);
+    $entity_type = \Drupal::entityTypeManager()->getDefinition('vchess_game');
     return [
       '#type' => 'table',
       '#header' => $header,
@@ -191,8 +183,8 @@ class GameController extends ControllerBase {
         'class' => ['table', 'current-games-table', 'table-responsive', 'table-striped'],
       ],
       '#cache' => [
-        'contexts' => $a_game->getEntityType()->getListCacheContexts(),
-        'tags' => $a_game->getEntityType()->getListCacheTags(),
+        'contexts' => $entity_type->getListCacheContexts(),
+        'tags' => $entity_type->getListCacheTags(),
       ],
     ];
   }
@@ -255,7 +247,7 @@ class GameController extends ControllerBase {
       $rows = static::doNonSqlSort($rows, $sort, $order['sql']);
     }
 
-    $a_game = reset($games);
+    $entity_type = \Drupal::entityTypeManager()->getDefinition('vchess_game');
     return [
       '#type' => 'table',
       '#header' => $header,
@@ -263,11 +255,11 @@ class GameController extends ControllerBase {
       '#rows' => $rows,
       '#empty' => $empty,
       '#attributes' => [
-        'class' => ['table', 'challenges-table', 'table-striped'],
+        'class' => ['table', 'challenges-table', 'table-responsive', 'table-striped'],
       ],
       '#cache' => [
-        'contexts' => $a_game->getEntityType()->getListCacheContexts(),
-        'tags' => $a_game->getEntityType()->getListCacheTags(),
+        'contexts' => $entity_type->getListCacheContexts(),
+        'tags' => $entity_type->getListCacheTags(),
       ],
     ];
   }
@@ -276,29 +268,27 @@ class GameController extends ControllerBase {
    * Get the stats for a particular player
    */
   protected function buildPlayerStatsTable(UserInterface $user) {
-  }
-
-  protected function playerStatsTable(UserInterface $user) {
     $stats = GamerStatistics::loadForUser($user);
 
-    $header = array('Played', 'Won', 'Drawn', 'Lost', 'Rating', 'Rating change', 'Current games');
-    $rows = array(array($stats->getPlayed(), $stats->getWon(), $stats->getDrawn(),
-      $stats->getLost(), $stats->getRating(), $stats->getRchanged(), $stats->getCurrent()));
+    $header = ['Played', 'Won', 'Drawn', 'Lost', 'Rating', 'Rating change', 'Current games', 'Streak'];
+    $rows = [[
+      $stats->getPlayed(), $stats->getWon(), $stats->getDrawn(),
+      $stats->getLost(), $stats->getRating(), $stats->getRchanged(),
+      $stats->getCurrent(), implode(' ', Game::getPlayerStreak($user, 5))
+    ]];
 
     return [
-      'title' => [
-        '#type' => 'markup',
-        '#markup' => 'Statistics for <b>' . $user->getDisplayName() . '</b>:'
+      '#caption' => $this->t('Statistics for <b>%user</b>', ['%user' => $user->getDisplayName()]),
+      '#type'   => 'table',
+      '#header' => $header,
+      '#rows'   => $rows,
+      '#empty'  => 'Nothing to display.',
+      '#attributes' => [
+        'class' => ['table', 'stats-table', 'table-responsive', 'table-striped'],
       ],
-      'table' => [
-        '#type'   => 'table',
-        '#header' => $header,
-        '#rows'   => $rows,
-        '#empty'  => 'Nothing to display.',
-        '#cache' => [
-          'contexts' => Cache::mergeContexts($stats->getEntityType()->getListCacheContexts()),
-          'tags' => Cache::mergeTags($stats->getEntityType()->getListCacheTags(), ['user']),
-        ],
+      '#cache' => [
+        'contexts' => Cache::mergeContexts($stats->getEntityType()->getListCacheContexts(), ['user']),
+        'tags' => Cache::mergeTags($stats->getEntityType()->getListCacheTags(), ['user']),
       ],
     ];
   }
@@ -361,8 +351,8 @@ class GameController extends ControllerBase {
       // Get the list of possible games to view
       $games = Game::loadAllCurrentGames();
 
-      $out['current_games'] = $this->buildCurrentGamesTable($games, $user);
       $out['links'] = $this->buildNewGameLinks();
+      $out['current_games'] = $this->buildCurrentGamesTable($games, $user);
     }
     else {
       $out['#markup'] = $this->t('Please log in to access this page');
@@ -378,8 +368,8 @@ class GameController extends ControllerBase {
   public function allChallenges() {
     // Get the list challenges available.
     $games = Game::loadChallenges();
-    $build['challenges'] = static::buildChallengesTable($games);
     $build['links'] = $this->buildNewGameLinks();
+    $build['challenges'] = static::buildChallengesTable($games);
     return $build;
   }
 
@@ -389,8 +379,8 @@ class GameController extends ControllerBase {
   public function myCurrentGames() {
     $user = User::load($this->currentUser()->id());
     $games = Game::loadUsersCurrentGames($user);
-    $out['my_games'] = $this->buildCurrentGamesTable($games, $user);
     $out['links'] = $this->buildNewGameLinks();
+    $out['my_games'] = $this->buildCurrentGamesTable($games, $user);
     return $out;
   }
 
@@ -419,7 +409,7 @@ class GameController extends ControllerBase {
   public function displayPlayer(UserInterface $player) {
     if ($player) {
       return [
-        'stats' => $this->playerStatsTable($player),
+        'stats' => $this->buildPlayerStatsTable($player),
         'games' => $this->usersCurrentGames($player),
       ];
     }
@@ -491,7 +481,7 @@ class GameController extends ControllerBase {
       '#rows' => $rows,
       '#empty' => 'The message to display in an extra row if table does not have any rows.',
       '#cache' => [
-        'contexts' => Cache::mergeContexts($stats->getEntityType()->getListCacheContexts()),
+        'contexts' => Cache::mergeContexts($stats->getEntityType()->getListCacheContexts(), ['user']),
         'tags' => Cache::mergeTags($stats->getEntityType()->getListCacheTags(), ['user']),
       ],
     ];
@@ -509,26 +499,28 @@ class GameController extends ControllerBase {
       ],
     ];
     $links['create_challenge'] = [
-      '#prefix' => '<div class="create-challenge">',
+      '#prefix' => '<div class="create-challenge button">',
       '#suffix' => '</div>',
       '#type' => 'link',
       '#title' => $this->t('Create challenge'),
       '#url' => Url::fromRoute('vchess.create_challenge'),
     ];
     $links['create_random_game'] = [
-      '#prefix' => '<div class="create-random-game">',
+      '#prefix' => '<div class="create-random-game button">',
       '#suffix' => '</div>',
       '#type' => 'link',
       '#title' => $this->t('New random game'),
       '#url' => Url::fromRoute('vchess.random_game_form'),
     ];
     $links['create_opponent_game'] = [
-      '#prefix' => '<div class="create-opponent-game">',
+      '#prefix' => '<div class="create-opponent-game button">',
       '#suffix' => '</div>',
       '#type' => 'link',
       '#title' => $this->t('New opponent game'),
       '#url' => Url::fromRoute('vchess.opponent_game_form'),
     ];
+    $links['#attached']['library'][] = 'vchess/vchess';
+
     return $links;
   }
 

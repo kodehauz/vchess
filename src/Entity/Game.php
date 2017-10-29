@@ -826,7 +826,7 @@ class Game extends ContentEntityBase {
 
     $ids = $query
       ->condition($user_condition)
-      ->condition('status', 'in progress')
+      ->condition('status', GamePlay::STATUS_IN_PROGRESS)
       ->sort('time_started', 'DESC')
       ->execute();
 
@@ -895,6 +895,68 @@ class Game extends ContentEntityBase {
       ->sort('time_started', 'ASC')
       ->execute();
     return static::loadMultiple($ids);
+  }
+
+  /**
+   * Calculates and returns a user's game streak.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The user who's game playing streak is to be returned.
+   * @param int $limit
+   *   (optional) The number of games to check. The return value will be less if
+   *   the number of games played by the user is not up to the specified limit.
+   *   Defaults to 10 games.
+   *
+   * @return string[]
+   *   An array containing the user's streak (strings 'W', 'L' and 'D' for 'win',
+   *   'lose' and 'draw') starting from the most recent game.
+   *   The array is keyed by the game IDs. E.g.
+   *   ['10' => 'L', '9' => 'L', '8' => 'W', '7' => 'D', '6' => 'W', '5' => 'W',
+   *    '4' => 'W', '3' => 'L', '2' => 'D', '1' => 'D']
+   */
+  public static function getPlayerStreak(UserInterface $user, $limit = NULL) {
+    if ($limit === NULL) {
+      $limit = 10;
+    }
+    $query = \Drupal::entityTypeManager()
+      ->getStorage('vchess_game')
+      ->getQuery();
+    $user_condition = $query->orConditionGroup()
+      ->condition('white_uid', $user->id())
+      ->condition('black_uid', $user->id());
+
+    $status_condition = $query->orConditionGroup()
+      ->condition('status', GamePlay::STATUS_WHITE_WIN)
+      ->condition('status', GamePlay::STATUS_BLACK_WIN)
+      ->condition('status', GamePlay::STATUS_DRAW);
+
+    $ids = $query
+      ->condition($user_condition)
+      ->condition($status_condition)
+      ->sort('time_started', 'DESC')
+      ->range(0, $limit)
+      ->execute();
+
+    $streak = [];
+    /** @var \Drupal\vchess\Entity\Game[] $games */
+    $games = static::loadMultiple($ids);
+    foreach ($games as $id => $game) {
+      $status = $game->getStatus();
+      $user_is_white = $game->getWhiteUser()->id() === $user->id();
+      $user_is_black = $game->getBlackUser()->id() === $user->id();
+      if ($status === GamePlay::STATUS_DRAW) {
+        $streak[$id] = 'D';
+      }
+      elseif (($status === GamePlay::STATUS_WHITE_WIN && $user_is_black)
+        || ($status === GamePlay::STATUS_BLACK_WIN && $user_is_white)) {
+        $streak[$id] = 'L';
+      }
+      elseif (($status === GamePlay::STATUS_WHITE_WIN && $user_is_white)
+        || ($status === GamePlay::STATUS_BLACK_WIN && $user_is_black)) {
+        $streak[$id] = 'W';
+      }
+    }
+    return $streak;
   }
 
 }
