@@ -268,7 +268,7 @@ Drupal.behaviors.vchess = {
 
     // Create ajax request for refreshing board.
     // Only if it is not current user's turn to play.
-    var isActivePlayer = $('td.board-square.enabled').size() > 0;
+    var isActivePlayer = $('td.board-square.enabled').length > 0;
     if (Board.refreshAjax === undefined && !isActivePlayer) {
       Board.createAjaxEvent();
     }
