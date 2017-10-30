@@ -284,48 +284,31 @@ class Game extends ContentEntityBase {
    * assigned to the game.
    *
    * @param \Drupal\user\UserInterface $user
+   *   The user to be randomly set to either black or white.
    *
-   * @return string
-   *   'w' or 'b': depending on which color was set, or '' if it couldn't be set.
+   * @return $this
+   *   For method chaining.
    */
   public function setPlayerRandomly($user) {
-//     watchdog("VChess", "In game.inc for game %gid, at start of set_player() setting player uid=%uid." .
-//         " Currently white_uid=%white_uid and black_uid=%black_uid",
-//         array('%gid' => $this->gid(),
-//             '%uid' => $uid,
-//             '%white_uid' => $this->white_uid,
-//             '%black_uid' => $this->black_uid));
-
     if ($this->getWhiteUser() === NULL && $this->getBlackUser() === NULL) {
       if (mt_rand(1,100) < 50) {
         $this->setWhiteUser($user);
-        return 'w';
       }
       else {
         $this->setBlackUser($user);
-        return 'b';
       }
     }
     else if ($this->getWhiteUser() === NULL) {
       $this->setWhiteUser($user);
-      return 'w';
     }
     else if ($this->getBlackUser() === NULL) {
       $this->setBlackUser($user);
-      return 'b';
     }
     else {
-      \Drupal::logger('VChess')->error(t( "Attempt to set a player when both players are already assigned"));
-      return '';
+      \Drupal::logger('VChess')
+        ->error(t( "Attempt to set a player when both players are already assigned"));
     }
-
-//     watchdog("VChess", "in game.inc for game %gid, at end of set_player() setting " .
-//         " player uid=%uid.  Now white_uid=%white_uid and black_uid=%black_uid",
-//         array('%gid' => $this->gid(),
-//             '%uid' => $uid,
-//             '%white_uid' => $this->white_uid,
-//             '%black_uid' => $this->black_uid));
-
+    return $this;
   }
 
   /**

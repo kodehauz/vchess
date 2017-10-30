@@ -73,7 +73,7 @@ class RandomGameForm extends FormBase {
     }
     /** @var \Drupal\vchess\Entity\Game $game */
     $game = Game::create();
-    static::startGame($game, $white_user, $black_user);
+    static::initializeGame($game, $white_user, $black_user, $user);
 
     drupal_set_message($this->t('Game %label has been created.', ['%label' => $game->label()]));
     $form_state->setRedirect('vchess.game', ['vchess_game' => $game->id()]);

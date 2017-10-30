@@ -20,7 +20,7 @@ trait GameManagementTrait {
    * @param \Drupal\user\UserInterface $black_user
    *
    */
-  public static function startGame(Game $game, UserInterface $white_user, UserInterface $black_user) {
+  public static function initializeGame(Game $game, UserInterface $white_user, UserInterface $black_user, UserInterface $challenger) {
     $white = GamerStatistics::loadForUser($white_user);
     $black = GamerStatistics::loadForUser($black_user);
 
@@ -33,23 +33,22 @@ trait GameManagementTrait {
     $game
       ->setWhiteUser($white_user)
       ->setBlackUser($black_user)
+      ->setChallenger($challenger)
       ->setStatus(GamePlay::STATUS_IN_PROGRESS);
 
     $game->save();
+  }
 
-    //   watchdog("VChess", "In gamer_start_game(), recording start of new game for game between " .
-    //     "@white_name (uid=@white_uid, current=@white_current) and " .
-    //     "@black_name (uid=@black_uid, current=@black_current)",
-    //     array(
-    //       '@white_name' => $white->name(),
-    //       '@black_name' => $black->name(),
-    //       '@white_uid' => $white_uid,
-    //       '@black_uid' => $black_uid,
-    //       '@white_current' => $white->current(),
-    //       '@black_current' => $black->current()
-    //     )
-    //   );
-
+  public static function createChallenge(UserInterface $user, $time_per_move, $board_position) {
+    $game = Game::create();
+    $game
+      ->setPlayerRandomly($user)
+      ->setTimePerMove($time_per_move)
+      ->setStatus(GamePlay::STATUS_AWAITING_PLAYERS)
+      ->setBoard($board_position)
+      ->setChallenger($user)
+      ->save();
+    return $game;
   }
 
 }

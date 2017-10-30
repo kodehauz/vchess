@@ -11,6 +11,7 @@ use Drupal\gamer\Entity\GamerStatistics;
 use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
 use Drupal\vchess\Entity\Game;
+use Drupal\vchess\Game\Board;
 use Drupal\vchess\Game\GamePlay;
 use Drupal\vchess\GameManagementTrait;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -306,9 +307,7 @@ class GameController extends ControllerBase {
 
     // Check that user does not already have too many challenges pending.
     if (count(Game::loadChallenges($user)) <= VCHESS_PENDING_LIMIT) {
-      $game = Game::create()
-        ->setWhiteUser($user);
-      $game->save();
+      $game = static::createChallenge($user, 3, Board::BOARD_DEFAULT);
       drupal_set_message($this->t('Challenge has been created.'));
       return new RedirectResponse(Url::fromRoute('vchess.game', ['vchess_game' => $game->id()])->toString());
     }
@@ -347,15 +346,16 @@ class GameController extends ControllerBase {
         '@username' => $user->getDisplayName(),
         '@game' => $game->label(),
       ];
-      $color = $game->setPlayerRandomly($user);
+      $game->setPlayerRandomly($user);
+      $color = $game->getPlayerColor($user);
 
       $extra = '';
       $its_your_move = '';
       if ($color === 'w') {
         $opponent = $game->getBlackUser();
         // @todo This is an outlier...???
-        static::startGame($game, $user, $opponent);
-        $its_your_move = t('Now, it is your move!');
+        static::initializeGame($game, $user, $opponent, $user);
+        $its_your_move = $this->t('Now, it is your move!');
         $t_args += [
           '@white' => $user->getDisplayName(),
           '@black' => $opponent->getDisplayName(),
@@ -364,8 +364,8 @@ class GameController extends ControllerBase {
       else {
         $opponent = $game->getWhiteUser();
         // @todo This is an outlier...???
-        static::startGame($game, $opponent, $user);
-        $extra = t('Since you are playing black, you will have to wait for @opponent to move.<br />',
+        static::initializeGame($game, $opponent, $user, $user);
+        $extra = $this->t('Since you are playing black, you will have to wait for @opponent to move.<br />',
           ['@opponent' => $opponent->getDisplayName()]);
         $t_args += [
           '@white' => $opponent->getDisplayName(),
@@ -377,7 +377,7 @@ class GameController extends ControllerBase {
         '@extra' => $extra,
         ':url' => Url::fromRoute('vchess.my_current_games')->toString(),
       ];
-      $msg = t('Congratulations, you have started a game against <b>@opponent</b>.<br />@extra
+      $msg = $this->t('Congratulations, you have started a game against <b>@opponent</b>.<br />@extra
       You can keep an eye on the status of this game and all your games on your <a href=":url">current games page</a>.<br />',
         $t_args);
 

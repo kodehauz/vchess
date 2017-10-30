@@ -71,25 +71,26 @@ class OpponentGameForm extends FormBase {
    *   The current state of the form.
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    $user = User::load($this->currentUser()->id());
     $opponent = User::load($form_state->getValue('opponent'));
 
     if ($form_state->getValue('color') === 'w') {
       // User plays white.
-      $white_user = User::load($this->currentUser()->id());
+      $white_user = $user;
 
       // Opponent plays black.
       $black_user = $opponent;
     }
     else {
       // User plays black.
-      $black_user = User::load($this->currentUser()->id());
+      $black_user = $user;
 
       // Opponent plays white.
       $white_user = $opponent;
     }
 
     $game = Game::create();
-    static::startGame($game, $white_user, $black_user);
+    static::initializeGame($game, $white_user, $black_user, $user);
     drupal_set_message($this->t('Game %label has been created.', ['%label' => $game->label()]));
     $form_state->setRedirect('vchess.game', ['vchess_game' => $game->id()]);
   }

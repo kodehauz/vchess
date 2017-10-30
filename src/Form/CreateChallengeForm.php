@@ -7,9 +7,11 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\pos\Entity\ChessPosition;
 use Drupal\user\Entity\User;
 use Drupal\vchess\Entity\Game;
-use Drupal\vchess\Game\GamePlay;
+use Drupal\vchess\GameManagementTrait;
 
 class CreateChallengeForm extends FormBase {
+
+  use GameManagementTrait;
 
   /**
    * {@inheritdoc}
@@ -62,14 +64,24 @@ class CreateChallengeForm extends FormBase {
     $user = User::load(\Drupal::currentUser()->id());
     // Check that user does not already have too many challenges pending.
     if (count(Game::loadChallenges($user)) < VCHESS_PENDING_LIMIT) {
-      Game::create()
-        ->setWhiteUser($user)
-        ->setTimePerMove($form_state->getValue('time_per_move'))
-        ->setStatus(GamePlay::STATUS_AWAITING_PLAYERS)
-        ->setBoard($form_state->getValue('position'))
-        ->save();
+      static::createChallenge($user, $form_state->getValue('time_per_move'), $form_state->getValue('position'));
 
       drupal_set_message($this->t('Challenge has been created.'));
+
+      //     watchdog("VChess", "In game.inc for game %gid, at start of set_player() setting player uid=%uid." .
+      //         " Currently white_uid=%white_uid and black_uid=%black_uid",
+      //         array('%gid' => $this->gid(),
+      //             '%uid' => $uid,
+      //             '%white_uid' => $this->white_uid,
+      //             '%black_uid' => $this->black_uid));
+
+      //     watchdog("VChess", "in game.inc for game %gid, at end of set_player() setting " .
+      //         " player uid=%uid.  Now white_uid=%white_uid and black_uid=%black_uid",
+      //         array('%gid' => $this->gid(),
+      //             '%uid' => $uid,
+      //             '%white_uid' => $this->white_uid,
+      //             '%black_uid' => $this->black_uid));
+
     }
     else {
       drupal_set_message($this->t('You already have the allowed maxiumum of @max challenges pending.',

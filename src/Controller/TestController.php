@@ -19,7 +19,7 @@ class TestController {
   public function testVchess() {
     $html = "";
 
-    static::startGame(1, 1);
+    static::initializeGame(1, 1);
 
     $player = GamerStatistics::loadForUser(1);
     $player->setCurrent(-25);

@@ -1486,8 +1486,7 @@ class Board {
     sort($full);
     $partial = [];
     foreach ($full as $piece_fen) {
-      $color = strtoupper($piece_fen) === $piece_fen ? 'w' : 'b';
-      $partial[$piece_fen] = (new Piece())->setType($piece_fen)->setColor($color);
+      $partial[] = Piece::fromFenType($piece_fen);
     }
     return $partial;
   }

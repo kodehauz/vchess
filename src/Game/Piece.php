@@ -127,4 +127,11 @@ class Piece {
     return $name;
   }
 
+  public static function fromFenType($fen_type) {
+    $piece = new static();
+    $piece->setColor($fen_type === strtoupper($fen_type) ? 'w' : 'b');
+    $piece->setType($fen_type);
+    return $piece;
+  }
+
 }
