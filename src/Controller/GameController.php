@@ -505,7 +505,7 @@ class GameController extends ControllerBase {
   public function displayPlayers() {
     $this->checkForLostOnTimeGames();
 
-    return $this->playersTable();
+    return $this->buildPlayersTable();
   }
 
   /**
@@ -523,39 +523,41 @@ class GameController extends ControllerBase {
     }
   }
 
-  protected function playersTable() {
+  protected function buildPlayersTable() {
     /** @var \Drupal\user\UserInterface $user */
     $rows = [];
     foreach (User::loadMultiple() as $user) {
       $stats = GamerStatistics::loadForUser($user);
+      $args = [
+        ':user-url' => Url::fromRoute('vchess.player', ['player' => $user->id()])->toString(),
+        '@user-name' => $user->getDisplayName(),
+        '@current' => $stats->getCurrent(),
+        ':current-url' => Url::fromRoute('vchess.user_current_games', ['user' => $user->id()])->toString(),
+      ];
       $rows[] = [
-        'uid' => $user->id(),
-        'name' => '<a href="'
-          . Url::fromRoute('vchess.player', ['player' => $user->id()])->toString()
-          . '">' . $user->getDisplayName() . '</a>',
+        'name' => new FormattableMarkup('<a href=":user-url">@user-name</a>', $args),
         'rating' => $stats->getRating(),
         'played' => $stats->getPlayed(),
         'won' => $stats->getWon(),
         'lost' => $stats->getLost(),
         'drawn' => $stats->getDrawn(),
         'rating_change' => $stats->getRchanged(),
+        'streak' => Game::getPlayerStreak($user),
         // the name tag is used so that the column still sorts correctly
-        'current' => '<a name="' . $stats->getCurrent() . '" href="'
-          . Url::fromRoute('vchess.user_current_games', ['user' => $user->id()])->toString()
-          . '">' . $stats->getCurrent() . '</a>',
+        'current' => new FormattableMarkup('<a name="@current" href=":current-url">@current</a>', $args),
       ];
     }
 
     $header = [
-      ['data' => $this->t('uid'), 'field' => 'uid'],
-      ['data' => $this->t('name'), 'field' => 'name'],
-      ['data' => $this->t('rating'), 'field' => 'rating'],
-      ['data' => $this->t('played'), 'field' => 'played'],
-      ['data' => $this->t('won'), 'field' => 'won'],
-      ['data' => $this->t('lost'), 'field' => 'lost'],
-      ['data' => $this->t('drawn'), 'field' => 'drawn'],
-      ['data' => $this->t('rating change'), 'field' => 'rating_change'],
-      ['data' => $this->t('in progress'), 'field' => 'current'],
+      ['data' => $this->t('Name'), 'field' => 'name'],
+      ['data' => $this->t('Rating'), 'field' => 'rating'],
+      ['data' => $this->t('Played'), 'field' => 'played'],
+      ['data' => $this->t('Won'), 'field' => 'won'],
+      ['data' => $this->t('Lost'), 'field' => 'lost'],
+      ['data' => $this->t('Drawn'), 'field' => 'drawn'],
+      ['data' => $this->t('Rating change'), 'field' => 'rating_change'],
+      ['data' => $this->t('Streak'), 'field' => 'streak'],
+      ['data' => $this->t('In progress'), 'field' => 'current'],
     ];
 
     return [
@@ -566,6 +568,9 @@ class GameController extends ControllerBase {
       '#cache' => [
         'contexts' => Cache::mergeContexts($stats->getEntityType()->getListCacheContexts(), ['user']),
         'tags' => Cache::mergeTags($stats->getEntityType()->getListCacheTags(), ['user']),
+      ],
+      '#attributes' => [
+        'class' => ['table', 'all-players-table', 'table-responsive', 'table-striped'],
       ],
     ];
   }
