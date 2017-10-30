@@ -6,8 +6,11 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
 use Drupal\vchess\Entity\Game;
+use Drupal\vchess\GameManagementTrait;
 
 class OpponentGameForm extends FormBase {
+
+  use GameManagementTrait;
 
   /**
    * {@inheritdoc}
@@ -85,10 +88,8 @@ class OpponentGameForm extends FormBase {
       $white_user = $opponent;
     }
 
-    $game = Game::create()
-      ->setWhiteUser($white_user)
-      ->setBlackUser($black_user);
-    $game->save();
+    $game = Game::create();
+    static::startGame($game, $white_user, $black_user);
     drupal_set_message($this->t('Game %label has been created.', ['%label' => $game->label()]));
     $form_state->setRedirect('vchess.game', ['vchess_game' => $game->id()]);
   }

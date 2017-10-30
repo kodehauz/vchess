@@ -11,6 +11,10 @@ use Drupal\vchess\Game\Square;
  */
 trait BoardTestTrait {
 
+  protected function getStandardBoard() {
+    return (new Board())->setupAsStandard();
+  }
+
   /**
    * Returns slightly more open board position for testing purposes.
    */

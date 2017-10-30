@@ -3,9 +3,11 @@
 namespace Drupal\vchess\Controller;
 
 use Drupal\gamer\Entity\GamerStatistics;
-use Drupal\vchess\GameManager;
+use Drupal\vchess\GameManagementTrait;
 
 class TestController {
+
+  use GameManagementTrait;
 
   /**
    * A single test
@@ -17,7 +19,7 @@ class TestController {
   public function testVchess() {
     $html = "";
 
-    GameManager::startGame(1, 1);
+    static::startGame(1, 1);
 
     $player = GamerStatistics::loadForUser(1);
     $player->setCurrent(-25);

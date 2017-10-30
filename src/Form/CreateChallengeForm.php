@@ -60,26 +60,8 @@ class CreateChallengeForm extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $user = User::load(\Drupal::currentUser()->id());
-//    $pending = 0;
-//    $games = ;
-//    @todo Separation of concerns: people shouldn't be accepting challenges
-//    while they are trying to create a new one.
-//    foreach ($games as $game) {
-//      // Check if there is a matching challenge.
-//      if ($game->getChallenger()->id() !== $user->id()
-//        && $game->getTimePerMove() == $form_state->getValue('time_per_move')) {
-//        GameManager::acceptChallenge($game);
-//        $game
-//          ->setStatus(GamePlay::STATUS_IN_PROGRESS)
-//          ->save();
-//      }
-//      if ($game->getChallenger()->id() === $user->id()) {
-//        $pending++;
-//      }
-//    }
-
     // Check that user does not already have too many challenges pending.
-    if (count(Game::loadMyChallenges()) < VCHESS_PENDING_LIMIT) {
+    if (count(Game::loadChallenges($user)) < VCHESS_PENDING_LIMIT) {
       Game::create()
         ->setWhiteUser($user)
         ->setTimePerMove($form_state->getValue('time_per_move'))

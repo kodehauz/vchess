@@ -1183,13 +1183,18 @@ class Board {
         }
         // Check the two diagonally forward squares (which could include an
         // en-passant square).
-        $square_in_front->setColumn($square_in_front->getColumn() - 1);
-        if ($this->moveIsOk($piece_square, $square_in_front)) {
-          $valid_moves[] = $this->getLongMove($piece_square, $square_in_front);
+        $col = $square_in_front->getColumn();
+        if ($col > 1) {
+          $square_in_front->setColumn($col - 1);
+          if ($this->moveIsOk($piece_square, $square_in_front)) {
+            $valid_moves[] = $this->getLongMove($piece_square, $square_in_front);
+          }
         }
-        $square_in_front->setColumn($square_in_front->getColumn() + 2);
-        if ($this->moveIsOk($piece_square, $square_in_front)) {
-          $valid_moves[] = $this->getLongMove($piece_square, $square_in_front);
+        if ($col < 8) {
+          $square_in_front->setColumn($col + 1);
+          if ($this->moveIsOk($piece_square, $square_in_front)) {
+            $valid_moves[] = $this->getLongMove($piece_square, $square_in_front);
+          }
         }
         break;
     }

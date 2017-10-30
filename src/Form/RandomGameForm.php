@@ -6,12 +6,14 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
 use Drupal\vchess\Entity\Game;
-use Drupal\vchess\GameManager;
+use Drupal\vchess\GameManagementTrait;
 
 /**
  * Form to start a chess game against a random opponent.
  */
 class RandomGameForm extends FormBase {
+
+  use GameManagementTrait;
 
   /**
    * {@inheritdoc}
@@ -70,13 +72,8 @@ class RandomGameForm extends FormBase {
       $white_user = $opponent;
     }
     /** @var \Drupal\vchess\Entity\Game $game */
-    $game = Game::create()
-      ->setBlackUser($black_user)
-      ->setWhiteUser($white_user);
-    $game->save();
-
-    // @todo: Check out this method.
-    GameManager::startGame($white_user, $black_user);
+    $game = Game::create();
+    static::startGame($game, $white_user, $black_user);
 
     drupal_set_message($this->t('Game %label has been created.', ['%label' => $game->label()]));
     $form_state->setRedirect('vchess.game', ['vchess_game' => $game->id()]);
