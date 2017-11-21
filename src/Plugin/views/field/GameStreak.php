@@ -21,6 +21,7 @@ class GameStreak extends Standard {
   protected function defineOptions() {
     $options = parent::defineOptions();
     $options['delimiter'] = ['default' => 'none'];
+    $options['limit'] = ['default' => 6];
 
     return $options;
   }
@@ -41,6 +42,12 @@ class GameStreak extends Standard {
       ],
       '#default_value' => $this->options['delimiter'],
     ];
+
+    $form['limit'] = [
+      '#title' => $this->t('Maximum number to show'),
+      '#type' => 'number',
+      '#default_value' => $this->options['limit'],
+    ];
   }
 
   /**
@@ -48,7 +55,7 @@ class GameStreak extends Standard {
    */
   public function render(ResultRow $values) {
     $user = User::load($this->getValue($values));
-    $streak = Game::getPlayerStreak($user);
+    $streak = Game::getPlayerStreak($user, $this->options['limit']);
     if ($this->options['delimiter'] && $this->options['delimiter'] !== 'none') {
       return implode($this->delimiter(), $streak);
     }
