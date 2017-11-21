@@ -17,7 +17,7 @@ use Drupal\vchess\Game\GamePlay;
  *   label = @Translation("VChess game"),
  *   handlers = {
  *     "list_builder" = "\Drupal\vchess\GameListBuilder",
- *     "views_data" = "Drupal\views\EntityViewsData",
+ *     "views_data" = "Drupal\vchess\Views\GameViewsData",
  *     "form" = {
  *        "add" = "\Drupal\vchess\Form\OpponentGameForm",
  *        "edit" = "\Drupal\vchess\Form\PlayGameForm",
