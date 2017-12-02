@@ -9,3 +9,10 @@ vchess:
   css:
     base:
       css/vchess.css: {}
+
+game_timer:
+  css:
+    theme:
+      css/game-timer.css: {}
+  js:
+    js/game-timer.js: {}
