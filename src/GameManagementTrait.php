@@ -39,13 +39,17 @@ trait GameManagementTrait {
     $game->save();
   }
 
-  public static function createChallenge(UserInterface $user, $time_per_move, $board_position) {
+  public static function createChallenge(UserInterface $user, $white_time, $black_time, $white_time_per_move, $black_time_per_move, $board_position) {
     $game = Game::create();
     $game
       ->setPlayerRandomly($user)
-      ->setTimePerMove($time_per_move)
+      ->setBlackTimePerMove($time_per_move)
       ->setStatus(GamePlay::STATUS_AWAITING_PLAYERS)
       ->setBoard($board_position)
+      //Timer value for white and black players
+      ->setBlackTimeLeft($black_time)
+      ->setWhiteTimeLeft($white_time)
+      //Timer value ends
       ->setChallenger($user)
       ->save();
     return $game;

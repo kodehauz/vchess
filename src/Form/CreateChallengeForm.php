@@ -12,6 +12,7 @@ use Drupal\vchess\GameManagementTrait;
 class CreateChallengeForm extends FormBase {
 
   use GameManagementTrait;
+  use GameCreationWidgetsTrait;
 
   /**
    * {@inheritdoc}
@@ -29,17 +30,7 @@ class CreateChallengeForm extends FormBase {
       a game for you against a random opponent.'),
     );
 
-    $form['time_per_move'] = array(
-      '#type' => 'select',
-      '#title' => t('Time per move'),
-      '#options' => array(
-        '1' => $this->t('1 day'),
-        '2' => $this->t('2 days'),
-        '3' => $this->t('3 days'),
-        '5' => $this->t('5 days'),
-      ),
-      '#default_value' => '3', // added default value.
-    );
+    $this->addGameTimeWidgets($form, $form_state);
 
     $positions = ChessPosition::getPositionLabels();
     $form['position'] = [
