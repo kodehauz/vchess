@@ -36,7 +36,7 @@ class GameTimer extends RenderElement {
 
       $element['#white_name'] = $game->getWhiteUser()->getDisplayName();
 //      $element['#white_time'] = $game->getWhiteTimeLeft();
-      $element['#white_time'] = 900;
+      $element['#white_time'] = 20;
       $element['#attached']['library'][] = 'vchess/game_timer';
 
       $element['#black_name'] = $game->getBlackUser()->getDisplayName();

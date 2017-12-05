@@ -516,6 +516,24 @@ class Game extends ContentEntityBase {
     return $this;
   }
 
+  public function setWhiteTimeLeft($value) {
+    $this->set('white_time_left', $value);
+    return $this;
+  }
+
+  public function getWhiteTimeLeft() {
+    return $this->get('white_time_left')->value;
+  }
+
+  public function setBlackTimeLeft($value) {
+    $this->set('black_time_left', $value);
+    return $this;
+  }
+
+  public function getBlackTimeLeft() {
+    return $this->get('white_time_left')->value;
+  }
+
   /**
    * @return string
    */
@@ -625,6 +643,16 @@ class Game extends ContentEntityBase {
     $fields['time_started'] = BaseFieldDefinition::create('timestamp')
       ->setLabel('Time started')
       ->setDescription(t('Date and time of the start of the game, e.g. 2012-05-03 12:01:29'));
+
+
+    // Newly added entity fields for tracking a game time moves for a white and black player
+    $fields['white_time_left'] = BaseFieldDefinition::create('timestamp')
+      ->setLabel('Black Time Left')
+      ->setDescription(t('Date and time white played a game move'));
+
+    $fields['black_time_left'] = BaseFieldDefinition::create('timestamp')
+      ->setLabel('White Time Left')
+      ->setDescription(t('Date and time black played a game move'));
 
     return $fields;
   }
