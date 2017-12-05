@@ -55,7 +55,9 @@ class CreateChallengeForm extends FormBase {
     $user = User::load(\Drupal::currentUser()->id());
     // Check that user does not already have too many challenges pending.
     if (count(Game::loadChallenges($user)) < VCHESS_PENDING_LIMIT) {
-      static::createChallenge($user, $form_state->getValue('time_per_move'), $form_state->getValue('position'));
+      $values = $form_state->getValues();
+      $game_time = $values['game_time_value'] * $values['game_time_unit'];
+      static::createChallenge($user, $game_time, $values['game_time_per_move'], $values['position']);
 
       drupal_set_message($this->t('Challenge has been created.'));
 

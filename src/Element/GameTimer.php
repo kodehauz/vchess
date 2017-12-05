@@ -36,12 +36,12 @@ class GameTimer extends RenderElement {
 
       $element['#white_name'] = $game->getWhiteUser()->getDisplayName();
 //      $element['#white_time'] = $game->getWhiteTimeLeft();
-      $element['#white_time'] = 20;
+      $element['#white_time'] = $game->getWhiteTimeLeft();
       $element['#attached']['library'][] = 'vchess/game_timer';
 
       $element['#black_name'] = $game->getBlackUser()->getDisplayName();
 //      $element['#black_time'] = $game->getBlackTimeLeft();
-      $element['#black_time'] = 400;
+      $element['#black_time'] = $game->getBlackTimeLeft();
 
       // Which timer should be counting down.
       $element['#attached']['drupalSettings']['vchess']['active_timer'] = $element['#player'];

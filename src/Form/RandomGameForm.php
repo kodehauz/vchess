@@ -14,6 +14,7 @@ use Drupal\vchess\GameManagementTrait;
 class RandomGameForm extends FormBase {
 
   use GameManagementTrait;
+  use GameCreationWidgetsTrait;
 
   /**
    * {@inheritdoc}
@@ -31,6 +32,8 @@ class RandomGameForm extends FormBase {
       '#title' => $this->t('Simply click on the button below and we will create
           a game for you against a random opponent.'),
     ];
+
+    $this->addGameTimeWidgets($form, $form_state);
 
     $form['submit'] = [
       '#type' => 'submit',
@@ -73,7 +76,9 @@ class RandomGameForm extends FormBase {
     }
     /** @var \Drupal\vchess\Entity\Game $game */
     $game = Game::create();
-    static::initializeGame($game, $white_user, $black_user, $user);
+    $values = $form_state->getValues();
+    $game_time = $values['game_time_value'] * $values['game_time_unit'];
+    static::initializeGame($game, $white_user, $black_user, $user, $game_time, $values['game_time_per_move']);
 
     drupal_set_message($this->t('Game %label has been created.', ['%label' => $game->label()]));
     $form_state->setRedirect('vchess.game', ['vchess_game' => $game->id()]);
