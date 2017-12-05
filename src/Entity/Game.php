@@ -46,13 +46,6 @@ class Game extends ContentEntityBase {
     GamePlay::STATUS_BLACK_WIN,
   ];
 
-  protected static $gameTime = [
-    GamePlay::TIME_UNITS_DAYS,
-    GamePlay::TIME_UNITS_HOURS,
-    GamePlay::TIME_UNITS_MINS,
-    GamePlay::TIME_UNITS_SECS
-  ];
-
   /**
    * The game scoresheet which holds history of moves for this game.
    *
@@ -116,26 +109,7 @@ class Game extends ContentEntityBase {
    *   Number of seconds till next move must be made
    */
   public function calculateTimeLeft() {
-    // Convert time_per_move into seconds
-    switch ($this->getTimeUnits()) {
-      case GamePlay::TIME_UNITS_DAYS:
-        $secs_per_unit = 24 * 60 * 60;
-        break;
-      case GamePlay::TIME_UNITS_HOURS:
-        $secs_per_unit = 60 * 60;
-        break;
-      case GamePlay::TIME_UNITS_MINS:
-        $secs_per_unit = 60;
-        break;
-      case GamePlay::TIME_UNITS_SECS:
-        $secs_per_unit = 1;
-        break;
-      default:
-        $secs_per_unit = 1;
-        break;
-    }
-
-    $secs_per_move = $this->getTimePerMove() * $secs_per_unit;
+    $secs_per_move = $this->getTimePerMove();
 
     if ($this->status === GamePlay::STATUS_IN_PROGRESS) {
       // All dates are kept as GMT
@@ -351,7 +325,7 @@ class Game extends ContentEntityBase {
    *   Returns the speed per move, e.g. "3 days"
    */
   public function getSpeed() {
-    return $this->getTimePerMove() . ' ' . $this->getTimeUnits();
+    return $this->getTimePerMove() . ' days';
   }
 
   /**
@@ -535,24 +509,6 @@ class Game extends ContentEntityBase {
   }
 
   /**
-   * @return string
-   */
-  public function getTimeUnits() {
-    return $this->get('time_units')->value;
-  }
-
-  /**
-   * @return $this
-   */
-  public function setTimeUnits($value) {
-    if (!in_array($value, static::$gameTime, TRUE)) {
-      throw new \InvalidArgumentException('Value must be one of ' . implode(', ', static::$gameTime));
-    }
-    $this->set('time_units', $value);
-    return $this;
-  }
-
-  /**
    * @return int
    */
   public function getTimeStarted() {
@@ -631,27 +587,20 @@ class Game extends ContentEntityBase {
 
     $fields['time_per_move'] = BaseFieldDefinition::create('integer')
       ->setLabel('Time per move')
-      ->setDescription(t('Time per move (the units are defined by time_units field)'))
+      ->setDescription(t('Time per move in days'))
       ->setDefaultValue(DEFAULT_TIME_PER_MOVE);
-
-    $fields['time_units'] = BaseFieldDefinition::create('string')
-      ->setLabel('Time units')
-      ->setDescription(t('Units of the time_per_move field'))
-      ->setSetting('max_length', 10)
-      ->setDefaultValue(DEFAULT_TIME_UNITS);
 
     $fields['time_started'] = BaseFieldDefinition::create('timestamp')
       ->setLabel('Time started')
       ->setDescription(t('Date and time of the start of the game, e.g. 2012-05-03 12:01:29'));
 
-    // Newly added entity fields for tracking a game time moves for a white and black player
-    $fields['white_time_left'] = BaseFieldDefinition::create('timestamp')
-      ->setLabel('Black Time Left')
-      ->setDescription(t('Date and time white played a game move'));
+    $fields['white_time_left'] = BaseFieldDefinition::create('integer')
+      ->setLabel('White time left')
+      ->setDescription(t('The number of game time left for the white player (seconds)'));
 
-    $fields['black_time_left'] = BaseFieldDefinition::create('timestamp')
-      ->setLabel('White Time Left')
-      ->setDescription(t('Date and time black played a game move'));
+    $fields['black_time_left'] = BaseFieldDefinition::create('integer')
+      ->setLabel('Black time left')
+      ->setDescription(t('The number of game time left for the black player (seconds)'));
 
     return $fields;
   }

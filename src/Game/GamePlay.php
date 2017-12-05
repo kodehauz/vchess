@@ -91,7 +91,6 @@ class GamePlay {
         'castling' => 'KQkq',
         'status' => static::STATUS_AWAITING_PLAYERS,
         'time_per_move' => DEFAULT_TIME_PER_MOVE,
-        'time_units' => DEFAULT_TIME_UNITS,
         'board' => $this->board->getFenString(),
       ]);
     }

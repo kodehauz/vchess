@@ -11,6 +11,7 @@ use Drupal\vchess\GameManagementTrait;
 class OpponentGameForm extends FormBase {
 
   use GameManagementTrait;
+  use GameCreationWidgetsTrait;
 
   /**
    * {@inheritdoc}
@@ -44,6 +45,8 @@ class OpponentGameForm extends FormBase {
       '#description' => $this->t('Type opponent\'s name. Opponent must be registered on this site.'),
       '#required' => TRUE,
     ];
+
+    $this->addGameTimeWidgets($form, $form_state);
 
     $form['submit'] = [
       '#type' => 'submit',
@@ -92,8 +95,10 @@ class OpponentGameForm extends FormBase {
       $white_user = $opponent;
     }
 
+    $values = $form_state->getValues();
+    $game_time = $values['game_time_value'] * $values['game_time_unit'];
     $game = Game::create();
-    static::initializeGame($game, $white_user, $black_user, $user);
+    static::initializeGame($game, $white_user, $black_user, $user, $game_time, $values['game_time_per_move']);
     drupal_set_message($this->t('Game %label has been created.', ['%label' => $game->label()]));
     $form_state->setRedirect('vchess.game', ['vchess_game' => $game->id()]);
   }

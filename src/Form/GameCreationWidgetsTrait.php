@@ -9,31 +9,21 @@ trait GameCreationWidgetsTrait {
 
 
   function addGameTimeWidgets(array &$form, FormStateInterface $form_state) {
-    $form['is_handicap'] = [
-      '#type' => 'checkbox',
-      '#title' => 'Handicap game',
-      '#default_value' => FALSE,
-    ];
 
-    $this->addTimeSelect($form, 'game_time', $this->t('Game time'), FALSE);
+    $this->addTimeSelect($form, 'game_time', $this->t('Game time'));
 
-    $this->addTimeSelect($form, 'white_time', $this->t('White game time'), TRUE);
+    //$this->addTimeSelect($form, 'white_time', $this->t('White game time'));
 
-    $this->addTimeSelect($form, 'black_time', $this->t('Black game time'), TRUE);
+    //$this->addTimeSelect($form, 'black_time', $this->t('Black game time'));
 
   }
 
-  protected function addTimeSelect(&$form, $name, $title, $visible_on_check = FALSE) {
+  protected function addTimeSelect(&$form, $name, $title) {
     $form[$name][$name . '_value'] = [
       '#type' => 'textfield',
       '#size' => '4',
       '#default_value' => 120,
       '#title' => $title,
-      '#states' => [
-        'visible' => [
-          ':input[name="is_handicap"]' => ['checked' => $visible_on_check],
-        ],
-      ],
     ];
 
     $form[$name][$name . '_unit'] = [
@@ -43,13 +33,9 @@ trait GameCreationWidgetsTrait {
         '1' => $this->t('seconds'),
         '60' => $this->t('minutes'),
         '3600' => $this->t('hours'),
-        '3600___' => $this->t('days'),
+        '86400' => $this->t('days'),
       ],
-      '#states' => [
-        'visible' => [
-          ':input[name="is_handicap"]' => ['checked' => $visible_on_check],
-        ],
-      ],
+      '#default_value' => '60',
     ];
 
     $form[$name][$name . '_time_per_move'] = [
@@ -63,15 +49,7 @@ trait GameCreationWidgetsTrait {
         '5' => $this->t('5 days'),
       ],
       '#default_value' => '3',
-      '#states' => [
-        'visible' => [
-          ':input[name="is_handicap"]' => ['checked' => $visible_on_check],
-        ],
-      ],
     ];
-
-
-
   }
 
 }

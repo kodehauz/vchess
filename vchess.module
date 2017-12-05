@@ -15,7 +15,6 @@ global $base_url; // e.g. http://localhost/chess_drupal-7.14
 
 // Define the default time per move
 define("DEFAULT_TIME_PER_MOVE", 3);
-define("DEFAULT_TIME_UNITS", 'days');
 
 define("VCHESS_PENDING_LIMIT", 3);
 
