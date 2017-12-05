@@ -64,4 +64,5 @@
     this.element.innerHTML = min + ":" + sec;
   }
 
+
 })(window, window.document, drupalSettings, Drupal);

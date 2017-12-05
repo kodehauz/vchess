@@ -74,6 +74,9 @@ class OpponentGameForm extends FormBase {
     $user = User::load($this->currentUser()->id());
     $opponent = User::load($form_state->getValue('opponent'));
 
+    //Collecting data for black and white players.
+    $black_time = $form_state->getValue('black_time');
+
     if ($form_state->getValue('color') === 'w') {
       // User plays white.
       $white_user = $user;
