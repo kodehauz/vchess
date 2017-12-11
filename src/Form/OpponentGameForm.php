@@ -8,7 +8,6 @@ use Drupal\user\Entity\User;
 use Drupal\vchess\Entity\Game;
 use Drupal\vchess\GameManagementTrait;
 
-
 class OpponentGameForm extends FormBase {
 
   use GameManagementTrait;
@@ -109,9 +108,5 @@ class OpponentGameForm extends FormBase {
     // drupal_set_message('Mail has been sent.', 'status');
     $form_state->setRedirect('vchess.game', ['vchess_game' => $game->id()]);
   }
-
-
-
-
 
 }
