@@ -1,0 +1,26 @@
+<div class="row">
+  <div class="col-md-12" id="controls">
+
+    <h1>{{ title }}</h1>
+
+  </div>
+
+  <div class="col-md-6">
+    <div class="time-container" id="left">
+      {{ white_name }}
+    </div>
+    <div>
+      <span id="js-white-timer" data-time-left="{{ white_time }}"></span>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <h1><span id="cdtime"></span></h1>
+    <div class="time-container" id="right">
+      {{ black_name }}
+    </div>
+    <div>
+      <span id="js-black-timer" data-time-left="{{ black_time }}"></span>
+    </div>
+  </div>
+</div>

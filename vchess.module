@@ -47,5 +47,14 @@ function vchess_theme($existing, $type, $theme, $path) {
     'vchess_captured_pieces' => [
       'variables' => ['pieces' => NULL, 'board_theme' => NULL],
     ],
+    'vchess_game_timer' => [
+      'variables' => [
+        'title' => NULL,
+        'white_name' => NULL,
+        'black_name' => NULL,
+        'white_time' => NULL,
+        'black_time' => NULL,
+      ],
+    ],
   ];
 }
