@@ -61,6 +61,7 @@
     if (sec < 10) {
       sec = "0" + sec;
     }
+
     this.element.innerHTML = min + ":" + sec;
   }
 
