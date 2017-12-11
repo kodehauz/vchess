@@ -2,13 +2,12 @@
 
 namespace Drupal\vchess\Form;
 
-
 use Drupal\Core\Form\FormStateInterface;
 
 trait GameCreationWidgetsTrait {
 
 
-  function addGameTimeWidgets(array &$form, FormStateInterface $form_state) {
+  protected function addGameTimeWidgets(array &$form, FormStateInterface $form_state) {
 
     $this->addTimeSelect($form, 'game_time', $this->t('Game time'));
 
