@@ -85,11 +85,6 @@ class GamePlayForm extends FormBase {
         '#flipped' => $this->isBoardFlipped(),
         '#refresh_interval' => 5,
       ],
-      'timer' => [
-        '#type' => 'vchess_game_timer',
-        '#game' => $game,
-        '#player' => $player_color,
-      ]
     ];
 
     /*
