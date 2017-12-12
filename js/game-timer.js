@@ -51,9 +51,9 @@
   };
 
   GameTimer.prototype.displayTimeLeft = function (timeLeft) {
-    var hrs = Math.floor(timeLeft / 3600);
-    var min = Math.floor((timeLeft % 3600) / 60);
-    var sec = Math.floor(timeLeft % 60);
+    var hrs = Math.max(Math.floor(timeLeft / 3600), 0);
+    var min = Math.max(Math.floor((timeLeft % 3600) / 60), 0);
+    var sec = Math.max(Math.floor(timeLeft % 60), 0);
 
     if (min < 10) {
       min = "0" + min;
