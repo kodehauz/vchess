@@ -89,6 +89,7 @@ class GamePlayForm extends FormBase {
         '#type' => 'vchess_game_timer',
         '#game' => $game,
         '#player' => $player_color,
+        '#active' => $player_may_move,
       ]
     ];
 
@@ -203,7 +204,11 @@ class GamePlayForm extends FormBase {
     $user = User::load($this->currentUser()->id());
     $gameplay = new GamePlay($this->game);
     $gameplay->resign($user);
-    $this->game->save();
+    // Update the player's times left.
+    $this->game
+      ->setWhiteTimeLeft($form_state->getValue(['timer', 'white_time']))
+      ->setBlackTimeLeft($form_state->getValue(['timer', 'black_time']))
+      ->save();
     GamerStatistics::updatePlayerStatistics($this->game);
     drupal_set_message($this->t('You have now resigned.'));
   }
@@ -232,6 +237,11 @@ class GamePlayForm extends FormBase {
       else { // try as chess move
         $move_made = $gameplay->makeMove($user, $move, $messages, $errors);
       }
+
+      // Update the player's times left.
+      $this->game
+        ->setWhiteTimeLeft($form_state->getValue(['timer', 'white_time']))
+        ->setBlackTimeLeft($form_state->getValue(['timer', 'black_time']));
 
       // Only save move and game if a move has actually been made
 //      if ($player_with_turn !== $game->getTurn()) {

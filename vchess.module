@@ -48,6 +48,7 @@ function vchess_theme($existing, $type, $theme, $path) {
     ],
     'vchess_game_timer' => [
       'variables' => [
+        'name' => NULL,
         'title' => NULL,
         'white_name' => NULL,
         'black_name' => NULL,
