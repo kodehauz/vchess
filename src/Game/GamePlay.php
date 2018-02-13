@@ -191,17 +191,10 @@ class GamePlay {
    */
   public function playerColor(UserInterface $user) {
     // @todo
-    if ($this->game->getWhiteUser()->id() === $this->game->getBlackUser()->id()) {
+    if ($this->game->getWhiteUser() === $this->game->getBlackUser()) {
       return $this->game->getTurn();
     }
-    elseif ($this->game->getWhiteUser()->id() == $user->id()) {
-      return 'w';
-    }
-    elseif ($this->game->getBlackUser()->id() == $user->id()) {
-      return 'b';
-    }
-  
-    return '';
+    return $this->game->getPlayerColor($user);
   }
   
   /**

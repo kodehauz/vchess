@@ -120,10 +120,10 @@ class GameController extends ControllerBase {
           $time_left = $game->calculateTimeLeft();
           $markup_arguments += [
             ':src' => $base_url . "/" . drupal_get_path('module', 'vchess') . '/images/default/' . $markup_arguments['mark'],
-            ':white-player-url' => Url::fromRoute('vchess.player', ['player' => $game->getWhiteUser()->getAccountName()])->toString(),
-            '@white-player-name' => $game->getWhiteUser()->getDisplayName(),
-            ':black-player-url' => Url::fromRoute('vchess.player', ['player' => $game->getBlackUser()->getAccountName()])->toString(),
-            '@black-player-name' => $game->getBlackUser()->getDisplayName(),
+            ':white-player-url' => Url::fromRoute('vchess.player', ['player' => $game->getWhiteUser() ? $game->getWhiteUser()->getAccountName() : 'white player'])->toString(),
+            '@white-player-name' => $game->getWhiteUser() ? $game->getWhiteUser()->getDisplayName() : 'white player',
+            ':black-player-url' => Url::fromRoute('vchess.player', ['player' => $game->getBlackUser() ? $game->getBlackUser()->getAccountName() : 'black player'])->toString(),
+            '@black-player-name' => $game->getBlackUser() ? $game->getBlackUser()->getDisplayName() : 'black player',
             ':player-to-move-url' => Url::fromRoute('vchess.player', ['player' => $player_to_move->getAccountName()])->toString(),
             '@player-to-move-name' => $player_to_move->getDisplayName(),
             ':game-url' => Url::fromRoute('vchess.game', ['vchess_game' => $game->id()])->toString(),
@@ -402,8 +402,8 @@ class GameController extends ControllerBase {
         ->error('Players are already assigned so challenge cannot be fulfilled. Player @username accepted challenge for game @game. W:@white vs. B:@black.',
           ['@username' => $user->getDisplayName(),
             '@game' => $game->label(),
-            '@white' => $game->getWhiteUser()->getDisplayName(),
-            '@black' => $game->getBlackUser()->getDisplayName()
+            '@white' => $game->getWhiteUser() ? $game->getWhiteUser()->getDisplayName() : 'white player',
+            '@black' => $game->getBlackUser() ? $game->getBlackUser()->getDisplayName() : 'black player'
           ]);
 
       return FALSE;

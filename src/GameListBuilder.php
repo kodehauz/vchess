@@ -64,12 +64,12 @@ class GameListBuilder extends EntityListBuilder {
         'player' => $game->getWhiteUser()
           ->getAccountName()
       ])->toString(),
-      '@white-player-name' => $game->getWhiteUser()->getDisplayName(),
+      '@white-player-name' => $game->getWhiteUser() ? $game->getWhiteUser()->getDisplayName() : 'white player',
       ':black-player-url' => Url::fromRoute('vchess.player', [
         'player' => $game->getBlackUser()
           ->getAccountName()
       ])->toString(),
-      '@black-player-name' => $game->getBlackUser()->getDisplayName(),
+      '@black-player-name' => $game->getBlackUser() ? $game->getBlackUser()->getDisplayName() : 'black player',
       ':player-to-move-url' => Url::fromRoute('vchess.player', ['player' => $player_to_move->getAccountName()])
         ->toString(),
       '@player-to-move-name' => $player_to_move->getDisplayName(),
