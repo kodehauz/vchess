@@ -91,6 +91,10 @@ class OpponentGameForm extends FormBase {
 
     $game = Game::create();
     static::initializeGame($game, $white_user, $black_user, $user);
+
+    $form_state->set('game', $game);
+    $form_state->set('opponent', $form_state->getValue('opponent'));
+
     drupal_set_message($this->t('Game %label has been created.', ['%label' => $game->label()]));
     $form_state->setRedirect('vchess.game', ['vchess_game' => $game->id()]);
   }
