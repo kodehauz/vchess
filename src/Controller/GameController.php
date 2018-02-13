@@ -113,19 +113,22 @@ class GameController extends ControllerBase {
           if ($game->getTurn() === 'w') {
             $player_to_move = $game->getWhiteUser();
           }
-          else {
+          else if ($game->getTurn() === 'b') {
             $player_to_move = $game->getBlackUser();
+          }
+          else {
+            $player_to_move = NULL;
           }
 
           $time_left = $game->calculateTimeLeft();
           $markup_arguments += [
             ':src' => $base_url . "/" . drupal_get_path('module', 'vchess') . '/images/default/' . $markup_arguments['mark'],
-            ':white-player-url' => Url::fromRoute('vchess.player', ['player' => $game->getWhiteUser() ? $game->getWhiteUser()->getAccountName() : 'white player'])->toString(),
-            '@white-player-name' => $game->getWhiteUser() ? $game->getWhiteUser()->getDisplayName() : 'white player',
-            ':black-player-url' => Url::fromRoute('vchess.player', ['player' => $game->getBlackUser() ? $game->getBlackUser()->getAccountName() : 'black player'])->toString(),
-            '@black-player-name' => $game->getBlackUser() ? $game->getBlackUser()->getDisplayName() : 'black player',
-            ':player-to-move-url' => Url::fromRoute('vchess.player', ['player' => $player_to_move->getAccountName()])->toString(),
-            '@player-to-move-name' => $player_to_move->getDisplayName(),
+            ':white-player-url' => $game->getWhiteUser() ? Url::fromRoute('vchess.player', ['player' => $game->getWhiteUser()->getAccountName()])->toString() : '',
+            '@white-player-name' => $game->getWhiteUser() ? $game->getWhiteUser()->getDisplayName() : $this->t('awaiting white player'),
+            ':black-player-url' => $game->getBlackUser() ? Url::fromRoute('vchess.player', ['player' => $game->getBlackUser()->getAccountName()])->toString() : '',
+            '@black-player-name' => $game->getBlackUser() ? $game->getBlackUser()->getDisplayName() : $this->t('awaiting black player'),
+            ':player-to-move-url' => $player_to_move ? Url::fromRoute('vchess.player', ['player' => $player_to_move->getAccountName()])->toString() : '',
+            '@player-to-move-name' => $player_to_move ? $player_to_move->getDisplayName() : $this->t('awaiting player'),
             ':game-url' => Url::fromRoute('vchess.game', ['vchess_game' => $game->id()])->toString(),
             '@long-time' => sprintf("%07d", $time_left),
             '@time' => $this->formatUserFriendlyTime($time_left),
