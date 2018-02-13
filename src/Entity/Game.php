@@ -199,8 +199,7 @@ class Game extends ContentEntityBase {
    *   TRUE if the given user is one of the players.
    */
   public function isUserPlaying(UserInterface $user) {
-    return ($this->getBlackUser() && $this->getBlackUser()->id() === $user->id())
-      || ($this->getWhiteUser() && $this->getWhiteUser()->id() === $user->id());
+    return $this->getPlayerColor($user) !== '';
   }
 
   /**
@@ -213,8 +212,8 @@ class Game extends ContentEntityBase {
    *   TRUE if the given user is one to move.
    */
   public function isPlayersMove(UserInterface $user) {
-    return (($this->getTurn() === 'w' && $this->getWhiteUser()->id() === $user->id())
-      || ($this->getTurn() === 'b' && $this->getBlackUser()->id() === $user->id()));
+    $player_color = $this->getPlayerColor($user);
+    return $player_color !== '' && $player_color === $this->getTurn();
   }
 
   /**
@@ -234,16 +233,20 @@ class Game extends ContentEntityBase {
    * @param \Drupal\user\UserInterface $user
    *   A user object corresponding to one of the players
    *
-   * @return \Drupal\gamer\Entity\GamerStatistics $player
+   * @return \Drupal\gamer\Entity\GamerStatistics|null $player
    *   The opposing player's game statistics.
    */
   public function getOpponent(UserInterface $user) {
-    if ($this->getWhiteUser()->id() === $user->id()) {
+    $player_color = $this->getPlayerColor($user);
+    if ($player_color === 'w') {
       return GamerStatistics::loadForUser($this->getBlackUser());
     }
-    else {
+
+    if ($player_color === 'b') {
       return GamerStatistics::loadForUser($this->getWhiteUser());
     }
+
+    return NULL;
   }
 
   /**
@@ -253,7 +256,7 @@ class Game extends ContentEntityBase {
    */
   public function setChallenger(UserInterface $user) {
     assert($this->isUserPlaying($user));
-    $this->set('challenger', $user->id() === $this->getWhiteUser()->id() ? 'w' : 'b');
+    $this->set('challenger', $this->getPlayerColor($user));
     return $this;
   }
 
@@ -925,17 +928,16 @@ class Game extends ContentEntityBase {
     $games = static::loadMultiple($ids);
     foreach ($games as $id => $game) {
       $status = $game->getStatus();
-      $user_is_white = $game->getWhiteUser()->id() === $user->id();
-      $user_is_black = $game->getBlackUser()->id() === $user->id();
+      $user_color = $game->getPlayerColor($user);
       if ($status === GamePlay::STATUS_DRAW) {
         $streak[$id] = 'D';
       }
-      elseif (($status === GamePlay::STATUS_WHITE_WIN && $user_is_black)
-        || ($status === GamePlay::STATUS_BLACK_WIN && $user_is_white)) {
+      elseif (($status === GamePlay::STATUS_WHITE_WIN && $user_color === 'b')
+        || ($status === GamePlay::STATUS_BLACK_WIN && $user_color === 'w')) {
         $streak[$id] = 'L';
       }
-      elseif (($status === GamePlay::STATUS_WHITE_WIN && $user_is_white)
-        || ($status === GamePlay::STATUS_BLACK_WIN && $user_is_black)) {
+      elseif (($status === GamePlay::STATUS_WHITE_WIN && $user_color === 'w')
+        || ($status === GamePlay::STATUS_BLACK_WIN && $user_color === 'b')) {
         $streak[$id] = 'W';
       }
     }
