@@ -162,107 +162,6 @@ class GamePlay {
     $this->board->setupPosition($fen_string);
   }
 
-//  /**
-//   * Get the current position as a FEN string
-//   *
-//   * @return string
-//   *   the current position as a FEN string e.g. after 1.e4 the FEN string will be:
-//   *   "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR"
-//   */
-//  public function position() {
-//    return $this->board->getFenString();
-//  }
-//
-//  /**
-//   * Get the uid of the white player
-//   */
-//  public function whiteUid() {
-//    return $this->game->getWhiteUser()->id();
-//  }
-//
-//  /**
-//   * Get the uid of the black player
-//   */
-//  public function blackUid() {
-//    return $this->game->getBlackUser()->id();
-//  }
-  
-//  /**
-//   * Get the en_passant
-//   *
-//   * The en_passant is the coordinates of the square
-//   * behind the pawn in the last move to have moved 2 squares.
-//   *
-//   * @return
-//   *   Returns the en_passant coord (e.g. "d3"), if there is one,
-//   *   otherwise it returns "-"
-//   */
-//  public function getEnPassantSquare() {
-//    return $this->board->getEnPassantSquare();
-//  }
-  
-//  /**
-//   * Get the player whose turn it is, either 'w' or 'b'
-//   *
-//   * @return
-//   *   Whose turn it is, 'w' or 'b'
-//   */
-//  public function getTurn() {
-//    return $this->game->getTurn();
-//  }
-  
-//  /**
-//   * Get the status
-//   *
-//   * Status can be one of:
-//   * - "awaiting players"
-//   * - "in progress"
-//   * - "1-0"
-//   * - "0-1"
-//   * - "1/2-1/2"
-//   */
-//  public function getStatus() {
-//    return $this->game->getStatus();
-//  }
-  
-//  /**
-//   * Set the player whose turn it is to move to be 'w'
-//   */
-//  public function setTurnWhite() {
-//    $this->game->setTurn('w');
-//  }
-  
-//  /**
-//   * Set the player whose turn it is to move to be 'b'
-//   */
-//  public function setTurnBlack() {
-//    $this->game->setTurn('b');
-//  }
-  
-//  /**
-//   * Checks whether the king is in checkmate.
-//   *
-//   * @param string $player
-//   *   Player, either 'w' or 'b'
-//   *
-//   * @return boolean
-//   */
-//  public function isCheckmate($player) {
-//    return $this->board->isInCheckmate($player);
-//  }
-  
-//  /**
-//   * Checks whether the king is in check.
-//   *
-//   * @param string $player
-//   *   Player, either 'w' or 'b'
-//   *
-//   * @return boolean
-//   */
-//  public function isCheck($player) {
-//    return $this->board->isInCheck($player);
-//  }
-  
   /**
    * Resigns a particular game.
    */
@@ -408,13 +307,13 @@ class GamePlay {
       ->setupPosition($this->board->getFenString())
       ->setEnPassantSquare($this->board->getEnPassantSquare());
 
-    // @todo Propagating errors here.
     if ($this->board->isValidCastlingMove($move->squareFrom(), $move->squareTo())) {
-      $errors[] = $this->castle($this->playerColor($user), $move->squareFrom(), $move->squareTo());
-      return TRUE;
+      if ($error = $this->castle($this->playerColor($user), $move->squareFrom(), $move->squareTo())) {
+        $errors[] = $error;
+        $move_ok = FALSE;
+      }
     }
-
-    if ($move->getType() === '-') {
+    elseif ($move->getType() === '-') {
       // Validate piece and position.
       // Move is e.g. "Nb1-c3"
       $piece = (new Piece())
@@ -559,17 +458,7 @@ class GamePlay {
       // Add comment to head of chatter. Right now we have only two
       // chatter items. Strip backslashes and replace newlines to get
       // a single line.
-      if (empty($comment)) {
-        $comment = '(silence)';
-      }
-      else {
-        $comment = str_replace("\\", '', strip_tags($comment));
-        $comment = str_replace("\n", '<br />', $comment);
-      }
-      $comment = '<u>' . $user->id() . '</u>: ' . $comment;
-      //    $game['chatter'][1] = $game['chatter'][0];
-      //    $game['chatter'][1] = "Hugh hard coding for now";
-      //    $game['chatter'][0] = $comment;
+      $this->addComment();
     }
     else {
       $errors[] = 'ERROR: ' . $move->getAlgebraic() . ' is not a legal move!  ';
@@ -589,38 +478,30 @@ class GamePlay {
    *   The coordinate the king is going, e.g. "g1".
    *
    * @return string
+   *   An error message if castling cannot be done.
    *
    */
   public function castle($turn, Square $king_from, Square $king_to) {
-    $error = '';
 
     if ($king_to->getColumn() - $king_from->getColumn() === 2) {
       $side = 'K';
       if (!$this->getCastling($turn, $side)) {
-        $error = static::ERROR_CANNOT_CASTLE_SHORT;
+        return static::ERROR_CANNOT_CASTLE_SHORT;
       }
     }
     else { // count == 3
       $side = 'Q';
       if (!$this->getCastling($turn, $side)) {
-        $error = static::ERROR_CANNOT_CASTLE_LONG;
+        return static::ERROR_CANNOT_CASTLE_LONG;
       }
     }
 
-//    if ($error === '') {
-//      foreach ($gap_coords as $gap_coord) {
-//        if (!$this->board->squareAtCoordinateIsEmpty($gap_coord)) {
-//          $error = static::ERROR_CASTLING_SQUARES_BLOCKED;
-//        }
-//      }
-//    }
-
-    if ($error === '') {
-      if ($this->board->isInCheck($turn)) {
-        $error = static::ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
-      }
+    if ($this->board->isInCheck($turn)) {
+      return static::ERROR_CANNOT_ESCAPE_CHECK_BY_CASTLING;
     }
-    if ($this->board->performCastling($king_from, $king_to)) {
+
+    $error = $this->board->performCastling($king_from, $king_to);
+    if (empty($error)) {
       // Castling can only happen once. So all options are off.
       $this->setCastlingForColor($turn, FALSE);
     }
@@ -696,6 +577,23 @@ class GamePlay {
       }
     }
     return 0;
+  }
+
+  protected function addComment() {
+    /** @todo
+    if (empty($comment)) {
+      $comment = '(silence)';
+    }
+    else {
+      $comment = str_replace("\\", '', strip_tags($comment));
+      $comment = str_replace("\n", '<br />', $comment);
+    }
+    $comment = '<u>' . $user->id() . '</u>: ' . $comment;
+    //    $game['chatter'][1] = $game['chatter'][0];
+    //    $game['chatter'][1] = "Hugh hard coding for now";
+    //    $game['chatter'][0] = $comment;
+    return $comment;
+     */
   }
 
 }

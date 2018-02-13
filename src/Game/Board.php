@@ -985,7 +985,7 @@ class Board {
    */
   public function performCastling(Square $from_square, Square $to_square) {
     if (!$this->isValidCastlingMove($from_square, $to_square)) {
-      return FALSE;
+      return 'ERROR: Invalid castling move';
     }
 
     // Confirm that there is nothing between king and rook.
@@ -995,7 +995,7 @@ class Board {
     $king_piece = $this->getPiece($from_square);
 
     if ($rook_piece->getType() !== 'R' || $rook_piece->getColor() !== $king_piece->getColor()) {
-      return FALSE;
+      return 'ERROR: Rook and King are different colors';
     }
 
     $king_from = $from_square->getIndex();
@@ -1005,7 +1005,7 @@ class Board {
     $change /= abs($change);
     $rook_to_square = Square::fromIndex($king_from + $change);
     if (!$this->pathIsNotBlocked($king_from + $change, $rook_from, $change)) {
-      return FALSE;
+      return 'ERROR: King path is blocked';
     }
 
     // Ensure the squares between the king's current position and where he will
@@ -1014,14 +1014,14 @@ class Board {
     for ($i = $king_from; $i <= $king_to; $i += $change) {
       $square = Square::fromIndex($i);
       if ($this->squareIsUnderAttack($square, $opponent)) {
-        return FALSE;
+        return 'ERROR: King path is under attack';
       }
     }
     // White King move.
     $this->movePiece($from_square, $to_square);
     // Rook move.
     $this->movePiece($rook_square, $rook_to_square);
-    return TRUE;
+    return '';
   }
 
   /**

@@ -244,22 +244,8 @@ class GamePlayForm extends FormBase {
           GamerStatistics::updatePlayerStatistics($game);
         }
 
-        // Send a notification if email address was supplied.
-        //    if ($opponent == 'b') {
-        //       $oid = $game['black'];
-        //     }
-        //     else {
-        //       $oid = $game['white'];
-        //     }
-        //  $email=ioLoadUserEmailAddress($oid);
-        $email = FALSE; // Hugh - force following condition to be FALSE
-        if ($email) {
-          $prot = ($GLOBALS['_SERVER']['HTTPS'] == 'on') ? 'https' : 'http';
-          $url = $prot . '://' . $GLOBALS['_SERVER']['HTTP_HOST'] . $GLOBALS['_SERVER']['SCRIPT_NAME'] . '?gid=' . $gid;
-          $message = "Dear $oid\n\n$uid has just moved.\n\nMove:\n$move\n\nIt is your turn now!\n\nEnter the game:\n$url";
-          mail($email, "[OCC] " . $game['white'] . "vs" . $game['black'] . ": $move->long_format()",
-            $message, 'From: ' . $mail_from);
-        }
+        $this->sendEmailNotification();
+
       }
 
       drupal_set_message(implode("\n", $messages));
@@ -274,6 +260,26 @@ class GamePlayForm extends FormBase {
     $gid = $this->game->id();
     $vchess_board = \Drupal::state()->get('vchess_board', []);
     return isset($vchess_board['flipped'][$gid]) && $vchess_board['flipped'][$gid] === TRUE;
+  }
+
+  protected function sendEmailNotification() {
+    // Send a notification if email address was supplied.
+    //    if ($opponent == 'b') {
+    //       $oid = $game['black'];
+    //     }
+    //     else {
+    //       $oid = $game['white'];
+    //     }
+    //  $email=ioLoadUserEmailAddress($oid);
+    $email = FALSE; // Hugh - force following condition to be FALSE
+    if ($email) {
+      $prot = ($GLOBALS['_SERVER']['HTTPS'] == 'on') ? 'https' : 'http';
+      $url = $prot . '://' . $GLOBALS['_SERVER']['HTTP_HOST'] . $GLOBALS['_SERVER']['SCRIPT_NAME'] . '?gid=' . $gid;
+      $message = "Dear $oid\n\n$uid has just moved.\n\nMove:\n$move\n\nIt is your turn now!\n\nEnter the game:\n$url";
+      mail($email, "[OCC] " . $game['white'] . "vs" . $game['black'] . ": $move->long_format()",
+        $message, 'From: ' . $mail_from);
+    }
+
   }
 
 }
