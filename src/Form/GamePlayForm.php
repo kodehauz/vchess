@@ -74,6 +74,12 @@ class GamePlayForm extends FormBase {
     $form['board'] = [
       '#prefix' => '<div id="board">',
       '#suffix' => '</div>',
+      'timer' => [
+        '#type' => 'vchess_game_timer',
+        '#game' => $game,
+        '#player' => $player_color,
+        '#active' => $player_may_move,
+      ],
       'game' => [
         '#cache' => [
           'max-age' => 0,
@@ -85,12 +91,6 @@ class GamePlayForm extends FormBase {
         '#flipped' => $this->isBoardFlipped(),
         '#refresh_interval' => 5,
       ],
-      'timer' => [
-        '#type' => 'vchess_game_timer',
-        '#game' => $game,
-        '#player' => $player_color,
-        '#active' => $player_may_move,
-      ]
     ];
 
     /*

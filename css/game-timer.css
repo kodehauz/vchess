@@ -1,0 +1,40 @@
+.game-timer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  height: 100%;
+  margin: 10px 0;
+}
+.game-timer .text-align center {
+  flex-wrap: wrap;
+}
+
+.game-timer .time-container {
+  display: flex;
+  flex-direction:column;
+  align-items: center;
+}
+
+.game-timer .time-display input:focus {
+  outline: 0 !important;
+}
+
+.game-timer .time-display {
+  font-size: 2.3em;
+  padding: 5px;
+  font-family: Arial, LiquidCrystal, sans-serif;
+  border: 2px grey solid;
+  margin-top: 10px;
+}
+
+.game-timer .time-display.active {
+  color: #CC4444;
+  border-color: #CC4444;
+}
+
+.game-timer .time-display.left {
+}
+
+.game-timer .time-display.right {
+}

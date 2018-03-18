@@ -178,7 +178,7 @@ class GameController extends ControllerBase {
       $rows = static::doNonSqlSort($rows, $sort, $order['sql']);
     }
 
-    $entity_type = \Drupal::entityTypeManager()->getDefinition('vchess_game');
+    $entity_type = $this->entityTypeManager()->getDefinition('vchess_game');
     return [
       '#type' => 'table',
       '#header' => $header,

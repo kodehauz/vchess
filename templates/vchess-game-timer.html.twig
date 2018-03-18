@@ -1,29 +1,25 @@
-<div class="row">
-  <div class="col-md-12" id="controls">
-
-    <h1 class="visually-hidden">{{ title }}</h1>
-
+<div class="game-timer">
+  <div class="visually-hidden" id="controls">
+    <h1>{{ title }}</h1>
   </div>
 
-  <div class="col-md-6">
-    <div class="time-container" id="left">
+  <div class="time-container left">
+    <div>
       {{ white_name }}
     </div>
-    <div id="js-white-timer">
+    <div id="js-white-timer" class="time-display{{ player == 'w' ? ' active' }}">
       <span data-time-left="{{ white_time }}"></span>
-      <input name="{{ name }}[white]" value="{{ white_time }}">
+      <input type="hidden" name="{{ name }}[white]" value="{{ white_time }}">
     </div>
   </div>
 
-  <div class="col-md-6">
-    <h1><span id="cdtime"></span></h1>
-
-    <div class="time-container" id="right">
+  <div class="time-container right">
+    <div>
       {{ black_name }}
     </div>
-    <div id="js-black-timer">
+    <div id="js-black-timer" class="time-display{{ player == 'b' ? ' active' }}">
       <span data-time-left="{{ black_time }}"></span>
-      <input name="{{ name }}[black]" value="{{ black_time }}">
+      <input type="hidden" name="{{ name }}[black]" value="{{ black_time }}">
     </div>
   </div>
 </div>

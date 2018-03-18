@@ -13,9 +13,6 @@ use Drupal\vchess\Game\Piece;
 
 global $base_url; // e.g. http://localhost/chess_drupal-7.14
 
-// Define the default time per move
-define("DEFAULT_TIME_PER_MOVE", 3);
-
 define("VCHESS_PENDING_LIMIT", 3);
 
 // During testing, it is sometimes useful to allow the possiblity to play against
@@ -50,6 +47,7 @@ function vchess_theme($existing, $type, $theme, $path) {
       'variables' => [
         'name' => NULL,
         'title' => NULL,
+        'player' => NULL,
         'white_name' => NULL,
         'black_name' => NULL,
         'white_time' => NULL,

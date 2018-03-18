@@ -7,7 +7,6 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\gamer\Entity\GamerStatistics;
-use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
 use Drupal\vchess\Game\GamePlay;
 
@@ -114,11 +113,6 @@ class Game extends ContentEntityBase {
     if ($this->status === GamePlay::STATUS_IN_PROGRESS) {
       // All dates are kept as GMT
       $current_time = time();
-      //        $other_time = gmdate("Y-m-d H:i:s");
-      //        $just_time = time();
-      //        drupal_set_message("current time:" . date("Y-m-d H:i:s", $current_time));
-      //        drupal_set_message("other time:" . $other_time);
-      //        drupal_set_message("time: " . date("Y-m-d H:i:s", $just_time));
       if ($this->isMoveMade()) {
         $move_time = strtotime($this->getLastMove()->getTimestamp());
       }
@@ -243,12 +237,18 @@ class Game extends ContentEntityBase {
     if ($this->getWhiteUser() !== NULL && $this->getBlackUser() === NULL) {
       return $this->getWhiteUser();
     }
-    else if ($this->getBlackUser() !== NULL && $this->getWhiteUser() === NULL) {
+
+    if ($this->getBlackUser() !== NULL && $this->getWhiteUser() === NULL) {
       return $this->getBlackUser();
     }
-    else {
-      return $this->get('challenger') === 'w' ? $this->getWhiteUser() : $this->getBlackUser();
+
+    if ($this->get('challenger')->value === 'w') {
+      return $this->getWhiteUser();
     }
+    if ($this->get('challenger')->value === 'b') {
+      return $this->getBlackUser();
+    }
+    return NULL;
   }
 
   /**
@@ -508,7 +508,7 @@ class Game extends ContentEntityBase {
   }
 
   public function getBlackTimeLeft() {
-    return $this->get('white_time_left')->value;
+    return $this->get('black_time_left')->value;
   }
 
   /**
@@ -591,7 +591,7 @@ class Game extends ContentEntityBase {
     $fields['time_per_move'] = BaseFieldDefinition::create('integer')
       ->setLabel('Time per move')
       ->setDescription(t('Time per move in days'))
-      ->setDefaultValue(DEFAULT_TIME_PER_MOVE);
+      ->setDefaultValue(GamePlay::DEFAULT_TIME_PER_MOVE);
 
     $fields['time_started'] = BaseFieldDefinition::create('timestamp')
       ->setLabel('Time started')
@@ -653,17 +653,12 @@ class Game extends ContentEntityBase {
   public function preSave(EntityStorageInterface $storage) {
     if (empty($this->label())) {
       // If label has not been set, then use the players' names.
+      $white_name = $black_name = 'Unknown';
       if ($white = $this->getWhiteUser()) {
         $white_name = $white->getDisplayName();
       }
-      else {
-        $white_name = 'Unknown';
-      }
       if ($white = $this->getBlackUser()) {
         $black_name = $white->getDisplayName();
-      }
-      else {
-        $black_name = 'Unknown';
       }
       $this->setLabel($white_name . ' vs. ' . $black_name);
     }
@@ -695,7 +690,9 @@ class Game extends ContentEntityBase {
    * @return integer
    */
   public static function countGamesWonByUser(UserInterface $user) {
-    $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getAggregateQuery('OR');
+    $query = \Drupal::entityTypeManager()
+      ->getStorage('vchess_game')
+      ->getAggregateQuery('OR');
     $white_condition = $query->andConditionGroup()
       ->condition('white_uid', $user->id())
       ->condition('status', GamePlay::STATUS_WHITE_WIN);
@@ -724,7 +721,9 @@ class Game extends ContentEntityBase {
    * @return integer
    */
   public static function countGamesLostByUser(UserInterface $user) {
-    $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getAggregateQuery('OR');
+    $query = \Drupal::entityTypeManager()
+      ->getStorage('vchess_game')
+      ->getAggregateQuery('OR');
     $white_condition = $query->andConditionGroup()
       ->condition('white_uid', $user->id())
       ->condition('status', GamePlay::STATUS_BLACK_WIN);
@@ -754,7 +753,9 @@ class Game extends ContentEntityBase {
    *   The number of games currently being played by a user.
    */
   public static function countUsersCurrentGames(UserInterface $user) {
-    $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getAggregateQuery('AND');
+    $query = \Drupal::entityTypeManager()
+      ->getStorage('vchess_game')
+      ->getAggregateQuery('AND');
     $user_condition = $query->orConditionGroup()
       ->condition('white_uid', $user->id())
       ->condition('black_uid', $user->id());
@@ -781,7 +782,9 @@ class Game extends ContentEntityBase {
    *   An array of the user's in progress games.
    */
   public static function loadUsersCurrentGames(UserInterface $user) {
-    $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getQuery('AND');
+    $query = \Drupal::entityTypeManager()
+      ->getStorage('vchess_game')
+      ->getQuery('AND');
     $user_condition = $query->orConditionGroup()
       ->condition('white_uid', $user->id())
       ->condition('black_uid', $user->id());
@@ -802,7 +805,9 @@ class Game extends ContentEntityBase {
    *   An array of all current (in progress) games
    */
   public static function loadAllCurrentGames() {
-    $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getQuery();
+    $query = \Drupal::entityTypeManager()
+      ->getStorage('vchess_game')
+      ->getQuery();
     $ids = $query
       ->condition('status', GamePlay::STATUS_IN_PROGRESS)
       ->sort('time_started', 'DESC')
@@ -820,7 +825,9 @@ class Game extends ContentEntityBase {
    *   An array of challenges awaiting players.
    */
   public static function loadChallenges(UserInterface $user = NULL) {
-    $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getQuery();
+    $query = \Drupal::entityTypeManager()
+      ->getStorage('vchess_game')
+      ->getQuery();
     $query
       ->condition('status', GamePlay::STATUS_AWAITING_PLAYERS)
       ->sort('time_started', 'ASC');
@@ -847,7 +854,9 @@ class Game extends ContentEntityBase {
    *   An array of challenges awaiting players.
    */
   public static function loadChallengesWithout(UserInterface $user) {
-    $query = \Drupal::entityTypeManager()->getStorage('vchess_game')->getQuery();
+    $query = \Drupal::entityTypeManager()
+      ->getStorage('vchess_game')
+      ->getQuery();
     $user_condition = $query->orConditionGroup()
       ->condition('white_uid', $user->id(), '<>')
       ->condition('black_uid', $user->id(), '<>');

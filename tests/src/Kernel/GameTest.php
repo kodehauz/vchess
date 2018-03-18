@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\vchess\Kernel;
 
+use Drupal\gamer\Entity\GamerStatistics;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\user\Entity\User;
 use Drupal\vchess\Entity\Game;
@@ -28,6 +29,7 @@ class GameTest extends KernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('vchess_game');
     $this->installEntitySchema('vchess_move');
+    $this->installEntitySchema('gamer_statistics');
   }
 
   /**
@@ -51,6 +53,7 @@ class GameTest extends KernelTestBase {
 
     $board = $this->randomString();
     $castling = $this->randomString(4);
+    $time_started = time();
 
     /** @var \Drupal\vchess\Entity\Game $game */
     $game = Game::create()
@@ -58,7 +61,14 @@ class GameTest extends KernelTestBase {
       ->setBlackUser($black_user)
       ->setBoard($board)
       ->setCastling($castling)
-      ->setEnPassantSquare('c3');
+      ->setEnPassantSquare('c3')
+      ->setTimePerMove(19)
+      ->setWhiteTimeLeft(1000)
+      ->setBlackTimeLeft(900)
+      ->setChallenger($white_user)
+      ->setStatus(GamePlay::STATUS_IN_PROGRESS)
+      ->setTimeStarted($time_started)
+      ->setTurn('b');
     $game->save();
 
     /** @var \Drupal\vchess\Entity\Game $saved_game */
@@ -68,6 +78,23 @@ class GameTest extends KernelTestBase {
     $this->assertEquals($white_user->id(), $saved_game->getWhiteUser()->id());
     $this->assertEquals($castling, $saved_game->getCastling());
     $this->assertEquals('c3', $saved_game->getEnPassantSquare());
+    $this->assertEquals(19, $saved_game->getTimePerMove());
+    $this->assertEquals(1000, $saved_game->getWhiteTimeLeft());
+    $this->assertEquals(900, $saved_game->getBlackTimeLeft());
+    $this->assertEquals('w', $saved_game->getPlayerColor($white_user));
+    $this->assertEquals('b', $saved_game->getPlayerColor($black_user));
+    $this->assertEquals($white_user->getAccountName(), $saved_game->getChallenger()->getAccountName());
+    $this->assertEquals(1, $saved_game->getMoveNumber());
+    $this->assertEquals(GamerStatistics::loadForUser($black_user)->getRating(), $saved_game->getOpponent($white_user)->getRating());
+    $this->assertEquals(GamerStatistics::loadForUser($white_user)->getRating(), $saved_game->getOpponent($black_user)->getRating());
+    $this->assertEquals('19 days', $saved_game->getSpeed());
+    $this->assertEquals(GamePlay::STATUS_IN_PROGRESS, $saved_game->getStatus());
+    $this->assertEquals($time_started, $saved_game->getTimeStarted());
+    $this->assertEquals('b', $saved_game->getTurn());
+
+    // Check the other code-path for getChallenger
+    $saved_game->setChallenger($black_user);
+    $this->assertTrue($black_user->getAccountName(), $saved_game->getChallenger()->getAccountName());
   }
 
   /**

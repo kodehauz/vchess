@@ -4,6 +4,7 @@ namespace Drupal\vchess\Element;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
+use Drupal\Core\Url;
 
 /**
  * @FormElement("vchess_game_timer")
@@ -18,8 +19,8 @@ class GameTimer extends FormElement {
     return [
       '#theme' => 'vchess_game_timer',
       '#input' => TRUE,
-      '#title' => 'Game timer',
-      '#description' => 'Game timer for Vchess',
+      '#title' => '',
+      '#description' => '',
       '#game' => NULL,
       '#player' => 'w',
       '#active' => FALSE,
@@ -63,6 +64,11 @@ class GameTimer extends FormElement {
     else {
       $element['#attached']['drupalSettings']['vchess']['active_timer'] = '';
     }
+    $element['#attached']['drupalSettings']['vchess']['gametimer_url'] = Url::fromRoute('vchess.gametimer', [
+      'vchess_game' => $game->id(),
+    ])->toString();
+    // Add this object to the list of timers in the form.
+    $element['#attached']['drupalSettings']['vchess']['game_timers'][] = $element['#name'];
 
     return $element;
   }

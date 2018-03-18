@@ -121,6 +121,13 @@ vchess.player:
   requirements:
     _permission: 'view player'
 
+vchess.gametimer:
+  path: /vchess/gametimer/{vchess_game}
+  defaults:
+    _controller: \Drupal\vchess\Controller\AjaxController::updateTimer
+  requirements:
+    _permission: 'view game'
+
 vchess.test:
   path: /vchess/test
   defaults:

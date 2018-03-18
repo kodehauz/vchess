@@ -30,6 +30,8 @@ class GamePlay {
   const ERROR_CANNOT_CASTLE_SHORT = 'ERROR: You cannot castle short anymore!';
   const ERROR_CANNOT_CASTLE_LONG = 'ERROR: You cannot castle long anymore!';
 
+  // Define the default time per move.
+  const DEFAULT_TIME_PER_MOVE = 3;
 
   /**
    * The entity holding game information.
@@ -90,7 +92,7 @@ class GamePlay {
         'turn' => 'w',
         'castling' => 'KQkq',
         'status' => static::STATUS_AWAITING_PLAYERS,
-        'time_per_move' => DEFAULT_TIME_PER_MOVE,
+        'time_per_move' => static::DEFAULT_TIME_PER_MOVE,
         'board' => $this->board->getFenString(),
       ]);
     }

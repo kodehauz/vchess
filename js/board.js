@@ -11,7 +11,7 @@ Board = {
  * @param cmd
  */
 Board.highlightMove = function (cmd) {
-  var obj;
+  let obj;
 
   // Clear old highlighting in source and destination.
   if (this.move.source !== "") {
@@ -50,16 +50,11 @@ Board.highlightMove = function (cmd) {
  * 
  */
 Board.checkMoveButton = function () {
-  var form = this.getBoardForm();
+  const form = this.getBoardForm();
 
   // Move button
   if (form && document.getElementById("edit-move-button")) {
-    if (form.move.value.length >= 6) {
-      document.getElementById("edit-move-button").disabled = false;
-    }
-    else {
-      document.getElementById("edit-move-button").disabled = true;
-    }
+    document.getElementById("edit-move-button").disabled = form.move.value.length < 6;
   }
 };
 
@@ -74,9 +69,8 @@ Board.checkMoveButton = function () {
  *     '-b5' = empty b5 square 
  */
 Board.assembleCmd = function (part) {
-  var form = this.getBoardForm();
-  var cmd = form.move.value;
-  var cmd3onwards = cmd.substring(3);
+  const form = this.getBoardForm();
+  const cmd = form.move.value;
 
   if (form) {
     // e.g. cmd might contain something like "Pe2-e4"
@@ -114,13 +108,13 @@ Board.assembleCmd = function (part) {
  * - "Qd1xBg4"
  */
 Board.onClickMove = function () {
-	var form = this.getBoardForm();
+	const form = this.getBoardForm();
 	
 	if (form && form.move.value !== "") {
-		var move = form.move.value;
-		var move_type = move[3];
-		var to_rank;
-		
+		let move = form.move.value;
+		const move_type = move[3];
+		let to_rank;
+
 		// Find out the rank of the square we are going to
 		if (move_type === "-") {
 		  to_rank = move[5];
@@ -143,7 +137,6 @@ Board.onClickMove = function () {
 				return;
 		}
 		form.cmd.value = move;
-		this.gatherCommandFormData();
 		form.submit();
 	}
 };
@@ -152,7 +145,7 @@ Board.onClickMove = function () {
  * Get the user to confirm resignation
  */
 Board.confirm_resign = function () {
-	var resign = confirm("Are you sure you want to resign?");
+	const resign = confirm("Are you sure you want to resign?");
 	if (resign === true) {
 	  alert(Drupal.t("You pressed OK!"));
 	}
@@ -161,27 +154,14 @@ Board.confirm_resign = function () {
 	}
 };
 
-/**
- * 
- */
-Board.gatherCommandFormData = function () {
-	fm = this.getBoardForm();
-//	if (document.commentForm && document.commentForm.comment)
-//		fm.comment.value=document.commentForm.comment.value;
-//	if (document.pnotesForm && document.pnotesForm.privnotes)
-//		fm.privnotes.value=document.pnotesForm.privnotes.value;
-//	else
-//		fm.privnotes.disabled=true;
-};
-
 Board.getBoardForm = function () {
   return document.getElementsByClassName('vchess-game-form')[0];
 };
 
 Board.refresh = function () {
   if (this.refreshAjax) {
-    var button = document.querySelector('[data-drupal-selector="edit-refresh-button"]');
-    var evt = new $.Event();
+    const button = document.querySelector('[data-drupal-selector="edit-refresh-button"]');
+    const evt = new $.Event();
     this.refreshAjax['board'].eventResponse(button, evt);
     if (this.refreshAjax['movelist']) {
       // Because moves list is in a block, we avoid the problem of duplicated
@@ -199,14 +179,14 @@ Board.refresh = function () {
 };
 
 Board.createAjaxEvent = function () {
-  var button = document.querySelector('[data-drupal-selector="edit-refresh-button"]');
-  var form = this.getBoardForm();
+  const button = document.querySelector('[data-drupal-selector="edit-refresh-button"]');
+  const form = this.getBoardForm();
   if (form) {
     // Create different ajax handlers to refresh the game board area.
     this.refreshAjax = {};
 
     // The board itself.
-    var refresh_board_settings = {
+    const refresh_board_settings = {
       url: form.action + '?ajax_form=1',
       callback: "::refreshBoard",
       wrapper: "vchess-container",
@@ -222,9 +202,9 @@ Board.createAjaxEvent = function () {
     this.refreshAjax['board'] = Drupal.ajax(refresh_board_settings);
 
     // The move list block.
-    var movelist = $('.vchess-moves-list').get(0);
+    const movelist = $('.vchess-moves-list').get(0);
     if (movelist) {
-      var refresh_movelist_settings = {
+      let refresh_movelist_settings = {
         url: drupalSettings.vchess.movelist_url,
         wrapper: movelist.id,
         progress: false
@@ -233,9 +213,9 @@ Board.createAjaxEvent = function () {
     }
 
     // The captured pieces block.
-    var captured_pieces = $('.vchess-captured-pieces').get(0);
+    const captured_pieces = $('.vchess-captured-pieces').get(0);
     if (captured_pieces) {
-      var refresh_captured_settings = {
+      let refresh_captured_settings = {
         url: drupalSettings.vchess.captured_pieces_url,
         wrapper: captured_pieces.id,
         progress: false
@@ -245,7 +225,7 @@ Board.createAjaxEvent = function () {
   }
 
   // Create interval for refreshing board.
-  var interval = Math.max(drupalSettings.vchess.refresh_interval, 10) * 1000;
+  const interval = Math.max(drupalSettings.vchess.refresh_interval, 10) * 1000;
   Board.interval = window.setInterval(function () {
     // Refresh the board in case a move was made.
     Board.refresh();
@@ -261,14 +241,14 @@ Drupal.behaviors.vchess = {
       });
 
     Board.checkMoveButton();
-    var form = Board.getBoardForm();
+    const form = Board.getBoardForm();
     if (form) {
       Board.highlightMove(form.move.value);
     }
 
     // Create ajax request for refreshing board.
     // Only if it is not current user's turn to play.
-    var isActivePlayer = $('td.board-square.enabled').length > 0;
+    const isActivePlayer = $('td.board-square.enabled').length > 0;
     if (Board.refreshAjax === undefined && !isActivePlayer) {
       Board.createAjaxEvent();
     }

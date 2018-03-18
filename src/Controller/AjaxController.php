@@ -2,12 +2,15 @@
 
 namespace Drupal\vchess\Controller;
 
+use Drupal\Core\Ajax\AjaxResponse;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Render\RendererInterface;
+use Drupal\user\Entity\User;
 use Drupal\vchess\Entity\Game;
 use Drupal\vchess\Plugin\Block\CapturedPiecesBlock;
 use Drupal\vchess\Plugin\Block\MoveListBlock;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\Request;
 
 class AjaxController extends ControllerBase {
 
@@ -48,6 +51,28 @@ class AjaxController extends ControllerBase {
    */
   public function capturedPieces(Game $vchess_game) {
     return CapturedPiecesBlock::buildContent($vchess_game);
+  }
+
+  /**
+   * Updates the game timer for a user.
+   */
+  public function updateTimer(Request $request, Game $vchess_game) {
+    $user = User::load($this->currentUser()->id());
+    $timer = $request->request->get('timer');
+
+    if ($vchess_game->isPlayersMove($user) && $timer) {
+      if ($vchess_game->getPlayerColor($user) === 'w') {
+        $vchess_game->setWhiteTimeLeft($timer['white']);
+      }
+      if ($vchess_game->getPlayerColor($user) === 'b') {
+        $vchess_game->setBlackTimeLeft($timer['black']);
+      }
+      $vchess_game->save();
+    }
+    return new AjaxResponse([
+      'white_time' => $vchess_game->getWhiteTimeLeft(),
+      'black_time' => $vchess_game->getBlackTimeLeft(),
+    ]);
   }
 
 }
