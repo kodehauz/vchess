@@ -21,9 +21,9 @@
 }
 
 .game-timer .time-display {
-  font-size: 2.3em;
+  font-size: 1.5em;
   padding: 5px;
-  font-family: Arial, LiquidCrystal, sans-serif;
+  font-family: Arial, sans-serif;
   border: 2px grey solid;
   margin-top: 10px;
 }

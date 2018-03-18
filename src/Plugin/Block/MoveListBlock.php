@@ -19,7 +19,14 @@ class MoveListBlock extends BlockBase {
    * {@inheritdoc}
    */
   public function build() {
-    if (($game_id = \Drupal::request()->get('vchess_game')) && ($game = Game::load($game_id))) {
+    $game_id = \Drupal::request()->get('vchess_game');
+    if ($game_id instanceof Game) {
+      $game = $game_id;
+    }
+    else if (is_numeric($game_id)) {
+      $game = Game::load($game_id);
+    }
+    if ($game instanceof Game) {
       return static::buildContent($game);
     }
     return ['#markup' => ''];
