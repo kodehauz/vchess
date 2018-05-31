@@ -27,7 +27,7 @@ class Square {
   protected $file = '';
 
   /**
-   * Get the rank (=row number) as a string, e.g. "4" for "d4"
+   * Gets the rank (=row number) as a string, e.g. "4" for "d4"
    * 
    * @return string
    */
@@ -36,25 +36,34 @@ class Square {
   }
   
   /** 
-   * Get the file (=column letter) e.g. "d" for "d4"
+   * Gets the file (=column letter) e.g. "d" for "d4"
+   *
+   * @return string
    */
   public function getFile() {
     return $this->file;
   }
 
+  /**
+   * Gets the file number i.e. 1 to 8.
+   *
+   * @return int
+   */
   public function getColumn() {
     return ord($this->file) - 96;
   }
   
   /**
-   * Get the coord, e.g. "d4"
+   * Gets the coordinate, e.g. "d4"
+   *
+   * @return string
    */
   public function getCoordinate() {
     return $this->file . $this->rank;
   }
 
   /**
-   * Set up the coord
+   * Sets the coordinate.
    *
    * @param string $coordinate e.g. "d4"
    *

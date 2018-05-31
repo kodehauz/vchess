@@ -81,4 +81,48 @@ class MoveTest extends KernelTestBase {
     }
   }
 
+  /**
+   * @covers ::fromAlgebraic
+   * @dataProvider providerFromAlgebraic()
+   */
+  public function testFromAlgebraic($algebraic, $fen, $player, $expected) {
+    $board = new Board();
+    $board->setupPosition($fen);
+    $move = Move::fromAlgebraic($algebraic, $board, $player);
+    $this->assertEquals($expected, $move->getLongMove());
+  }
+
+  public function providerFromAlgebraic() {
+    return [
+      'Pa2-a3' => ['Pa2-a3', Board::BOARD_DEFAULT, 'w', 'Pa2-a3'],
+      'pa2-a3' => ['pa2-a3', Board::BOARD_DEFAULT, 'w', 'Pa2-a3'],
+      'nf3' => ['nf3', Board::BOARD_DEFAULT, 'w', 'Ng1-f3'],
+      'Nf3' => ['Nf3', Board::BOARD_DEFAULT, 'w', 'Ng1-f3'],
+      'e3' => ['e3', Board::BOARD_DEFAULT, 'w', 'Pe2-e3'],
+      'Nf6' => ['Nf6', Board::BOARD_DEFAULT, 'b', 'Ng8-f6'],
+      'Bg7' => ['Bg7', 'rnbqkbnr/pppppp1p/6p1/8/8/6P1/PPPPPP1P/RNBQKBNR', 'b', 'Bf8-g7'],
+      'e5' => ['e5', Board::BOARD_DEFAULT, 'b', 'Pe7-e5'],
+      'dxe4' => ['dxe4', 'rnbqk1nr/ppp2pbp/4p1p1/3p4/3PP3/2N3P1/PPP2PBP/R1BQK1NR', 'b', 'Pd5xe4'],
+      'Bxe4' => ['Bxe4', 'rnbqk1nr/ppp2pbp/4p1p1/8/3Pp3/2N3P1/PPP2PBP/R1BQK1NR', 'w', 'Bg2xe4'],
+      'Ngf6' => ['Ngf6', 'r1bqk1nr/pppn1pbp/4p1p1/8/3PB3/2N3P1/PPP1NP1P/R1BQK2R', 'b', 'Ng8-f6'],
+      'N7f6' => ['N7f6', 'r1bq1rk1/pppn1pbp/4p1p1/3n4/3P4/2NQB1PP/PPP1NPB1/R4RK1', 'b', 'Nd7-f6'],
+      'Ng8f6' => ['Ng8f6', 'r1bqk1nr/pppn1pbp/4p1p1/8/3PB3/2N3P1/PPP1NP1P/R1BQK2R', 'b', 'Ng8-f6'],
+      'O-Ob' => ['O-O', 'r1bq1rk1/pppn1pbp/4pnp1/8/3P4/2N3P1/PPP1NPBP/R1BQK2R', 'b', 'Ke8-g8'],
+      'O-Ow' => ['O-O', 'r1bq1rk1/pppn1pbp/4pnp1/8/3P4/2N3P1/PPP1NPBP/R1BQK2R', 'w', 'Ke1-g1'],
+      'Qf3+' => ['Qf3+', '8/5ppk/4p3/3qP3/R7/3r4/2Q1pK2/4B3', 'b', 'Qd5-f3+'],
+      'Rg7+' => ['Rg7+', '8/5p1k/4p1R1/4P3/7p/8/7K/4qq2', 'w', 'Rg6-g7+'],
+      'e1=Q' => ['e1=Q', '8/5p2/4p2k/4P1p1/3Q4/6R1/4p2K/5q2', 'b', 'Pe2-e1=Q'],
+    ];
+  }
+
+  /**
+   * @covers ::fromAlgebraic
+   */
+  public function testInvalidAlgebraic() {
+    $board = new Board();
+    $board->setupPosition(Board::BOARD_DEFAULT);
+    $move = Move::fromAlgebraic('dxe5', $board, 'w');
+    $this->assertNull($move);
+  }
+
 }

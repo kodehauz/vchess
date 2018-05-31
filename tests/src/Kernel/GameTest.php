@@ -85,8 +85,8 @@ class GameTest extends KernelTestBase {
     $this->assertEquals('b', $saved_game->getPlayerColor($black_user));
     $this->assertEquals($white_user->getAccountName(), $saved_game->getChallenger()->getAccountName());
     $this->assertEquals(1, $saved_game->getMoveNumber());
-    $this->assertEquals(GamerStatistics::loadForUser($black_user)->getRating(), $saved_game->getOpponent($white_user)->getRating());
-    $this->assertEquals(GamerStatistics::loadForUser($white_user)->getRating(), $saved_game->getOpponent($black_user)->getRating());
+    $this->assertEquals($black_user->id(), $saved_game->getOpponent($white_user)->id());
+    $this->assertEquals($white_user->id(), $saved_game->getOpponent($black_user)->id());
     $this->assertEquals('19 days', $saved_game->getSpeed());
     $this->assertEquals(GamePlay::STATUS_IN_PROGRESS, $saved_game->getStatus());
     $this->assertEquals($time_started, $saved_game->getTimeStarted());

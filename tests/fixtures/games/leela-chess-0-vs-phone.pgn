@@ -1,0 +1,14 @@
+[Event "Phone chess vs. LeelaChess0"]
+
+[Date "2018.05.0!"]
+[Round "1"]
+[White "Phone"]
+[Black "Leela"]
+[Result "1-0"]
+[Board "1"]
+[WhiteCountry "USA"]
+[WhiteFideId "phone"]
+[BlackCountry "INT"]
+[BlackFideId "Leela"]
+
+1. d4 d5 2. c4 dxc4 3. Nf3 c5 4. e3 e6 5. Bxc4 Nf6 6. O-O cxd4 7. exd4 Nc6 8. Nc3 Be7 9. Bf4 O-O 10. a3 Bd6 11. Be5 Bc7 12. Qc2 Bd7 13. Ba2 Rc8 14. Rad1 Nxe5 15. dxe5 Nd5 16. Bxd5 exd5 17. Rxd5 Qe7 18. Rd4 Bb6 19. Rd6 Bc6 20. Qf5 Rcd8 21. Rfd1 f6 22. Rxd8 Rxd8 23. b4 Rxd1+ 24. Nxd1 fxe5 25. Qxe5 Qxe5 26. Nxe5 Ba4 27. Nb2 Be8 28. Nbd3 Bd4 29. g4 h5 30. h3 g5 31. Kg2 hxg4 32. hxg4 Kg7 33. Kf3 Ba1 34. Ke4 Kf6 35. f3 Ke6 36. f4?! gxf4 37. Kxf4 Bc3 38. Ke4 Kf6 39. Kd5 a5 40. bxa5 Bxa5 41. Nf2 Bc7 42. Ne4+ Ke7 43. g5 Bb8 44. Nd2 Ba4 45. Ndc4 Bb3 46. Kc5 Bc7 47. Nd3 Kf7 48. Nd6+ Kg6 49. Nf4+ Kxg5 50. Ne2 Bxd6+ 51. Kxd6 Bc4 52. Nd4 *

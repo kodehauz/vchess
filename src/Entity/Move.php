@@ -6,6 +6,7 @@ use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\vchess\Game\Board;
+use Drupal\vchess\Game\Direction;
 use Drupal\vchess\Game\Square;
 
 /**
@@ -46,7 +47,7 @@ class Move extends ContentEntityBase {
       //   $move[3] = move type, "x"
       //   $move[4] = dest piece
       //   $move[5-6] = dest square
-      $to_square->setCoordinate(substr($this->getLongMove(), 5, 2));
+      $to_square->setCoordinate(substr($this->getLongMove(), 4, 2));
     }
     else { // Move type = "-"
       // In a move like "Rh4-d4":
@@ -125,7 +126,7 @@ class Move extends ContentEntityBase {
    * 
    */
   public function getPromotionPieceType() {
-    $piece_type = "";
+    $piece_type = '';
     
     // Check that a pawn promotion is happening
     if ($this->squareFrom()->getRank() == 7 && $this->squareTo()->getRank() == 8) {
@@ -367,14 +368,132 @@ class Move extends ContentEntityBase {
   }
 
   /**
-   * Get the algebraic version of the move
-   * 
-   * @return
-   *   The algebraic version of the move, e.g. "Nc3"
+   * Creates a move object from an algebraic board notation.
+   *
+   * @param string $algebraic
+   *   The algebraic notation.
+   * @param \Drupal\vchess\Game\Board $board
+   *   The board position prior to the move.
+   * @param string $color
+   *   The player making the move, either 'w' or 'b'.
+   *
+   * @return \Drupal\vchess\Entity\Move|null
+   *   A move object or NULL if a correct representation is not found.
    */
-//  public function algebraic() {
-//    return $this->algebraic;
-//  }
+  public static function fromAlgebraic($algebraic, Board $board, $color) {
+    $move = static::create();
+
+    // Castling short.
+    if ($algebraic === 'O-O') {
+      if ($color === 'w') {
+        $move->setLongMove('Ke1-g1');
+      }
+      else {
+        $move->setLongMove('Ke8-g8');
+      }
+      return $move;
+    }
+
+    // Castling long
+    if ($algebraic === 'O-O-O') {
+      if ($color === 'w') {
+        $move->setLongMove('Ke1-c1');
+      }
+      else {
+        $move->setLongMove('Ke8-c8');
+      }
+      return $move;
+    }
+
+    // If algebraic already matches the long form, just return it.
+    if (preg_match('/^[PNRBQK][a-h][1-8][-x][a-h][1-8]/i', $algebraic)) {
+      $algebraic = strtolower($algebraic);
+      $algebraic[0] = strtoupper($algebraic[0]);
+      $move->setLongMove($algebraic);
+      return $move;
+    }
+
+    // Look for the standard algebraic format.
+    $matches = [];
+    if (preg_match('/^([PNRBQKa-h]?)([:x]?)([a-h][1-8])(.*)$/i', $algebraic, $matches)) {
+      // $matches = [ 0 => $algebraic, 1 => type, 2 => operation, 3 => destination ]
+      list(, $type, $operation, $destination, $extra) = $matches;
+      $operation = $operation === '' ? '-' : 'x';
+      $to_square = Square::fromCoordinate($destination);
+      if ($type === '') {
+        // Pawn move: 2 possible options:
+        $direction = $color === 'w' ? Direction::DOWN : Direction::UP;
+        if ($operation === '-') {
+          // 1. Forward step
+          $from_square = $to_square->nextSquare($direction);
+          $pawn = $board->getPiece($from_square);
+          if ($pawn->getType() === 'P' && $pawn->getColor() === $color) {
+            $move->setLongMove('P' . $from_square->getCoordinate() . '-' . $destination . $extra);
+            return $move;
+          }
+
+          // 2. Forward double-step (first move).
+          $from_square = $to_square->nextSquare($direction, 2);
+          $pawn = $board->getPiece($from_square);
+          if ($pawn->getType() === 'P' && $pawn->getColor() === $color) {
+            $move->setLongMove('P' . $from_square->getCoordinate() . '-' . $destination . $extra);
+            return $move;
+          }
+        }
+      }
+      else {
+        // In the case of pawn capture move, e.g. bxc4, exd4, we need to adjust
+        // the piece type.
+        if (in_array($type, ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'], TRUE)) {
+          $type = 'P';
+        }
+
+        // A pawn capture or a piece move / capture. Find the first pawn or
+        // piece in a square that can attack the destination position.
+        $squares = $board->getSquaresAttackingSquare($to_square, $color);
+        $piece = strtoupper($type);
+        $matching_squares = array_filter($squares, function(Square $square) use ($board, $piece) {
+          return $board->getPiece($square)->getType() === $piece;
+        });
+        if ($matching_squares) {
+          $move->setLongMove($piece . reset($matching_squares)->getCoordinate() . $operation . $destination . $extra);
+          return $move;
+        }
+      }
+    }
+
+    // Look for disambiguated format.
+    $matches = [];
+    if (preg_match('/^([PNRBQK])([a-h]?)([1-8]?)([:x]?)([a-h][1-8])(.*)$/i', $algebraic, $matches)) {
+      list(, $type, $file, $rank, $operation, $destination, $extra) = $matches;
+      $operation = $operation === '' ? '-' : 'x';
+      $to_square = Square::fromCoordinate($destination);
+
+      // A callback that verifies that the square matches exactly the
+      // disambiguated format. E.g. if both rank and file FROM WHICH the piece
+      // moved is specified, then both must match, otherwise either may match.
+      $square_matches = function(Square $square) use ($file, $rank) {
+        if ($file !== ''  && $rank !== '') {
+          return $square->getFile() === $file && $square->getRank() == $rank;
+        }
+        return $square->getFile() === $file || $square->getRank() == $rank;
+      };
+
+      // A disambiguated piece move or capture. Find all pieces that attack the
+      // square in question and find closest match.
+      $squares = $board->getSquaresAttackingSquare($to_square, $color);
+      $piece = strtoupper($type);
+      $matching_squares = array_filter($squares, function(Square $square) use ($board, $piece, $square_matches) {
+        return $board->getPiece($square)->getType() === $piece && $square_matches($square);
+      });
+      if ($matching_squares) {
+        $move->setLongMove($piece . reset($matching_squares)->getCoordinate() . $operation . $destination . $extra);
+        return $move;
+      }
+    }
+
+    return NULL;
+  }
 
   public function getGameId() {
     return $this->get('gid')->value;
@@ -429,6 +548,12 @@ class Move extends ContentEntityBase {
     return $this;
   }
 
+  /**
+   * Gets the algebraic version of the move.
+   *
+   * @return string
+   *   The algebraic version of the move, e.g. "Nc3"
+   */
   public function getAlgebraic() {
     return $this->get('algebraic')->value;
   }
