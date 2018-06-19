@@ -293,6 +293,7 @@ class GamerStatistics extends ContentEntityBase {
       default:
         $score = '';
     }
+    $score = 0; // @todo...
 
     switch ($game->getStatus()) {
       case GamePlay::STATUS_WHITE_WIN:

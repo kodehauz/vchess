@@ -61,9 +61,9 @@ class BoardValidMoveTest extends UnitTestCase {
       [$default_board, 'Ng2-h3', FALSE], [$default_board, 'Qb1-a2', FALSE], [$default_board, 'Kg1-e3', FALSE],
       [$default_board, 'Ng8-h6', TRUE], [$default_board, 'Nb8-a6', TRUE], [$default_board, 'Ng8-f6', TRUE],
       [$default_board, 'Qg8-h8', FALSE], [$default_board, 'Ra8-b8', FALSE], [$default_board, 'Bc1-b2', FALSE],
-      
+
       [$open_board, 'Bg2-h3', TRUE], [$open_board, 'Qd1-d2', TRUE], [$open_board, 'Ke1-f1', TRUE],
-      [$open_board, 'Ke1-g1', TRUE], [$open_board, 'Rh1-g1', TRUE], [$open_board, 'Rh1-f1', TRUE],
+      [$open_board, 'Ke1-g1', FALSE], [$open_board, 'Rh1-g1', TRUE], [$open_board, 'Rh1-f1', TRUE],
       [$open_board, 'Ke1-a1', FALSE], [$open_board, 'Rh8-h1', FALSE], [$open_board, 'Bg7-f6', FALSE],
       [$open_board, 'Pe6-e4', FALSE], [$open_board, 'Ke8-e7', FALSE], [$open_board, 'Qd1-a1', FALSE],
 

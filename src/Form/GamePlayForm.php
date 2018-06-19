@@ -69,6 +69,14 @@ class GamePlayForm extends FormBase {
         drupal_set_message('This game was drawn.');
         break;
 
+      case GamePlay::STATUS_DRAW_OFFERED_WHITE:
+        drupal_set_message('Draw offered by white.');
+        break;
+
+      case GamePlay::STATUS_DRAW_OFFERED_BLACK:
+        drupal_set_message('Draw offered by black.');
+        break;
+
     }
 
     $form['board'] = [
@@ -124,6 +132,8 @@ class GamePlayForm extends FormBase {
       '#name' => 'move_button',
     ];
 
+    $form['actions'] = ['#type' => 'actions'];
+
     $form['refresh_button'] = [
       '#type' => 'submit',
       '#value' => $this->t('Refresh'),
@@ -134,7 +144,7 @@ class GamePlayForm extends FormBase {
       ],
     ];
 
-    $form['flip_board_button'] = [
+    $form['actions']['flip_board_button'] = [
       '#type' => 'submit', // For now!
       '#value' => $this->t('Flip board'),
       '#name' => 'flip_button',
@@ -142,12 +152,27 @@ class GamePlayForm extends FormBase {
 
     if ($game->isMoveMade()
       && !$game->isGameOver()
-      && $game->isUserPlaying($user)) {
-      $form['resign_button'] = [
+      && $game->isPlayersMove($user)) {
+      $form['actions']['resign_button'] = [
         '#type' => 'submit',
         '#value' => $this->t('Resign'),
         '#name' => 'resign_button',
       ];
+      if (!$game->isDrawOffered()) {
+        $form['actions']['offer_draw_button'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Offer Draw'),
+          '#name' => 'offer_draw_button',
+        ];
+      }
+      else {
+        if ($game->isDrawOfferedTo($user)) {
+          $form['draw_offered'] = [
+            '#type' => 'hidden',
+            '#value' => $game->getStatus(),
+          ];
+        }
+      }
     }
 
     $form['move'] = [
@@ -155,7 +180,6 @@ class GamePlayForm extends FormBase {
       '#default_value' => '',
     ];
 
-    // Abort options.
     return $form;
   }
 
@@ -169,6 +193,9 @@ class GamePlayForm extends FormBase {
     else if ($form_state->getTriggeringElement()['#name'] === 'resign_button') {
       $this->resignGame($form, $form_state);
     }
+    else if ($form_state->getTriggeringElement()['#name'] === 'offer_draw_button') {
+      $this->offerDraw($form, $form_state);
+    }
     else if ($form_state->getTriggeringElement()['#name'] === 'move_button') {
       $this->makeMove($form, $form_state);
     }
@@ -179,48 +206,85 @@ class GamePlayForm extends FormBase {
    */
   protected function flipBoard(array &$form, FormStateInterface $form_state) {
     $gid = $this->game->id();
+    $uid = $this->currentUser()->id();
 
     $vchess_board = \Drupal::state()->get('vchess_board', []);
-    if (!isset($vchess_board['flipped'][$gid])) {
-      $vchess_board['flipped'][$gid] = FALSE;
+    if (!isset($vchess_board['flipped'][$gid][$uid])) {
+      $vchess_board['flipped'][$gid][$uid] = FALSE;
     }
 
-    if ($vchess_board['flipped'][$gid]) {
+    if ($vchess_board['flipped'][$gid][$uid]) {
       drupal_set_message($this->t('Flip now OFF!'));
-      $vchess_board['flipped'][$gid] = FALSE;
+      $vchess_board['flipped'][$gid][$uid] = FALSE;
     }
     else {
       drupal_set_message($this->t('Flip now ON!'));
-      $vchess_board['flipped'][$gid] = TRUE;
+      $vchess_board['flipped'][$gid][$uid] = TRUE;
     }
 
     \Drupal::state()->set('vchess_board', $vchess_board);
   }
 
   /**
-   * Resign from a particular game.  This is the form handler for the resignation button.
+   * Resign from a particular game.
+   *
+   * This is the form handler for the resignation button.
    */
   protected function resignGame(array &$form, FormStateInterface $form_state) {
     $user = User::load($this->currentUser()->id());
-    $gameplay = new GamePlay($this->game);
-    $gameplay->resign($user);
-    // Update the player's times left.
-    $this->game
-      ->setWhiteTimeLeft($form_state->getValue(['timer', 'white_time']))
-      ->setBlackTimeLeft($form_state->getValue(['timer', 'black_time']))
-      ->save();
-    GamerStatistics::updatePlayerStatistics($this->game);
-    drupal_set_message($this->t('You have now resigned.'));
+    if ($this->game->isUserPlaying($user)) {
+      $gameplay = new GamePlay($this->game);
+      $gameplay->resign($user);
+      // Update the player's times left.
+      $this->game
+        ->setWhiteTimeLeft($form_state->getValue(['timer', 'white_time']))
+        ->setBlackTimeLeft($form_state->getValue(['timer', 'black_time']))
+        ->save();
+      GamerStatistics::updatePlayerStatistics($this->game);
+      drupal_set_message($this->t('You have now resigned.'));
+    }
+    else {
+      drupal_set_message($this->t('Not your turn to play'));
+    }
   }
 
+  /**
+   * Sets up a draw offer.
+   *
+   * This is the form handler for the offer draw button.
+   */
+  protected function offerDraw(array &$form, FormStateInterface $form_state) {
+    $user = User::load($this->currentUser()->id());
+    if ($this->game->isUserPlaying($user)) {
+      $gameplay = new GamePlay($this->game);
+      $gameplay->offerDraw($user);
+      $this->game
+        ->setWhiteTimeLeft($form_state->getValue(['timer', 'white_time']))
+        ->setBlackTimeLeft($form_state->getValue(['timer', 'black_time']))
+        ->save();
+      drupal_set_message($this->t('You have offered a draw.'));
+    }
+    else {
+      drupal_set_message($this->t('Not your turn to play'));
+    }
+  }
+
+  /**
+   * Makes the move specified.
+   *
+   * This is the form handler for the make move button.
+   */
   protected function makeMove(array &$form, FormStateInterface $form_state) {
+    $user = User::load($this->currentUser()->id());
+    if (!$this->game->isUserPlaying($user)) {
+      drupal_set_message($this->t('Not your turn to play'));
+      return;
+    }
+
     // Command: e.g. Pe2-e4
     if ($cmd = $form_state->getValue('cmd')) {
-      $user = User::load($this->currentUser()->id());
       $game = $this->game;
 
-      /** @var \Drupal\vchess\Entity\Move $move */
-      $move = Move::create()->setLongMove($cmd);
       $gameplay = new GamePlay($game);
       $messages = [];
       $errors = [];
@@ -228,13 +292,15 @@ class GamePlayForm extends FormBase {
       if ($cmd === 'abort') {
         $move_made = $gameplay->abort($user, $messages, $errors);
       }
-      elseif ($cmd === 'acceptdraw') {
+      elseif ($cmd === 'accept-draw') {
         $move_made = $gameplay->acceptDraw($user, $messages, $errors);
       }
-      elseif ($cmd === 'refusedraw') {
-        $move_made = $gameplay->rejectDraw($user, $messages, $errors);
+      elseif ($cmd === 'refuse-draw') {
+        $move_made = $gameplay->refuseDraw($user, $messages, $errors);
       }
       else { // try as chess move
+        /** @var \Drupal\vchess\Entity\Move $move */
+        $move = Move::create()->setLongMove($cmd);
         $move_made = $gameplay->makeMove($user, $move, $messages, $errors);
       }
 
@@ -243,8 +309,7 @@ class GamePlayForm extends FormBase {
         ->setWhiteTimeLeft($form_state->getValue(['timer', 'white_time']))
         ->setBlackTimeLeft($form_state->getValue(['timer', 'black_time']));
 
-      // Only save move and game if a move has actually been made
-//      if ($player_with_turn !== $game->getTurn()) {
+      // Only save move and game if a move has actually been made.
       if ($move_made) {
         // Save game.
         $game->save();
@@ -255,14 +320,12 @@ class GamePlayForm extends FormBase {
 //        rules_invoke_event('vchess_move_made', $opponent,
 //          $gid, $game->last_move()->algebraic());
 
-        if ($game->getStatus() !== GamePlay::STATUS_IN_PROGRESS) {
+        if ($game->isGameOver()) {
           GamerStatistics::updatePlayerStatistics($game);
         }
 
         $this->sendEmailNotification();
-
       }
-
       drupal_set_message(implode("\n", $messages));
     }
   }

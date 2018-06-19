@@ -27,6 +27,9 @@ class CapturedPiecesBlock extends BlockBase {
     else if (is_numeric($game_id)) {
       $game = Game::load($game_id);
     }
+    else {
+      return ['#markup' => ''];
+    }
     if ($game instanceof Game) {
       return static::buildContent($game);
     }

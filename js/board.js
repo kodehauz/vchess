@@ -258,6 +258,23 @@ Drupal.behaviors.vchess = {
       delete Board.refreshAjax; // = undefined;
       window.clearInterval(Board.interval);
     }
+
+    // Check if a draw offered flag is set.
+    const draw_offered = $('input[name="draw_offered"]').val();
+    if (draw_offered === '???w' || draw_offered === '???b') {
+      const opponent = draw_offered === '???w' ? 'white' : 'black';
+      let input = confirm('Draw offered by ' + opponent + '. Do you accept?');
+      const form = Board.getBoardForm();
+      if (form) {
+        if (input) {
+          form.cmd.value = 'accept-draw';
+        }
+        else {
+          form.cmd.value = 'refuse-draw';
+        }
+        form.submit();
+      }
+    }
   }
 };
 

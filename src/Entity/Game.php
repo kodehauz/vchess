@@ -41,6 +41,8 @@ class Game extends ContentEntityBase {
     GamePlay::STATUS_AWAITING_PLAYERS,
     GamePlay::STATUS_IN_PROGRESS,
     GamePlay::STATUS_DRAW,
+    GamePlay::STATUS_DRAW_OFFERED_WHITE,
+    GamePlay::STATUS_DRAW_OFFERED_BLACK,
     GamePlay::STATUS_WHITE_WIN,
     GamePlay::STATUS_BLACK_WIN,
   ];
@@ -110,7 +112,7 @@ class Game extends ContentEntityBase {
   public function calculateTimeLeft() {
     $secs_per_move = $this->getTimePerMove();
 
-    if ($this->status === GamePlay::STATUS_IN_PROGRESS) {
+    if ($this->getStatus() === GamePlay::STATUS_IN_PROGRESS) {
       // All dates are kept as GMT
       $current_time = time();
       if ($this->isMoveMade()) {
@@ -132,10 +134,39 @@ class Game extends ContentEntityBase {
   /**
    * Say whether the game is over or not
    *
-   * @return TRUE if the game is over
+   * @return true if the game is over.
    */
   public function isGameOver() {
-    return $this->getStatus() !== GamePlay::STATUS_IN_PROGRESS;
+    $status = $this->getStatus();
+    return $status === GamePlay::STATUS_WHITE_WIN
+        || $status === GamePlay::STATUS_BLACK_WIN
+        || $status === GamePlay::STATUS_DRAW;
+  }
+
+  /**
+   * Determines if a draw has been offered.
+   *
+   * @return true if a draw has been offered.
+   */
+  public function isDrawOffered() {
+    $status = $this->getStatus();
+    return $status === GamePlay::STATUS_DRAW_OFFERED_WHITE
+        || $status === GamePlay::STATUS_DRAW_OFFERED_BLACK;
+  }
+
+  /**
+   * Determines if a user has received a draw offer.
+   *
+   * @param UserInterface $user
+   *   The user who got the draw request.
+   *
+   * @return true if the user got a draw offer.
+   */
+  public function isDrawOfferedTo(UserInterface $user) {
+    $status = $this->getStatus();
+    $color = $this->getPlayerColor($user);
+    return ($status === GamePlay::STATUS_DRAW_OFFERED_WHITE && $color === 'b')
+        || ($status === GamePlay::STATUS_DRAW_OFFERED_BLACK && $color === 'w');
   }
 
   /**
@@ -155,6 +186,19 @@ class Game extends ContentEntityBase {
       return 'b';
     }
     return '';
+  }
+
+  /**
+   * Switches whose turn it is to play.
+   */
+  public function switchTurn() {
+    if ($this->getTurn() === 'b') {
+      $this->setTurn('w');
+    }
+    else {
+      $this->setTurn('b');
+    }
+    return $this->getTurn();
   }
 
   /**
@@ -201,17 +245,17 @@ class Game extends ContentEntityBase {
    * @param \Drupal\user\UserInterface $user
    *   A user object corresponding to one of the players
    *
-   * @return \Drupal\gamer\Entity\GamerStatistics|null $player
-   *   The opposing player's game statistics.
+   * @return \Drupal\user\UserInterface|null
+   *   The opposing player.
    */
   public function getOpponent(UserInterface $user) {
     $player_color = $this->getPlayerColor($user);
     if ($player_color === 'w') {
-      return GamerStatistics::loadForUser($this->getBlackUser());
+      return $this->getBlackUser();
     }
 
     if ($player_color === 'b') {
-      return GamerStatistics::loadForUser($this->getWhiteUser());
+      return $this->getWhiteUser();
     }
 
     return NULL;
@@ -613,12 +657,12 @@ class Game extends ContentEntityBase {
    * @return $this
    */
   protected function handleLostOnTime() {
-    if ($this->getTurn() === 'w') {
-      $this->setStatus(GamePlay::STATUS_BLACK_WIN)->save();
-    }
-    else {
-      $this->setStatus(GamePlay::STATUS_WHITE_WIN)->save();
-    }
+//    if ($this->getTurn() === 'w') {
+//      $this->setStatus(GamePlay::STATUS_BLACK_WIN)->save();
+//    }
+//    else {
+//      $this->setStatus(GamePlay::STATUS_WHITE_WIN)->save();
+//    }
     return $this;
   }
 

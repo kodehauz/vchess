@@ -114,7 +114,7 @@ class BoardTest extends UnitTestCase {
     sort($squares);
     $this->assertEquals($expected_squares, $squares);
   }
-  
+
   public function providerGetDiagonalSquares() {
     return [
       ['e4', ['b1','h1','c2','g2','d3','f3','e4','d5','f5','c6','g6','b7','h7','a8']],
@@ -131,7 +131,7 @@ class BoardTest extends UnitTestCase {
     $squares = TestBoard::getKnightMoveSquares(Square::fromCoordinate($from_square));
     $this->assertEquals($expected_squares, $squares);
   }
-  
+
   public function providerGetKnightMoveSquares() {
     return [
       ['e5', ['d3','f3','c4','g4','c6','g6','d7','f7']],
@@ -281,7 +281,7 @@ class BoardTest extends UnitTestCase {
    */
   public function testPerformCastling(Board $board, $from, $to, $expected) {
     $castling = $board->performCastling(Square::fromCoordinate($from), Square::fromCoordinate($to));
-    $this->assertEquals($expected, $castling);
+    $this->assertEquals($expected, $castling === '');
     $to_square = Square::fromCoordinate($to);
     $this->assertEquals($expected, $board->getPiece($to_square)->getType() === 'K');
     $rook_square = Square::fromCoordinate($from);

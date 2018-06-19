@@ -14,8 +14,17 @@ class GamePlay {
   const STATUS_WHITE_WIN = '1-0';
   const STATUS_BLACK_WIN = '0-1';
   const STATUS_DRAW = '1/2-1/2';
+  const STATUS_DRAW_OFFERED_WHITE = '???w';
+  const STATUS_DRAW_OFFERED_BLACK = '???b';
   const STATUS_IN_PROGRESS = 'in progress';
   const STATUS_AWAITING_PLAYERS = 'awaiting players';
+
+  const WIN_CAUSE_CHECKMATE = 'checkmate';
+  const WIN_CAUSE_RESIGN = 'resigned';
+  const WIN_CAUSE_TIMEOUT = 'timeout';
+  const DRAW_CAUSE_STALEMATE = 'stalemate';
+  const DRAW_CAUSE_REPEAT = 'repeat';
+  const DRAW_CAUSE_OFFERED = 'offered';
 
     // Define time units
   const TIME_UNITS_DAYS = 'days';
@@ -168,10 +177,10 @@ class GamePlay {
    */
   public function resign(UserInterface $user) {
     if ($this->playerColor($user) === 'w') {
-      $this->game->setStatus(static::STATUS_BLACK_WIN)->save();
+      $this->game->setStatus(static::STATUS_BLACK_WIN);
     }
     else {
-      $this->game->setStatus(static::STATUS_WHITE_WIN)->save();
+      $this->game->setStatus(static::STATUS_WHITE_WIN);
     }
   }
   
@@ -237,40 +246,35 @@ class GamePlay {
     return $castling;
   }
 
-  public function offerDraw() {
-// HANDLE MOVES:
-    if ($move_string === 'draw?' && $this->game->getStatus() === '?') {
-      // Offer draw
-      $this->game->setStatus('D');
-      $result .= 'You have offered a draw.';
-      $draw_handled = 1;
-      $this->lastMove = 'DrawOffered';
+  public function offerDraw(UserInterface $user) {
+    if ($this->game->isPlayersMove($user)) {
+      // Offer a draw and switch the user.
+      $status = $this->game->getPlayerColor($user) === 'w' ? static::STATUS_DRAW_OFFERED_WHITE : static::STATUS_DRAW_OFFERED_BLACK;;
+      $this->game->setStatus($status);
+      $this->game->switchTurn();
     }
   }
 
-  public function acceptDraw(UserInterface $user) {
-    if ($this->game->getStatus() === 'D') {
-        // Accept draw
-      $this->game->setStatus('-');
-      $draw_handled = 1;
-      $result = 'You accepted the draw.';
-      $this->lastMove = 'DrawAccepted';
-      if ($this->game->getTurn() === 'b') {
-        $this->game->setCurrentMove($this->game->getCurrentMove() + 1); // new move as white offered
-      }
-      $game['mhistory'][count($game['mhistory'])] = 'draw';
+  public function acceptDraw(UserInterface $user, array &$messages, array &$errors) {
+    if ($this->game->isPlayersMove($user)) {
+      // Accept draw.
+      $this->game->setStatus(static::STATUS_DRAW);
+      $this->game->switchTurn();
+      $messages[] = new TranslatableMarkup('You accepted the draw.');
+      return TRUE;
     }
+    return FALSE;
   }
 
-
-  public function rejectDraw(UserInterface $user) {
-    if ($this->game->getStatus() === 'D') {
-        // Refuse draw
-      $this->game->setStatus('?');
-      $draw_handled = 1;
-      $result = 'You refused the draw.';
-      $this->lastMove = 'DrawRefused';
+  public function refuseDraw(UserInterface $user, array &$messages, array &$errors) {
+    if ($this->game->isPlayersMove($user)) {
+      // Refuse draw.
+      $this->game->setStatus(static::STATUS_IN_PROGRESS);
+      $this->game->switchTurn();
+      $messages[] = new TranslatableMarkup('You refused the draw.');
+      return TRUE;
     }
+    return FALSE;
   }
 
   /**
@@ -278,9 +282,12 @@ class GamePlay {
    *
    * @param \Drupal\user\UserInterface $user
    *   User id of current player
-   *   
    * @param \Drupal\vchess\Entity\Move $move
    *   A move object representing the current move.
+   * @param string[] $messages
+   *   Messages to be displayed to the user.
+   * @param string[] $errors
+   *   Errors to be displayed to the user.
    *   
    * @return boolean
    *   true for successful move, false for unsuccessful.
@@ -437,17 +444,13 @@ class GamePlay {
       $this->game->setCastling($this->getCastlingString());
 
       // Append move to scoresheet.
+      // @todo This needs to be fixed.
       $this->game->getScoresheet()->appendMove($move);
 
       // Update whose turn it is.  Even if mate has occurred, it
       // is still logically the opponents move, even if they have
       // no valid move that they can make
-      if ($this->game->getTurn() === 'b') {
-        $this->game->setTurn('w');
-      }
-      else {
-        $this->game->setTurn('b');
-      }
+      $this->game->switchTurn();
 
       // Add comment to head of chatter. Right now we have only two
       // chatter items. Strip backslashes and replace newlines to get

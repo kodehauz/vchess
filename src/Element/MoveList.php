@@ -17,7 +17,7 @@ class MoveList extends Table {
     $info = parent::getInfo();
     $info['#moves'] = [];
     $info['#theme'] = 'table__movelist';
-    $info['#sort'] = 'DESC';
+    $info['#sort'] = 'ASC';
     $info['#pre_render'] = [
       [$class, 'preRenderMoves'],
     ];
