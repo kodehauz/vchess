@@ -10,7 +10,7 @@ vchess.opponent_game_form:
   path: /vchess/opponent-game-form
   defaults:
     _form: \Drupal\vchess\Form\OpponentGameForm
-    _title: 'Create chess game against named player'
+    _title: 'Play a Friend'
   requirements:
     _permission: 'basic access'
 
@@ -18,7 +18,7 @@ vchess.random_game_form:
   path: /vchess/random-game-form
   defaults:
     _form: \Drupal\vchess\Form\RandomGameForm
-    _title: 'Create chess game against random player'
+    _title: 'Start A Random Game'
   requirements:
     _permission: 'basic access'
 
@@ -26,7 +26,7 @@ vchess.default_challenge:
   path: /vchess/default-challenge
   defaults:
     _controller: \Drupal\vchess\Controller\GameController::createDefaultChallenge
-    _title: 'Create chess game challenge'
+    _title: 'Start A Game challenge'
   requirements:
     _permission: 'basic access'
 
@@ -34,7 +34,7 @@ vchess.create_challenge:
   path: /vchess/challenge/create
   defaults:
     _form: \Drupal\vchess\Form\CreateChallengeForm
-    _title: 'Create chess game challenge'
+    _title: 'Start A Game Challenge'
   requirements:
     _permission: 'basic access'
 

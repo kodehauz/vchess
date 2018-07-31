@@ -127,6 +127,23 @@ class GamePlayTest extends KernelTestBase {
     return $pgn;
   }
 
+
+  public function testPawnCapture() {
+    $fen = "rnbqkb1r/pp3ppp/4pn2/3p4/3P4/2N2N2/PPP2PPP/R1BQKB1R w KQkq - 2 6";
+    $game = new Game();
+    $game->setBoard($fen);
+    $user1 = new User();
+    $user2 = new User();
+    $user1->save();
+    $user2->save();
+    $game->setWhiteUser($user1);
+    $game->setBlackUser($user2);
+    $game->save();
+    $gamePlay = new GamePlay($game);
+
+    $move_made = $gamePlay->makeMove($user1, (Move::create()->setLongMove('Pd4xd5'));
+    $this->assertFalse($move_made);
+  }
 }
 
 
