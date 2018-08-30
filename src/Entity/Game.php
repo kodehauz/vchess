@@ -676,7 +676,9 @@ class Game extends ContentEntityBase {
    *   TRUE if the game has been lost on time.
    */
   public function isLostOnTime() {
-    if ($this->calculateTimeLeft() <= 0) {
+    if (($this->getStatus() === GamePlay::STATUS_BLACK_WIN || $this->getStatus() === GamePlay::STATUS_WHITE_WIN)
+      && $this->calculateTimeLeft() <= 0) {
+
       $lost_on_time = TRUE;
 
       if ($this->getStatus() === GamePlay::STATUS_IN_PROGRESS) {
@@ -689,7 +691,6 @@ class Game extends ContentEntityBase {
 
     return $lost_on_time;
   }
-
 
   /**
    * {@inheritdoc}

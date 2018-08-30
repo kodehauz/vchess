@@ -9,23 +9,23 @@ trait GameCreationWidgetsTrait {
 
   protected function addGameTimeWidgets(array &$form, FormStateInterface $form_state) {
 
-    $this->addTimeSelect($form, 'game_time', $this->t('Game time'));
+    $this->addTimeSelect($form, 'game', $this->t('Game time'));
 
-    //$this->addTimeSelect($form, 'white_time', $this->t('White game time'));
+    //$this->addTimeSelect($form, 'white', $this->t('White game time'));
 
-    //$this->addTimeSelect($form, 'black_time', $this->t('Black game time'));
+    //$this->addTimeSelect($form, 'black', $this->t('Black game time'));
 
   }
 
   protected function addTimeSelect(&$form, $name, $title) {
-    $form[$name][$name . '_value'] = [
+    $form[$name][$name . '_time_value'] = [
       '#type' => 'textfield',
       '#size' => '4',
       '#default_value' => 120,
       '#title' => $title,
     ];
 
-    $form[$name][$name . '_unit'] = [
+    $form[$name][$name . '_time_unit'] = [
       '#type' => 'select',
       '#options' => [
         '0' => $this->t('Unlimited'),
