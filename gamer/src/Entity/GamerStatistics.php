@@ -65,6 +65,16 @@ class GamerStatistics extends ContentEntityBase {
   }
 
   /**
+   * @param int $increment
+   *
+   * @return $this
+   */
+  public function incrementCurrent($increment=1) {
+    $this->set('current', $this->get('current')->value + $increment);
+    return $this;
+  }
+
+  /**
    * @return int
    */
   public function getWon() {
@@ -76,6 +86,17 @@ class GamerStatistics extends ContentEntityBase {
    */
   public function setWon($value) {
     $this->set('won', $value);
+    return $this;
+  }
+
+
+  /**
+   * @param int $increment
+   *
+   * @return $this
+   */
+  public function incrementWon($increment=1) {
+    $this->set('won', $this->get('won')->value + $increment);
     return $this;
   }
 
@@ -95,6 +116,16 @@ class GamerStatistics extends ContentEntityBase {
   }
 
   /**
+   * @param int $increment
+   *
+   * @return $this
+   */
+  public function incrementDrawn($increment=1) {
+    $this->set('drawn', $this->get('drawn')->value + $increment);
+    return $this;
+  }
+
+  /**
    * @return int
    */
   public function getLost() {
@@ -106,6 +137,16 @@ class GamerStatistics extends ContentEntityBase {
    */
   public function setLost($value) {
     $this->set('lost', $value);
+    return $this;
+  }
+
+  /**
+   * @param int $increment
+   *
+   * @return $this
+   */
+  public function incrementLost($increment=1) {
+    $this->set('lost', $this->get('lost')->value + $increment);
     return $this;
   }
 

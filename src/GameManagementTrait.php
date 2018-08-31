@@ -21,14 +21,14 @@ trait GameManagementTrait {
    *
    */
   public static function initializeGame(Game $game, UserInterface $white_user, UserInterface $black_user, UserInterface $challenger, $game_time, $time_per_move) {
-    $white = GamerStatistics::loadForUser($white_user);
-    $black = GamerStatistics::loadForUser($black_user);
 
-    $white->setCurrent($white->getCurrent() + 1);
-    $black->setCurrent($black->getCurrent() + 1);
+    GamerStatistics::loadForUser($white_user)
+      ->incrementCurrent()
+      ->save();
 
-    $white->save();
-    $black->save();
+    GamerStatistics::loadForUser($black_user)
+      ->incrementCurrent()
+      ->save();
 
     $game
       ->setWhiteUser($white_user)

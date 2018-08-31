@@ -356,8 +356,6 @@ class GameController extends ControllerBase {
       $its_your_move = '';
       if ($color === 'w') {
         $opponent = $game->getBlackUser();
-        // @todo This is an outlier...???
-        static::initializeGame($game, $user, $opponent, $user);
         $its_your_move = $this->t('Now, it is your move!');
         $t_args += [
           '@white' => $user->getDisplayName(),
@@ -366,8 +364,6 @@ class GameController extends ControllerBase {
       }
       else {
         $opponent = $game->getWhiteUser();
-        // @todo This is an outlier...???
-        static::initializeGame($game, $opponent, $user, $user);
         $extra = $this->t('Since you are playing black, you will have to wait for @opponent to move.<br />',
           ['@opponent' => $opponent->getDisplayName()]);
         $t_args += [
@@ -375,6 +371,12 @@ class GameController extends ControllerBase {
           '@black' => $user->getDisplayName(),
         ];
       }
+
+      // Update users' game statistics.
+      GamerStatistics::loadForUser($user)->incrementCurrent()->save();
+      GamerStatistics::loadForUser($opponent)->incrementCurrent()->save();
+
+      // Send messages to the users.
       $t_args += [
         '@opponent' => $opponent->getDisplayName(),
         '@extra' => $extra,
