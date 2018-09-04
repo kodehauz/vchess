@@ -47,7 +47,7 @@ class Move extends ContentEntityBase {
       //   $move[3] = move type, "x"
       //   $move[4] = dest piece
       //   $move[5-6] = dest square
-      $to_square->setCoordinate(substr($this->getLongMove(), 4, 2));
+      $to_square->setCoordinate(substr($this->getLongMove(), 5, 2));
     }
     else { // Move type = "-"
       // In a move like "Rh4-d4":

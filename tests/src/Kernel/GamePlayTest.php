@@ -128,22 +128,30 @@ class GamePlayTest extends KernelTestBase {
   }
 
 
+  /**
+   * Tests that pawn captures work as expected.
+   */
   public function testPawnCapture() {
-    $fen = "rnbqkb1r/pp3ppp/4pn2/3p4/3P4/2N2N2/PPP2PPP/R1BQKB1R w KQkq - 2 6";
-    $game = new Game();
-    $game->setBoard($fen);
-    $user1 = new User();
-    $user2 = new User();
+//    $fen = "rnbqkb1r/pp3ppp/4pn2/3p4/3P4/2N2N2/PPP2PPP/R1BQKB1R w KQkq - 2 6";
+    // Full FENs cause the parser to hang.
+    $fen = "rnbqkb1r/pp3ppp/4pn2/3p4/3P4/2N2N2/PPP2PPP/R1BQKB1R";
+    $user1 = User::create(['name' => 'user1']);
+    $user2 = User::create(['name' => 'user2']);
     $user1->save();
     $user2->save();
-    $game->setWhiteUser($user1);
-    $game->setBlackUser($user2);
+    $game = Game::create()
+      ->setBoard($fen)
+      ->setWhiteUser($user1)
+      ->setBlackUser($user2);
     $game->save();
     $gamePlay = new GamePlay($game);
 
-    $move_made = $gamePlay->makeMove($user1, (Move::create()->setLongMove('Pd4xd5'));
+    $move = Move::create()->setLongMove('Pd4xPd5');
+    $messages = $errors = [];
+    $move_made = $gamePlay->makeMove($user1, $move, $messages, $errors);
     $this->assertFalse($move_made);
   }
+
 }
 
 
