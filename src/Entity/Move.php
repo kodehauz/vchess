@@ -406,7 +406,7 @@ class Move extends ContentEntityBase {
     }
 
     // If algebraic already matches the long form, just return it.
-    if (preg_match('/^[PNRBQK][a-h][1-8][-x][a-h][1-8]/i', $algebraic)) {
+    if (preg_match('/^[PNRBQK][a-h][1-8][-x][PNRBQK]?[a-h][1-8]/i', $algebraic)) {
       $algebraic = strtolower($algebraic);
       $algebraic[0] = strtoupper($algebraic[0]);
       $move->setLongMove($algebraic);
